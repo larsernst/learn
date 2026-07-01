@@ -1,8 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SESSION_COOKIE = "bs_lernapp_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+export const SESSION_COOKIE = "bs_lernapp_session";
+export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 function getSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET ?? process.env.NEXTAUTH_SECRET;
@@ -16,6 +16,32 @@ export interface SessionPayload {
   sub: string;
   email: string;
   name: string;
+}
+
+export interface SessionCookieOptions {
+  name: string;
+  value: string;
+  httpOnly: boolean;
+  sameSite: "lax" | "strict" | "none";
+  secure: boolean;
+  path: string;
+  maxAge: number;
+}
+
+export function isSecureCookie(): boolean {
+  return process.env.SESSION_COOKIE_SECURE === "true";
+}
+
+export function getSessionCookieOptions(value: string, maxAge: number = SESSION_TTL_SECONDS): SessionCookieOptions {
+  return {
+    name: SESSION_COOKIE,
+    value,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isSecureCookie(),
+    path: "/",
+    maxAge,
+  };
 }
 
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
@@ -44,23 +70,13 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 }
 
 export async function setSessionCookie(token: string): Promise<void> {
-  cookies().set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_TTL_SECONDS,
-  });
+  const { name, value, ...rest } = getSessionCookieOptions(token);
+  cookies().set(name, value, rest);
 }
 
 export function clearSessionCookie(): void {
-  cookies().set(SESSION_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
+  const { name, value, ...rest } = getSessionCookieOptions("", 0);
+  cookies().set(name, value, rest);
 }
 
 export function readSessionCookie(): string | undefined {

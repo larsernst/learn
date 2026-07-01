@@ -28,6 +28,7 @@ services:
       DATABASE_URL: "postgresql://lernapp:lernapp@db:5432/lernapp?schema=public"
       JWT_SECRET: "${JWT_SECRET:-please-change-me-to-a-long-random-secret}"
       NEXTAUTH_SECRET: "${JWT_SECRET:-please-change-me-to-a-long-random-secret}"
+      SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-false}"
       NEXT_PUBLIC_APP_NAME: "BS Lern-App"
       NODE_ENV: production
       PORT: "${WEB_PORT:-3000}"

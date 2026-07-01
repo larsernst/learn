@@ -28,12 +28,6 @@ export const SM2_DEFAULTS = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
 export function clampEase(ef: number): number {
   return Math.max(SM2_DEFAULTS.easeFloor, ef);
 }
@@ -88,7 +82,7 @@ export function applySm2(prev: Sm2UpdateInput, grade: ReviewGrade, now: Date = n
 }
 
 export function isDue(state: { dueAt: Date }, now: Date = new Date()): boolean {
-  return startOfDay(state.dueAt) <= startOfDay(now);
+  return state.dueAt.getTime() <= now.getTime();
 }
 
 export function intervalLabel(intervalDays: number): string {

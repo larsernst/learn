@@ -7,10 +7,9 @@ export default async function LernenPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const now = new Date();
   const dueToday = await prisma.review.count({
-    where: { userId: user.sub, dueAt: { lte: start } },
+    where: { userId: user.sub, dueAt: { lte: now } },
   });
 
   return (

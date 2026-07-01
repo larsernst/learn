@@ -8,10 +8,9 @@ export default async function HomePage() {
 
   let dueCount = 0;
   if (user) {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
+    const now = new Date();
     dueCount = await prisma.review.count({
-      where: { userId: user.sub, dueAt: { lte: start } },
+      where: { userId: user.sub, dueAt: { lte: now } },
     });
   }
 

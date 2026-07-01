@@ -8,11 +8,10 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const now = new Date();
 
   const dueReviews = await prisma.review.findMany({
-    where: { userId: user.sub, dueAt: { lte: start } },
+    where: { userId: user.sub, dueAt: { lte: now } },
     include: { question: true },
     orderBy: [{ lapses: "desc" }, { dueAt: "asc" }],
     take: 1,

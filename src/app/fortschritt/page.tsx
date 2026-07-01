@@ -7,8 +7,7 @@ export default async function FortschrittPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const now = new Date();
 
   const total = await prisma.question.count();
   const reviews = await prisma.review.findMany({
@@ -24,7 +23,7 @@ export default async function FortschrittPage() {
   });
 
   const learned = reviews.length;
-  const dueToday = reviews.filter((r) => r.dueAt <= start).length;
+  const dueToday = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
   const mature = reviews.filter((r) => r.intervalDays >= 21).length;
   const totalLapses = reviews.reduce((s, r) => s + r.lapses, 0);
 

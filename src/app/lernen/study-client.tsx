@@ -65,8 +65,8 @@ export default function StudyClient() {
         isNew: data.isNew,
       }),
     });
-    setSubmitting(false);
     if (!res.ok) {
+      setSubmitting(false);
       setError("Bewertung konnte nicht gespeichert werden.");
       return;
     }
@@ -76,7 +76,11 @@ export default function StudyClient() {
         ? "Wird heute erneut angezeigt."
         : `Nächste Wiederholung ${intervalLabel(result.intervalDays)}.`
     );
-    await loadNext();
+    // Feedback kurz anzeigen, bevor die naechste Karte geladen wird.
+    setTimeout(() => {
+      setSubmitting(false);
+      loadNext();
+    }, 900);
   }
 
   if (loading) {

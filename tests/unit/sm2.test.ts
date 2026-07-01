@@ -99,10 +99,33 @@ describe("applySm2", () => {
 });
 
 describe("isDue", () => {
-  it("treats dueAt on or before today as due", () => {
+  it("treats dueAt on or before now as due", () => {
     const now = new Date("2026-07-01T15:00:00Z");
     expect(isDue({ dueAt: new Date("2026-07-01T00:00:00Z") }, now)).toBe(true);
     expect(isDue({ dueAt: new Date("2026-06-30T23:00:00Z") }, now)).toBe(true);
     expect(isDue({ dueAt: new Date("2026-07-02T00:00:00Z") }, now)).toBe(false);
+  });
+
+  it("makes an 'again' card due immediately so it repeats in the same session", () => {
+    const now = new Date("2026-07-01T15:00:00Z");
+    const before: Sm2UpdateInput = {
+      easeFactor: 2.5,
+      intervalDays: 6,
+      repetitions: 2,
+      lapses: 0,
+      dueAt: new Date("2026-07-07T00:00:00Z"),
+      lastReviewedAt: null,
+    };
+    const after = applySm2(before, "again", now);
+    // dueAt == now (Intervall 0) -> sofort wieder faellig
+    expect(after.dueAt.getTime()).toBe(now.getTime());
+    expect(isDue({ dueAt: after.dueAt }, now)).toBe(true);
+  });
+
+  it("schedules a 'good' card into the future (not due now)", () => {
+    const now = new Date("2026-07-01T15:00:00Z");
+    const after = applySm2(initialState(), "good", now);
+    expect(after.dueAt.getTime()).toBeGreaterThan(now.getTime());
+    expect(isDue({ dueAt: after.dueAt }, now)).toBe(false);
   });
 });

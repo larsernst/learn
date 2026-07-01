@@ -8,8 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const now = new Date();
 
   const total = await prisma.question.count();
 
@@ -19,7 +18,7 @@ export async function GET() {
   });
 
   const learned = reviews.length;
-  const dueToday = reviews.filter((r) => r.dueAt <= start).length;
+  const dueToday = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
   const mature = reviews.filter((r) => r.intervalDays >= 21).length;
   const totalLapses = reviews.reduce((sum, r) => sum + r.lapses, 0);
 
