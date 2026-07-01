@@ -44,6 +44,38 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
     loadNext();
   }, []);
 
+  useEffect(() => {
+    if (loading || !data || !data.review) return;
+    const r = data.review;
+    const mcqOpts = r.question.mcqOptions;
+    const mcqMode = mcqOpts !== null && mcqOpts !== undefined && mcqOpts.length > 0;
+    function handle(e: KeyboardEvent) {
+      if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        if (!revealed) setRevealed(true);
+        else if (mcqMode && !submitting) submitMcq();
+      }
+      if (!revealed || submitting) return;
+      if (mcqMode) {
+        const idx = Number(e.key) - 1;
+        const opts = mcqOpts!;
+        if (opts[idx]) {
+          const id = opts[idx].id;
+          const selMode = r.question.mcqSelectionMode ?? "multi";
+          selMode === "single"
+            ? setSelected([id])
+            : setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+        }
+        return;
+      }
+      const grades: Record<string, ReviewGrade> = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+      if (grades[e.key]) gradeRecall(grades[e.key]);
+    }
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [loading, data, revealed, submitting]);
+
   async function gradeRecall(grade: ReviewGrade) {
     if (!data?.review) return;
     setSubmitting(true);
@@ -262,6 +294,7 @@ function RecallQuestion(props: {
               className="grade-btn grade-btn--again"
               disabled={props.submitting}
               onClick={() => props.onGrade("again")}
+              aria-label="Again – völlig falsch (Taste 1)"
             >
               Again<small>völlig falsch</small>
             </button>
@@ -269,6 +302,7 @@ function RecallQuestion(props: {
               className="grade-btn"
               disabled={props.submitting}
               onClick={() => props.onGrade("hard")}
+              aria-label="Hard – mit Mühe (Taste 2)"
             >
               Hard<small>mit Mühe</small>
             </button>
@@ -276,6 +310,7 @@ function RecallQuestion(props: {
               className="grade-btn grade-btn--good"
               disabled={props.submitting}
               onClick={() => props.onGrade("good")}
+              aria-label="Good – korrekt (Taste 3)"
             >
               Good<small>korrekt</small>
             </button>
@@ -283,6 +318,7 @@ function RecallQuestion(props: {
               className="grade-btn"
               disabled={props.submitting}
               onClick={() => props.onGrade("easy")}
+              aria-label="Easy – mühelos (Taste 4)"
             >
               Easy<small>mühelos</small>
             </button>
@@ -325,13 +361,19 @@ function McqQuestion(props: {
             cls += " mcq-option--selected";
           }
           return (
-            <label key={o.id} className={cls}>
+            <label
+              key={o.id}
+              className={cls}
+              role={isSingle ? "radio" : "checkbox"}
+              aria-checked={checked}
+            >
               <input
                 type={inputType}
                 name={isSingle ? "mcq-single" : undefined}
                 checked={checked}
                 disabled={props.disabled}
                 onChange={() => props.onToggle(o.id)}
+                tabIndex={0}
               />
               <span>{o.text}</span>
             </label>

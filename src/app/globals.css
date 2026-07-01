@@ -329,7 +329,19 @@ button {
 
 .badge--warn {
   background: rgba(199, 83, 0, 0.12);
-  color: var(--ds-chart-orange);
+  color: #a04000;
+}
+
+/* Keyboard / focus */
+:focus-visible {
+  outline: 2px solid var(--ds-link);
+  outline-offset: 2px;
+}
+
+.grade-btn:focus-visible,
+.mcq-option:focus-within {
+  outline: 2px solid var(--ds-link);
+  outline-offset: 1px;
 }
 
 /* Katalog list */
