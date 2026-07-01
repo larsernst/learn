@@ -140,14 +140,14 @@ export default async function KatalogPage() {
                 const isMcq = Array.isArray(q.mcqOptions) && q.mcqOptions !== null;
                 return (
                   <li key={q.id} className="katalog-item">
-                    <div className="katalog-item__main">
+                    <Link href={`/katalog/${q.id}`} className="katalog-item__main">
                       <span className="katalog-item__q">{q.question}</span>
                       <span className="katalog-item__meta">
                         {isMcq ? "Multiple-Choice" : "Freie Erinnerung"}
                         {r ? ` · ${r.repetitions}× wiederholt · ${r.lapses}× falsch` : ""}
                         {r ? ` · fällig ${intervalLabel(r.intervalDays)}` : ""}
                       </span>
-                    </div>
+                    </Link>
                     <span className={STATUS_CLASS[status]}>{STATUS_LABEL[status]}</span>
                   </li>
                 );

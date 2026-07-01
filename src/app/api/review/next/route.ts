@@ -1,16 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import type { McqOption } from "@/lib/types";
-
-function stripMcq(options: McqOption[]): { id: string; text: string }[] {
-  const stripped = options.map((o) => ({ id: o.id, text: o.text }));
-  for (let i = stripped.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [stripped[i], stripped[j]] = [stripped[j], stripped[i]];
-  }
-  return stripped;
-}
+import { serializeQuestion } from "@/lib/serialize";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -34,9 +25,8 @@ export async function GET(request: Request) {
   });
 
   if (dueReviews.length > 0) {
-    const r = dueReviews[0];
     return NextResponse.json({
-      review: serializeReview(r.question),
+      review: { question: serializeQuestion(dueReviews[0].question) },
       isNew: false,
       deck: difficultOnly ? "difficult" : "all",
     });
@@ -59,28 +49,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ review: null, isNew: false, deck: "all" });
   }
 
-  return NextResponse.json({ review: serializeReview(nextNew), isNew: true, deck: "all" });
-}
-
-function serializeReview(question: {
-  id: string;
-  chapter: number;
-  chapterTitle: string;
-  question: string;
-  answer: string;
-  sourceRef: string;
-  mcqOptions: unknown;
-}) {
-  const mcq = Array.isArray(question.mcqOptions) ? (question.mcqOptions as McqOption[]) : null;
-  return {
-    question: {
-      id: question.id,
-      chapter: question.chapter,
-      chapterTitle: question.chapterTitle,
-      question: question.question,
-      answer: question.answer,
-      sourceRef: question.sourceRef,
-      mcqOptions: mcq ? stripMcq(mcq) : null,
-    },
-  };
+  return NextResponse.json({
+    review: { question: serializeQuestion(nextNew) },
+    isNew: true,
+    deck: "all",
+  });
 }

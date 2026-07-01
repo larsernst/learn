@@ -1,0 +1,47 @@
+import { getCurrentUser } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+export default async function CramPage({ params }: { params: { id: string } }) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const q = await prisma.question.findUnique({ where: { id: params.id } });
+  if (!q) notFound();
+
+  return (
+    <div className="page page--narrow" style={{ paddingTop: 64 }}>
+      <p className="eyebrow">Vorschau (ohne Bewertung)</p>
+      <div className="row row--between" style={{ flexWrap: "wrap" }}>
+        <h1 style={{ fontSize: 24 }}>Kapitel {q.chapter} · {q.chapterTitle}</h1>
+        <Link href="/katalog" className="btn btn--ghost">
+          ← Zurück zum Katalog
+        </Link>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <p className="review-question">{q.question}</p>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 8 }}>Musterantwort</p>
+        <div className="review-answer">{q.answer}</div>
+      </div>
+
+      <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>
+        Quelle: {q.sourceRef} · Diese Ansicht beeinflusst nicht deinen SM-2-Fortschritt.
+      </p>
+
+      <div className="row" style={{ marginTop: 16 }}>
+        <Link href="/lernen" className="btn btn--primary">
+          Jetzt lernen
+        </Link>
+        <Link href="/pruefung" className="btn btn--secondary">
+          Prüfung proben
+        </Link>
+      </div>
+    </div>
+  );
+}

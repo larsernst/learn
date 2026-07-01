@@ -24,6 +24,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/lernen" className="navlink">
                 Lernen
               </Link>
+              <Link href="/pruefung" className="navlink">
+                Prüfung
+              </Link>
               {user ? (
                 <>
                   <Link href="/fortschritt" className="navlink">
