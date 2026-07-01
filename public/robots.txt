@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# BS Lern-App – keine öffentlichen Inhalte indexiert (Lern-App mit Login).

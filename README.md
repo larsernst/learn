@@ -1,5 +1,16 @@
 # BS Lern-App – Betriebssysteme Grundlagen (Fragenkatalog 2026)
 
+![AI Assisted](https://img.shields.io/badge/AI%20Assisted-000000?style=for-the-badge&logo=opencode&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14.2-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-5.18-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-2.0-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-1.45-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Lern--Projekt-orange?style=for-the-badge)
+
 Eine TypeScript-/Next.js-Webanwendung zum Vorbereiten auf die Prüfung
 „Betriebssysteme – Grundlagen" (Fragenkatalog 2026, Dozent: Ing. Leonard Zeh).
 Die App enthält **alle 100 Fragen** des offiziellen Fragenkatalogs mit
