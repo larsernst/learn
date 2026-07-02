@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookieOptions } from "@/lib/session";
 import { requireSameOrigin } from "@/lib/origin";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   const originCheck = requireSameOrigin(request);
   if (!originCheck.ok) {
     return NextResponse.json(
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     );
   }
   const { name, value, ...options } = getSessionCookieOptions("", 0);
-  const res = NextResponse.redirect(new URL("/", request.url));
+  const res = NextResponse.redirect(new URL("/", request.nextUrl));
   res.cookies.set(name, value, options);
   return res;
 }
