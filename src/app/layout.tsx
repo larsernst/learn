@@ -84,6 +84,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             BS Lern-App · Fragenkatalog 2026 Betriebssysteme Grundlagen
             <br />
             Nur für Lernzwecke. Keine offizielle Veröffentlichung der Hochschule.
+            <br />
+            <a
+              href="https://github.com/larsernst/dhge-betriebssysteme"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "var(--ds-link)" }}
+            >
+              GitHub
+            </a>
           </div>
         </footer>
       </body>
