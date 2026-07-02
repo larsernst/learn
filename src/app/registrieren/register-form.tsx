@@ -74,7 +74,7 @@ export default function RegisterForm() {
           autoComplete="new-password"
         />
       </div>
-      <button type="submit" className="btn btn--primary" disabled={loading}>
+      <button type="submit" className="btn btn--primary btn--sm" disabled={loading}>
         {loading ? "Wird erstellt …" : "Konto erstellen"}
       </button>
       <p className="muted" style={{ fontSize: 14 }}>
