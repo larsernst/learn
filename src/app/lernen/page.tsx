@@ -46,7 +46,7 @@ export default async function LernenPage({
         </a>
       </div>
       <StudyClient deck={deck} />
-      <p className="muted" style={{ fontSize: 13, marginTop: 16 }}>
+      <p className="muted desktop-only" style={{ fontSize: 13, marginTop: 16 }}>
         Tastatur: <strong>Leertaste/Enter</strong> = Aufdecken/Bestätigen ·{" "}
         <strong>1–4</strong> = Again/Hard/Good/Easy (Freie Erinnerung) ·{" "}
         <strong>1–n</strong> = Option togglen (MCQ)

@@ -15,10 +15,10 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="page" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <div className="page" style={{ paddingTop: "clamp(48px, 10vw, 96px)", paddingBottom: "clamp(48px, 10vw, 96px)" }}>
       <p className="eyebrow">Fragenkatalog 2026 · Betriebssysteme Grundlagen</p>
       <h1>Betriebssysteme verstehen. Prüfungsfragen meistern.</h1>
-      <p className="muted" style={{ maxWidth: 720, fontSize: 20 }}>
+      <p className="muted" style={{ maxWidth: 720, fontSize: "clamp(16px, 2.5vw, 20px)" }}>
         Alle {totalQuestions} Prüfungsfragen aus der Vorlesung von Ing. Leonard Zeh –
         mit modellantworten aus den Vorlesungsfolien. Wiederhole mit Spaced Repetition
         (SM-2) und merke dir, was du noch nicht konntest.
