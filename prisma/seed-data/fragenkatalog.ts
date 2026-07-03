@@ -6,6 +6,7 @@
 
 export interface CatalogQuestion {
   id: string;
+  courseId?: string;
   chapter: number;
   chapterTitle: string;
   question: string;

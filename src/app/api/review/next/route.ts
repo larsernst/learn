@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const difficultOnly = url.searchParams.get("deck") === "difficult";
+  const courseId = url.searchParams.get("courseId") ?? undefined;
   const now = new Date();
 
   const me = await prisma.user.findUnique({
@@ -19,11 +20,14 @@ export async function GET(request: Request) {
   });
   const mcqEnabled = me?.mcqEnabled ?? true;
 
+  const courseFilter = courseId ? { question: { courseId } } : undefined;
+
   const dueReviews = await prisma.review.findMany({
     where: {
       userId: user.sub,
       dueAt: { lte: now },
       ...(difficultOnly ? { lapses: { gte: 1 } } : {}),
+      ...(courseFilter ?? {}),
     },
     include: { question: true },
     orderBy: [{ lapses: "desc" }, { dueAt: "asc" }],
@@ -48,7 +52,10 @@ export async function GET(request: Request) {
   });
   const learnedIds = new Set(learnedQuestionIds.map((r) => r.questionId));
 
-  const allQuestions = await prisma.question.findMany({ orderBy: [{ chapter: "asc" }, { id: "asc" }] });
+  const allQuestions = await prisma.question.findMany({
+    where: courseId ? { courseId } : undefined,
+    orderBy: [{ chapter: "asc" }, { id: "asc" }],
+  });
   const nextNew = allQuestions.find((q) => !learnedIds.has(q.id));
 
   if (!nextNew) {

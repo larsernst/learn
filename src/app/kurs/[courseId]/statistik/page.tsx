@@ -3,24 +3,34 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { buildHeatmap, buildLapsesLeaderboard, computeStreak, toDayKey } from "@/lib/stats";
 import Link from "next/link";
+import { KursNav } from "../kurs-nav";
+import { resolveCourse } from "../resolve-course";
 
-export default async function StatistikPage() {
+export default async function StatistikPage({
+  params,
+}: {
+  params: { courseId: string };
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const course = await resolveCourse(params.courseId);
 
   const now = new Date();
 
   const [events, reviews, questions] = await Promise.all([
     prisma.reviewEvent.findMany({
-      where: { userId: user.sub },
+      where: { userId: user.sub, question: { courseId: course.id } },
       select: { at: true, grade: true, mcqCorrect: true },
       orderBy: { at: "asc" },
     }),
     prisma.review.findMany({
-      where: { userId: user.sub },
+      where: { userId: user.sub, question: { courseId: course.id } },
       select: { questionId: true, lapses: true, repetitions: true, easeFactor: true, intervalDays: true },
     }),
-    prisma.question.findMany({ select: { id: true, question: true, chapter: true, chapterTitle: true } }),
+    prisma.question.findMany({
+      where: { courseId: course.id },
+      select: { id: true, question: true, chapter: true, chapterTitle: true },
+    }),
   ]);
 
   const streak = computeStreak(events, now);
@@ -42,8 +52,9 @@ export default async function StatistikPage() {
 
   return (
     <div className="page" style={{ paddingTop: 64 }}>
-      <p className="eyebrow">Statistik</p>
+      <p className="eyebrow">{course.title} · Statistik</p>
       <h1>Deine Lern-Statistik</h1>
+      <KursNav courseId={course.id} />
 
       <div className="grid grid--4" style={{ marginTop: 8 }}>
         <Stat label="Aktuelle Serie" value={`${streak} Tag${streak === 1 ? "" : "e"}`} accent="brand" />
@@ -102,7 +113,7 @@ export default async function StatistikPage() {
           </ol>
         )}
         <p style={{ marginTop: 16 }}>
-          <Link href="/lernen?deck=difficult" className="btn btn--primary">
+          <Link href={`/kurs/${course.id}/lernen?deck=difficult`} className="btn btn--primary">
             Schwierige Karten üben
           </Link>
         </p>

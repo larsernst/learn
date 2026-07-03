@@ -13,6 +13,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const countRaw = Number(url.searchParams.get("count") ?? "30");
   const count = Number.isFinite(countRaw) && countRaw > 0 ? countRaw : 30;
+  const courseId = url.searchParams.get("courseId");
 
   const me = await prisma.user.findUnique({
     where: { id: user.sub },
@@ -20,7 +21,9 @@ export async function GET(request: Request) {
   });
   const mcqEnabled = me?.mcqEnabled ?? true;
 
-  const all = await prisma.question.findMany();
+  const all = await prisma.question.findMany(
+    courseId ? { where: { courseId } } : undefined
+  );
   const picked = selectExamQuestions(all, count);
 
   return NextResponse.json({

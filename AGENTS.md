@@ -19,7 +19,10 @@ BASE_URL=http://<your-host>:<port> npm run test:e2e
 - Auth: `src/lib/session.ts` (Jose-JWT), `src/lib/password.ts` (bcryptjs).
 - API-Routen: `src/app/api/**/route.ts` (Eingabevalidierung via Zod).
 - Fragenkatalog-Daten: `prisma/seed-data/fragenkatalog.ts` (nur diese Datei
-  enthält die 100 Fragen/Antworten).
+  enthält die Fragen/Antworten). Jede Frage trägt `courseId`.
+- Kurs-Metadaten: `prisma/seed-data/courses.ts` (id, slug, title, beschreibung,
+  Reihenfolge, published). Neuer Kurs → dort eintragen + Fragen in
+  `fragenkatalog.ts` mit entsprechendem `courseId`.
 - Design-Tokens: `src/lib/design-tokens.ts` + `src/app/globals.css`
   (Vorgabe: `DESIGN.md`).
 - Prüfungsmodus: `src/lib/exam.ts` (Fragenauswahl, Bewertung).
@@ -55,6 +58,11 @@ Prisma-Binary-Targets: `native` + `linux-musl` (für Docker-Alpine-Images).
 - Sprache der UI: **Deutsch**.
 - Keine Kommentare im Code, außer es wird ausdrücklich gewünscht.
 - Neue Fragen/Antworten ausschließlich in `fragenkatalog.ts`pflegen,
-  danach `npm run db:seed`.
+  danach `npm run db:seed`. Neue Kurse zusätzlich in `courses.ts` anlegen.
+- Kurs-Routing: Inhalte liegen unter `/kurs/[courseId]/*` (lernen, pruefung,
+  fortschritt, statistik, katalog). Alte Top-Level-Routen leiten per
+  `next.config.js` redirect auf den BS-Kurs weiter.
+- Frage-IDs (`Question.id`) sind stabil und dürfen nie geändert werden – daran
+  hängt der komplette Nutzerfortschritt (`Review`/`ReviewEvent`).
 - Keine Secrets committen; `.env` ist ignoriert.
 - `resources/` (Vorlesungsquellen) wird **nicht** committet.
