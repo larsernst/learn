@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { intervalLabel } from "@/lib/sm2";
 import Link from "next/link";
+import { KursNav } from "../kurs-nav";
+import { resolveCourse } from "../resolve-course";
 
 type Status = "neu" | "faellig" | "gelernt" | "gefestigt";
 
@@ -30,13 +32,19 @@ const STATUS_CLASS: Record<Status, string> = {
   gefestigt: "badge badge--success",
 };
 
-export default async function KatalogPage() {
+export default async function KatalogPage({
+  params,
+}: {
+  params: { courseId: string };
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const course = await resolveCourse(params.courseId);
 
   const now = new Date();
 
   const questions = await prisma.question.findMany({
+    where: { courseId: course.id },
     orderBy: [{ chapter: "asc" }, { id: "asc" }],
       select: {
       id: true,
@@ -49,7 +57,7 @@ export default async function KatalogPage() {
   });
 
   const reviews = await prisma.review.findMany({
-    where: { userId: user.sub },
+    where: { userId: user.sub, question: { courseId: course.id } },
     select: {
       questionId: true,
       intervalDays: true,
@@ -88,13 +96,14 @@ export default async function KatalogPage() {
     <div className="page" style={{ paddingTop: 64 }}>
       <div className="row row--between" style={{ flexWrap: "wrap", gap: 16 }}>
         <div>
-          <p className="eyebrow">Fragenkatalog</p>
+          <p className="eyebrow">{course.title} · Fragenkatalog</p>
           <h1>Alle Fragen</h1>
         </div>
-        <Link href="/lernen" className="btn btn--primary">
+        <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary">
           Jetzt lernen
         </Link>
       </div>
+      <KursNav courseId={course.id} />
 
       <div className="grid grid--4" style={{ marginTop: 24 }}>
         <Stat label="Fragen gesamt" value={total} />
@@ -141,7 +150,7 @@ export default async function KatalogPage() {
                 const isMcq = Array.isArray(q.mcqOptions) && q.mcqOptions !== null;
                 return (
                   <li key={q.id} className="katalog-item">
-                    <Link href={`/katalog/${q.id}`} className="katalog-item__main">
+                    <Link href={`/kurs/${course.id}/katalog/${q.id}`} className="katalog-item__main">
                       <span className="katalog-item__q">{q.question}</span>
                       <span className="katalog-item__meta">
                         {isMcq ? "Multiple-Choice" : "Freie Erinnerung"}

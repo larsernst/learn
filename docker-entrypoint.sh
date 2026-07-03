@@ -1,13 +1,18 @@
 #!/bin/sh
 set -e
 
-# Wende Migrationen an und seeede die Fragen, bevor die Next.js-App startet.
-# Beides ist idempotent (migrate deploy / upsert).
-echo "BS Lern-App: wende Datenbank-Migrationen an …"
+# Wende Migrationen an, weise bestehende Fragen einem Kurs zu und seeede
+# den Katalog, bevor die Next.js-App startet. Alle Schritte sind idempotent
+# (migrate deploy / updateMany mit WHERE / upsert) und beruehren keine
+# Nutzerdaten (Review / ReviewEvent).
+echo "Lern-App: wende Datenbank-Migrationen an …"
 npx prisma migrate deploy
 
-echo "BS Lern-App: seeede Fragenkatalog …"
+echo "Lern-App: weise bestehende Fragen dem Standardkurs zu …"
+npx tsx prisma/migrate-data.ts
+
+echo "Lern-App: seeede Kurse und Fragenkatalog …"
 npx tsx prisma/seed.ts
 
-echo "BS Lern-App: starte Webserver …"
+echo "Lern-App: starte Webserver …"
 exec "$@"

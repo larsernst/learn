@@ -10,7 +10,13 @@ type Feedback =
   | { kind: "mcq"; correct: boolean; correctIds: string[] | null; text: string }
   | null;
 
-export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficult" }) {
+export default function StudyClient({
+  deck = "all",
+  courseId,
+}: {
+  deck?: "all" | "difficult";
+  courseId: string;
+}) {
   const [data, setData] = useState<ReviewNextResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [revealed, setRevealed] = useState(false);
@@ -29,7 +35,9 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
     setFeedback(null);
     setError(null);
     const url =
-      deck === "difficult" ? "/api/review/next?deck=difficult" : "/api/review/next";
+      deck === "difficult"
+        ? `/api/review/next?deck=difficult&courseId=${encodeURIComponent(courseId)}`
+        : `/api/review/next?courseId=${encodeURIComponent(courseId)}`;
     const res = await fetch(url);
     setLoading(false);
     if (!res.ok) {
@@ -165,7 +173,7 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
           <button className="btn btn--secondary" onClick={loadNext}>
             {deck === "difficult" ? "Erneut suchen" : "Nach weiteren neuen Fragen suchen"}
           </button>
-          <Link href="/katalog" className="btn btn--ghost">
+          <Link href={`/kurs/${courseId}/katalog`} className="btn btn--ghost">
             Alle Fragen ansehen
           </Link>
         </div>

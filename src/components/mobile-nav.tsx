@@ -38,23 +38,13 @@ export function MobileNav({ user }: MobileNavProps) {
       {open && (
         <div className="mobile-nav-overlay" onClick={() => setOpen(false)}>
           <nav className="mobile-nav-panel" onClick={(e) => e.stopPropagation()}>
-            <Link href="/lernen" className="mobile-nav-link" onClick={() => setOpen(false)}>
-              Lernen
-            </Link>
-            <Link href="/pruefung" className="mobile-nav-link" onClick={() => setOpen(false)}>
-              Prüfung
-            </Link>
+            {user && (
+              <Link href="/" className="mobile-nav-link" onClick={() => setOpen(false)}>
+                Übersicht
+              </Link>
+            )}
             {user && (
               <>
-                <Link href="/fortschritt" className="mobile-nav-link" onClick={() => setOpen(false)}>
-                  Fortschritt
-                </Link>
-                <Link href="/statistik" className="mobile-nav-link" onClick={() => setOpen(false)}>
-                  Statistik
-                </Link>
-                <Link href="/katalog" className="mobile-nav-link" onClick={() => setOpen(false)}>
-                  Katalog
-                </Link>
                 <Link href="/einstellungen" className="mobile-nav-link" onClick={() => setOpen(false)}>
                   Einstellungen
                 </Link>

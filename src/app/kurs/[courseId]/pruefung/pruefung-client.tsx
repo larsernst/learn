@@ -26,7 +26,7 @@ const COUNTS: { label: string; value: number }[] = [
   { label: "Alle", value: 0 },
 ];
 
-export default function PruefungClient() {
+export default function PruefungClient({ courseId }: { courseId: string }) {
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<QuestionPublic[]>([]);
   const [index, setIndex] = useState(0);
@@ -41,7 +41,7 @@ export default function PruefungClient() {
   async function start(count: number) {
     setLoading(true);
     setError(null);
-    const res = await fetch(`/api/exam/questions?count=${count}`);
+    const res = await fetch(`/api/exam/questions?count=${count}&courseId=${encodeURIComponent(courseId)}`);
     setLoading(false);
     if (!res.ok) {
       setError("Fragen konnten nicht geladen werden.");
@@ -166,7 +166,7 @@ export default function PruefungClient() {
               >
                 Ins SM-2 übernehmen
               </button>
-              <Link href="/lernen" className="btn btn--secondary">
+              <Link href={`/kurs/${courseId}/lernen`} className="btn btn--secondary">
                 Nicht übernehmen – weiter lernen
               </Link>
             </div>
@@ -178,7 +178,7 @@ export default function PruefungClient() {
             <p className="muted" style={{ marginTop: 8 }}>
               Dein Ergebnis wurde ins Spaced-Repetition-System übernommen.
             </p>
-            <Link href="/statistik" className="btn btn--secondary">
+            <Link href={`/kurs/${courseId}/statistik`} className="btn btn--secondary">
               Statistik ansehen
             </Link>
           </div>

@@ -2,18 +2,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
+  const url = new URL(request.url);
+  const courseId = url.searchParams.get("courseId") ?? undefined;
+  const where = courseId ? { courseId } : undefined;
+
   const now = new Date();
 
-  const total = await prisma.question.count();
+  const total = await prisma.question.count({ where });
 
   const reviews = await prisma.review.findMany({
-    where: { userId: user.sub },
+    where: { userId: user.sub, question: where ? { courseId } : undefined },
     select: { questionId: true, repetitions: true, lapses: true, intervalDays: true, dueAt: true },
   });
 
@@ -24,6 +28,7 @@ export async function GET() {
 
   const byChapterRaw = await prisma.question.groupBy({
     by: ["chapter", "chapterTitle"],
+    where,
     _count: { _all: true },
     orderBy: { chapter: "asc" },
   });
@@ -36,6 +41,7 @@ export async function GET() {
   const learnedIds = new Set(learnedByChapter.map((r) => r.questionId));
 
   const questionsByChapter = await prisma.question.findMany({
+    where,
     select: { id: true, chapter: true, chapterTitle: true },
   });
   const perChapter = byChapterRaw.map((c) => {

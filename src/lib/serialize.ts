@@ -12,6 +12,7 @@ export function stripMcq(options: McqOption[]): { id: string; text: string }[] {
 export function serializeQuestion(
   q: {
     id: string;
+    courseId: string | null;
     chapter: number;
     chapterTitle: string;
     question: string;
@@ -28,6 +29,7 @@ export function serializeQuestion(
   if (!mcqEnabled || !mcq) {
     return {
       id: q.id,
+      courseId: q.courseId,
       chapter: q.chapter,
       chapterTitle: q.chapterTitle,
       question: q.question,
@@ -41,6 +43,7 @@ export function serializeQuestion(
   const correctCount = mcq.filter((o) => o.correct).length;
   return {
     id: q.id,
+    courseId: q.courseId,
     chapter: q.chapter,
     chapterTitle: q.chapterTitle,
     question: q.question,

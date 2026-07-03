@@ -8,9 +8,9 @@ import { MobileNav } from "@/components/mobile-nav";
 const THEME_SCRIPT = `(function(){var t=localStorage.getItem("bs-theme")||"dark";document.documentElement.setAttribute("data-theme",t);}());`;
 
 export const metadata: Metadata = {
-  title: "BS Lern-App – Betriebssysteme Grundlagen",
+  title: "Lern-App – Prüfungsfragen wiederholen",
   description:
-    "Lern-App fuer den Fragenkatalog Betriebssysteme Grundlagen mit Lueckentext-Wiederholung und Spaced Repetition.",
+    "Lern-Plattform fuer mehrere Kurse mit Fragenkatalogen, Spaced Repetition (SM-2) und Fortschrittsverfolgung pro Kurs und Kapitel.",
 };
 
 export const viewport: Viewport = {
@@ -31,28 +31,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <header className="topnav">
           <div className="topnav__inner">
             <Link href="/" className="topnav__brand">
-              BS Lern-App
+              Lern-App
             </Link>
             <div className="topnav__right">
               <ThemeToggle />
               <nav className="topnav__links">
-                <Link href="/lernen" className="navlink">
-                  Lernen
-                </Link>
-                <Link href="/pruefung" className="navlink">
-                  Prüfung
-                </Link>
+                {user && (
+                  <Link href="/" className="navlink">
+                    Übersicht
+                  </Link>
+                )}
                 {user ? (
                   <>
-                    <Link href="/fortschritt" className="navlink">
-                      Fortschritt
-                    </Link>
-                    <Link href="/statistik" className="navlink">
-                      Statistik
-                    </Link>
-                    <Link href="/katalog" className="navlink">
-                      Katalog
-                    </Link>
                     <span className="nav-user">{user.name}</span>
                     <Link href="/einstellungen" className="navlink" title="Einstellungen">
                       Einstell.
@@ -81,7 +71,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main>{children}</main>
         <footer className="footer">
           <div className="page">
-            BS Lern-App · Fragenkatalog 2026 Betriebssysteme Grundlagen
+            Lern-App · Fragenkataloge 2026
             <br />
             Nur für Lernzwecke. Keine offizielle Veröffentlichung der Hochschule.
             <br />

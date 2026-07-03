@@ -2,16 +2,23 @@ import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ProgressClient from "./progress-client";
+import { KursNav } from "../kurs-nav";
+import { resolveCourse } from "../resolve-course";
 
-export default async function FortschrittPage() {
+export default async function FortschrittPage({
+  params,
+}: {
+  params: { courseId: string };
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const course = await resolveCourse(params.courseId);
 
   const now = new Date();
 
-  const total = await prisma.question.count();
+  const total = await prisma.question.count({ where: { courseId: course.id } });
   const reviews = await prisma.review.findMany({
-    where: { userId: user.sub },
+    where: { userId: user.sub, question: { courseId: course.id } },
     select: {
       questionId: true,
       repetitions: true,
@@ -28,7 +35,10 @@ export default async function FortschrittPage() {
   const totalLapses = reviews.reduce((s, r) => s + r.lapses, 0);
 
   const perChapterMap = new Map<number, { chapter: number; chapterTitle: string; total: number; learned: number }>();
-  const allQ = await prisma.question.findMany({ select: { id: true, chapter: true, chapterTitle: true } });
+  const allQ = await prisma.question.findMany({
+    where: { courseId: course.id },
+    select: { id: true, chapter: true, chapterTitle: true },
+  });
   for (const q of allQ) {
     const entry = perChapterMap.get(q.chapter) ?? {
       chapter: q.chapter,
@@ -49,12 +59,15 @@ export default async function FortschrittPage() {
 
   return (
     <div className="page" style={{ paddingTop: 64 }}>
-      <p className="eyebrow">Lernfortschritt</p>
+      <p className="eyebrow">{course.title} · Lernfortschritt</p>
       <h1>Dein Stand</h1>
-      <ProgressClient
-        stats={{ total, learned, dueToday, mature, totalLapses }}
-        perChapter={perChapter}
-      />
+      <KursNav courseId={course.id} />
+      <div style={{ marginTop: 16 }}>
+        <ProgressClient
+          stats={{ total, learned, dueToday, mature, totalLapses }}
+          perChapter={perChapter}
+        />
+      </div>
     </div>
   );
 }

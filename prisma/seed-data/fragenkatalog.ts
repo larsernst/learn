@@ -6,6 +6,7 @@
 
 export interface CatalogQuestion {
   id: string;
+  courseId?: string;
   chapter: number;
   chapterTitle: string;
   question: string;
@@ -1165,5 +1166,497 @@ export const FRAGENKATALOG: CatalogQuestion[] = [
     answer:
       "Vier Aufgaben einer Firewall sind: (1) Trennung des unsicheren vom zu schützenden Netz und Realisierung eines gesicherten Übergangs; (2) Prüfung, welche IT-Systeme/Nutzer/Daten/Protokolle über die Firewall kommunizieren dürfen (Netz-/Nutzer-/Datenebene); (3) Entkopplung von Diensten zur Vermeidung von Angriffen durch Implementierungsfehler (z. B. via VPN) und Verbergen der Netzstruktur; (4) Protokollierung sicherheitsrelevanter Ereignisse und Weiterleitung/Alarmierung an Sicherheitsmanagement und Anwender.",
     sourceRef: "_MConverter.eu_Betriebssysteme_Kapitel 6 gesamt.md",
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // RECHNERNETZE – DB-markierte Prüfungsfragen
+  // Modellantworten autorenfundierte Schätzungen aus Tanenbaum (5. Aufl.)
+  // und den RNG-Vorlesungsfolien, markiert confidence:"low" zur Nachprüfung.
+  // Kapitel 1 = Netzstruktur/Übersicht, 2 = Referenzmodelle (OSI/TCP-IP),
+  // 3 = Bitübertragung/Anschlussnetze, 4 = Sicherungsschicht/MAC,
+  // 5 = Vermittlungsschicht/IP.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // ───────────────── Kapitel RN 1 – Netzstruktur & Übersicht ─────────────
+
+  {
+    id: "rn1-itu-aufgaben",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-itu-opt-a", text: "Die ITU-T gibt technische Empfehlungen für Telefon-, Telegraphen- und Datenkommunikationsschnittstellen.", correct: true },
+      { id: "rn1-itu-opt-b", text: "Die ITU ist eine Agentur der Vereinten Nationen, die internationale Telekommunikationsstandards entwickelt und die Nutzung von Funkfrequenzen weltweit koordiniert.", correct: true },
+      { id: "rn1-itu-opt-c", text: "Der ITU-Entwicklungssektor (ITU-D) fördert IKT, um die digitale Kluft zwischen Ländern zu verringern.", correct: true },
+      { id: "rn1-itu-opt-d", text: "Die ITU ist eine rein politische Organisation ohne Einfluss auf die Standardisierung von Telekommunikationssystemen.", correct: false },
+      { id: "rn1-itu-opt-e", text: "Die ITU koordiniert ausschließlich die Entwicklung von Internetstandards und hat keinen Einfluss auf traditionelle Telekommunikation wie Telefon oder Telegrafie.", correct: false },
+    ],
+    question: "Welche Aussagen zu Aufgaben und Funktionen der ITU sind korrekt?",
+    answer:
+      "Die ITU (International Telecommunication Union) ist eine UN-Sonderorganisation. Ihr Sektor ITU-T erarbeitet Empfehlungen („Recommendations“) für Telefon-, Telegraphen- und Datenkommunikationsschnittstellen; ITU-R koordiniert die weltweite Nutzung der Funkfrequenzen; ITU-D fördert den Einsatz von IKT zur Verringerung der digitalen Kluft. Sie ist also weder rein politisch noch auf Internetstandards beschränkt.",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-netzneutralitaet",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-nn-opt-a", text: "ISPs müssen den gesamten Datenverkehr ohne Priorisierung oder Blockierung weiterleiten, unabhängig vom Anbieter.", correct: true },
+      { id: "rn1-nn-opt-b", text: "ISPs dürfen beliebige Dienste bevorzugen oder blockieren, solange sie dies transparent machen.", correct: false },
+      { id: "rn1-nn-opt-c", text: "ISPs sind verpflichtet, bestimmte Dienste wie VoIP und Video-Streaming zu blockieren, wenn diese mit ihren eigenen Angeboten konkurrieren.", correct: false },
+      { id: "rn1-nn-opt-d", text: "ISPs dürfen den Datenverkehr beliebig priorisieren, solange sie eine angemessene Netzwerkmanagementpraxis anwenden.", correct: false },
+    ],
+    question: "Welche Aussage beschreibt am besten das Prinzip der Netzneutralität?",
+    answer:
+      "Netzneutralität bedeutet, dass ISPs den gesamten Datenverkehr gleichbehandeln müssen – ohne Bevorzugung, Benachteiligung, Priorisierung oder Blockierung einzelner Dienste oder Anbieter.",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-transitnetz-trends",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-transit-opt-a", text: "Konsolidierung von Inhalten bei einer Handvoll großer Inhaltsanbieter.", correct: true },
+      { id: "rn1-transit-opt-b", text: "Ausweitung des Footprints von ISP-Netzen mit individuellem Zugang.", correct: true },
+      { id: "rn1-transit-opt-c", text: "Direkte Verbindungen zwischen großen ISPs und großen Inhaltsanbietern.", correct: true },
+      { id: "rn1-transit-opt-d", text: "Erhöhung der Gebühren für Transitnetze.", correct: false },
+    ],
+    question: "Welche Trends haben die Entwicklung von Transitnetzen und ISPs beeinflusst?",
+    answer:
+      "Treibende Trends sind die Konsolidierung von Inhalten bei wenigen großen Anbietern, die Ausweitung von ISP-Netzen mit individuellem Zugang sowie direkte Verbindungen (Peering/Private Interconnects) zwischen großen ISPs und großen Inhaltsanbietern. Eine Erhöhung der Transitgebühren gehört nicht zu diesen Trends.",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-datenuebertragung-internet",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-ueb-opt-a", text: "Ihr ISP hostet in der Regel die Inhalte der Websites, die Sie besuchen.", correct: false },
+      { id: "rn1-ueb-opt-b", text: "Inhalte müssen im Internet vom Rechenzentrum über das Zugangsnetz Ihr Gerät erreichen.", correct: true },
+      { id: "rn1-ueb-opt-c", text: "Transitnetzwerke berechnen normalerweise Gebühren für die Datenübertragung an beide Parteien.", correct: false },
+      { id: "rn1-ueb-opt-d", text: "Die Daten reisen über viele unabhängig betriebene Netzwerke.", correct: true },
+    ],
+    question: "Welche Aussagen zur Datenübertragung im Internet sind korrekt?",
+    answer:
+      "Inhalte liegen typischerweise in Rechenzentren und müssen über das Zugangsnetz zum Endgerät gelangen. Auf dem Weg durchlaufen die Daten viele unabhängig betriebene Netze (Access-, Transit- und Backbone-Netze). Der eigene ISP hostet die Inhalte in der Regel nicht, und Transitgebühren fallen üblicherweise nicht bei beiden Parteien gleichzeitig an.",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-cdn-eigenschaften",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-cdn-opt-a", text: "Sie replizieren Inhalte an vielen Standorten, um die Bereitstellung zu optimieren.", correct: true },
+      { id: "rn1-cdn-opt-b", text: "CDNs sind geografisch verteilte Ansammlungen von Servern.", correct: true },
+      { id: "rn1-cdn-opt-c", text: "CDNs werden ausschließlich von großen Unternehmen wie Google und Netflix betrieben.", correct: false },
+      { id: "rn1-cdn-opt-d", text: "CDNs berücksichtigen bei der Auswahl der Replik auch die Last auf den Servern und die Netzwerklast.", correct: true },
+    ],
+    question: "Welche Aussagen über CDNs (Content Delivery Networks) sind korrekt?",
+    answer:
+      "CDNs sind geografisch verteilte Server-Cluster, die Inhalte an vielen Standorten replizieren und bei der Replikauswahl Netzwerk- und Serverlast berücksichtigen, um die Auslieferung zu optimieren. Sie werden nicht ausschließlich von Google/Netflix betrieben, sondern auch von spezialisierten Anbietern (z. B. Akamai, Cloudflare).",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-metcalfe-law",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-met-opt-a", text: "Der Wert eines Netzwerks ist konstant.", correct: false },
+      { id: "rn1-met-opt-b", text: "Der Wert eines Netzwerks nimmt mit der Anzahl der Benutzer ab.", correct: false },
+      { id: "rn1-met-opt-c", text: "Der Wert eines Netzwerks wächst proportional zur Anzahl der Benutzer.", correct: false },
+      { id: "rn1-met-opt-d", text: "Der Wert eines Netzwerks ist proportional zum Quadrat der Anzahl der Benutzer.", correct: true },
+    ],
+    question: "Was beschreibt Metcalfe's Law?",
+    answer:
+      "Bob Metcalfe stellte die Hypothese auf, dass der Wert eines Netzwerks proportional zum Quadrat der Anzahl der Benutzer wächst, da dies näherungsweise der Anzahl möglicher Verbindungen zwischen den Teilnehmern entspricht.",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-rechenzentrumsnetzwerke",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-rz-opt-a", text: "Rechenzentrumsnetzwerke sind hauptsächlich für die Speicherung von Daten ausgelegt.", correct: false },
+      { id: "rn1-rz-opt-b", text: "Frühe Netzwerkdesigns basierten auf einer einfachen Baumtopologie.", correct: true },
+      { id: "rn1-rz-opt-c", text: "Sie verbinden Hunderttausende oder Millionen von Servern an einem Standort.", correct: true },
+      { id: "rn1-rz-opt-d", text: "Sie sind auf die Bewegung großer Datenmengen zwischen Servern im Rechenzentrum ausgelegt.", correct: true },
+    ],
+    question: "Welche Aussagen über Rechenzentrumsnetzwerke sind korrekt?",
+    answer:
+      "Rechenzentrumsnetzwerke verbinden sehr viele Server an einem Standort (Hunderttausende bis Millionen) und sind auf den Datentransfer zwischen diesen Servern optimiert. Frühe Designs nutzten eine einfache Baumtopologie; Speicherung ist nicht ihr Hauptzweck.",
+    sourceRef: "computer-networks-tanenbaum-5th-edition.md",
+  },
+  {
+    id: "rn1-drahtlos-mobil-zuordnung",
+    courseId: "rechnernetze",
+    chapter: 1,
+    chapterTitle: "Netzstruktur & Übersicht",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn1-dm-opt-a", text: "Laptop an der Netzwerkdose → nicht drahtlos, aber mobil", correct: false },
+      { id: "rn1-dm-opt-b", text: "Laptop an der Netzwerkdose → nicht drahtlos und nicht mobil", correct: true },
+      { id: "rn1-dm-opt-c", text: "Inventur mit Laptop → drahtlos und mobil", correct: true },
+      { id: "rn1-dm-opt-d", text: "Netze in nicht verkabelten Gebäuden → drahtlos und nicht mobil", correct: true },
+      { id: "rn1-dm-opt-e", text: "Traditioneller Desktop-PC im Büro → nicht drahtlos und nicht mobil", correct: true },
+    ],
+    question: "Ordnen Sie die Anwendungsfälle den Kombinationen aus drahtlos/mobil zu.",
+    answer:
+      "Ein Laptop an der Netzwerkdose ist weder drahtlos noch mobil; die Inventur mit Laptop ist drahtlos und mobil; Netze in nicht verkabelten Gebäuden sind drahtlos, aber nicht mobil; ein klassischer Desktop-PC ist weder drahtlos noch mobil.",
+    sourceRef: "rng_260519.md",
+  },
+
+  // ─────────────── Kapitel RN 2 – Referenzmodelle (OSI / TCP-IP) ─────────
+
+  {
+    id: "rn2-osi-schichten-reihenfolge",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    question: "Ordnen Sie die Schichten des ISO-OSI-Referenzmodells in absteigender Reihenfolge.",
+    answer:
+      "Von oben nach unten (Schicht 7 → 1): Anwendungsschicht, Darstellungsschicht, Sitzungsschicht, Transportschicht, Vermittlungsschicht, Sicherungsschicht, Bitübertragungsschicht.",
+    sourceRef: "rng_260511.md",
+  },
+  {
+    id: "rn2-osi-geraete-zuordnung",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn2-osimc-opt-a", text: "Repeater → Bitübertragungsschicht", correct: true },
+      { id: "rn2-osimc-opt-b", text: "Hub → Bitübertragungsschicht", correct: true },
+      { id: "rn2-osimc-opt-c", text: "Bridge → Sicherungsschicht", correct: true },
+      { id: "rn2-osimc-opt-d", text: "Switch → Sicherungsschicht", correct: true },
+      { id: "rn2-osimc-opt-e", text: "Router → Vermittlungsschicht", correct: true },
+      { id: "rn2-osimc-opt-f", text: "Transport-Gateway → Transportschicht", correct: true },
+      { id: "rn2-osimc-opt-g", text: "Application-Gateway → Anwendungsschicht", correct: true },
+      { id: "rn2-osimc-opt-h", text: "Router → Transportschicht", correct: false },
+      { id: "rn2-osimc-opt-i", text: "Hub → Vermittlungsschicht", correct: false },
+    ],
+    question: "Ordnen Sie die Geräte den Schichten des OSI-Modells zu.",
+    answer:
+      "Repeater und Hub arbeiten auf der Bitübertragungsschicht (Layer 1), Bridge und Switch auf der Sicherungsschicht (Layer 2), Router auf der Vermittlungsschicht (Layer 3). Transport-Gateways ordnet man der Transportschicht (Layer 4), Application-Gateways der Anwendungsschicht (Layer 7) zu.",
+    sourceRef: "rng_260511.md",
+  },
+  {
+    id: "rn2-tcpip-route-schicht",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    question: "Welche Schicht im TCP/IP-Modell ist zuständig für die Festlegung einer Route?",
+    answer:
+      "Die Vermittlungsschicht (Internet-Schicht / Internet Layer) des TCP/IP-Modells ist für die Weiterleitung und die Festlegung der Route (Routing) zuständig. Sie entspricht der OSI-Schicht 3.",
+    sourceRef: "rng_260511.md",
+  },
+  {
+    id: "rn2-tcpip-frames-schicht",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    question: "Welche TCP/IP-Schicht ist zuständig für die Aufteilung eines Datenstroms in Frames?",
+    answer:
+      "Die Netzzugangsschicht (Link Layer) ist für die Kapselung von Paketen in Frames zuständig. Sie entspricht den OSI-Schichten 1 und 2.",
+    sourceRef: "rng_260511.md",
+  },
+  {
+    id: "rn2-osi-tcpip-zuordnung",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn2-osi2tcp-opt-a", text: "Application (OSI 7) → Application (TCP/IP)", correct: true },
+      { id: "rn2-osi2tcp-opt-b", text: "Presentation (OSI 6) → Application (TCP/IP)", correct: true },
+      { id: "rn2-osi2tcp-opt-c", text: "Session (OSI 5) → Application (TCP/IP)", correct: true },
+      { id: "rn2-osi2tcp-opt-d", text: "Transport (OSI 4) → Transport (TCP/IP)", correct: true },
+      { id: "rn2-osi2tcp-opt-e", text: "Network (OSI 3) → Internet (TCP/IP)", correct: true },
+      { id: "rn2-osi2tcp-opt-f", text: "Data Link (OSI 2) → Link (TCP/IP)", correct: true },
+      { id: "rn2-osi2tcp-opt-g", text: "Physical (OSI 1) → Link (TCP/IP)", correct: true },
+    ],
+    question: "Ordnen Sie die Schichten des ISO-OSI-Modells denen des TCP/IP-Modells zu.",
+    answer:
+      "Application, Presentation und Session (OSI 5–7) werden zur Application-Schicht des TCP/IP-Modells zusammengefasst; Transport (OSI 4) bleibt Transport; Network (OSI 3) wird Internet; Data Link (OSI 2) und Physical (OSI 1) werden zur Link-Schicht zusammengefasst.",
+    sourceRef: "rng_260511.md",
+  },
+  {
+    id: "rn2-tcpip-protokolle-zuordnung",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn2-proto-opt-a", text: "HTTP → Application", correct: true },
+      { id: "rn2-proto-opt-b", text: "DNS → Application", correct: true },
+      { id: "rn2-proto-opt-c", text: "SMTP → Application", correct: true },
+      { id: "rn2-proto-opt-d", text: "TCP → Transport", correct: true },
+      { id: "rn2-proto-opt-e", text: "UDP → Transport", correct: true },
+      { id: "rn2-proto-opt-f", text: "RTP → Transport", correct: true },
+      { id: "rn2-proto-opt-g", text: "IP → Internet", correct: true },
+      { id: "rn2-proto-opt-h", text: "ICMP → Internet", correct: true },
+      { id: "rn2-proto-opt-i", text: "Ethernet → Link", correct: true },
+      { id: "rn2-proto-opt-j", text: "DSL → Link", correct: true },
+      { id: "rn2-proto-opt-k", text: "SONET → Link", correct: true },
+      { id: "rn2-proto-opt-l", text: "802.11 → Link", correct: true },
+      { id: "rn2-proto-opt-m", text: "IP → Transport", correct: false },
+      { id: "rn2-proto-opt-n", text: "802.11 → Internet", correct: false },
+    ],
+    question: "Ordnen Sie die Protokolle den Schichten im TCP/IP-Modell zu.",
+    answer:
+      "Application: HTTP, DNS, SMTP. Transport: TCP, UDP, RTP. Internet: IP, ICMP. Link: Ethernet, DSL, SONET, 802.11. ICMP arbeitet direkt auf IP und wird deshalb zur Internet-Schicht gezählt.",
+    sourceRef: "rng_260511.md",
+  },
+  {
+    id: "rn2-header-overhead-rechnung",
+    courseId: "rechnernetze",
+    chapter: 2,
+    chapterTitle: "Referenzmodelle (OSI / TCP-IP)",
+    confidence: "low",
+    question:
+      "Ein 5-Schichten-Modell: Anwendungen erzeugen Nachrichten von 10 Bytes, jede Schicht fügt 2 Bytes Header hinzu. Wie viel Prozent der Übertragungskapazität gehen durch Header verloren (ohne Fragmentierung/Aggregation)?",
+    answer:
+      "Pro Nachricht entstehen 5 × 2 = 10 Bytes Header bei 10 Bytes Nutzdaten, also 10 von insgesamt 20 Bytes = 50 % Header-Overhead. (Prüfungsformat: ohne Nachkommastellen → 50.)",
+    sourceRef: "rng_260511.md",
+  },
+
+  // ─────────────── Kapitel RN 3 – Bitübertragung & Anschlussnetze ────────
+
+  {
+    id: "rn3-wifi-standard",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn3-wifi-opt-a", text: "IEEE 802.11", correct: true },
+      { id: "rn3-wifi-opt-b", text: "IEEE 802.17", correct: false },
+      { id: "rn3-wifi-opt-c", text: "Ethernet", correct: false },
+      { id: "rn3-wifi-opt-d", text: "IEEE 802.15", correct: false },
+      { id: "rn3-wifi-opt-e", text: "IEEE 802.5", correct: false },
+      { id: "rn3-wifi-opt-f", text: "Bluetooth", correct: false },
+    ],
+    question: "Welcher Standard für drahtlose LANs wird allgemein als WiFi bezeichnet?",
+    answer:
+      "WiFi bezeichnet die WLAN-Standards der Familie IEEE 802.11. (Bluetooth gehört zu 802.15, Token Ring zu 802.5, Resilient Packet Ring zu 802.17.)",
+    sourceRef: "rng_260519.md",
+  },
+  {
+    id: "rn3-vlan-gruende",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn3-vlan-opt-a", text: "VLANs ermöglichen es, das Netz logisch zu segmentieren, ohne die physische Verkabelung zu ändern.", correct: true },
+      { id: "rn3-vlan-opt-b", text: "VLANs erhöhen die Sicherheit durch Isolierung bestimmter Benutzergruppen und Daten.", correct: true },
+      { id: "rn3-vlan-opt-c", text: "VLANs erleichtern die Verwaltung nach organisatorischer Struktur.", correct: true },
+      { id: "rn3-vlan-opt-d", text: "VLANs begrenzen Broadcast-Verkehr auf einzelne VLANs und helfen gegen Broadcast-Stürme.", correct: true },
+      { id: "rn3-vlan-opt-e", text: "VLANs gruppieren Geräte zwingend nach physischer Lage, unabhängig von der Organisationseinheit.", correct: false },
+      { id: "rn3-vlan-opt-f", text: "VLANs verringern die Notwendigkeit von Switches und Routern.", correct: false },
+    ],
+    question: "Welche Gründe sind typisch für den Einsatz von VLANs in Netzwerken?",
+    answer:
+      "VLANs segmentieren das Netz logisch ohne Änderung der Verkabelung, erhöhen die Sicherheit durch Isolierung, erleichtern die Verwaltung nach Organisationseinheiten und begrenzen Broadcast-Domänen. Sie gruppieren nicht nach physischer Lage und ersetzen keine Switches/Router.",
+    sourceRef: "rng_260617.md",
+  },
+  {
+    id: "rn3-pon-aussagen",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn3-pon-opt-a", text: "In Upstream-Richtung ist eine zeitsynchrone Übertragung erforderlich, um Kollisionen zu vermeiden.", correct: true },
+      { id: "rn3-pon-opt-b", text: "In Downstream-Richtung wird das Signal durch optische Splitter aufgeteilt.", correct: true },
+      { id: "rn3-pon-opt-c", text: "Für die Upstream-Übertragung wird eine von allen Teilnehmern geteilte Wellenlänge verwendet.", correct: true },
+      { id: "rn3-pon-opt-d", text: "Die Glasfaser-TAL ist passiv, sodass keine stromversorgten Geräte zur Signalverstärkung nötig sind.", correct: true },
+      { id: "rn3-pon-opt-e", text: "In Downstream-Richtung werden optische Kombinierer eingesetzt.", correct: false },
+    ],
+    question: "Welche Aussagen zu PON (Passive Optical Network) sind korrekt?",
+    answer:
+      "Bei einem PON ist die Teilnehmeranschlussleitung passiv (nur Splitter, keine aktiven Verstärker). Downstream wird das Signal über Splitter verteilt, Upstream nutzt eine gemeinsame Wellenlänge und erfordert zeitsynchrone Übertragung zur Kollisionsvermeidung. Optische Kombinierer gehören nicht zum PON (Splitter, nicht Kombinierer).",
+    sourceRef: "rng_260608.md",
+  },
+  {
+    id: "rn3-ip-ethernet-unterschied",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    question:
+      "IP-Adressen beinhalten die Angabe des Netzwerks, Ethernet-Adressen tun dies nicht. Warum?",
+    answer:
+      "IP-Adressen sind logische, hierarchische Adressen mit einem Netzwerkanteil (Präfix) und einem Host-Anteil; sie erlauben Routing über mehrere Netze. Ethernet-Adressen (MAC) sind flache, hardwarenahe Adressen, die nur einen Knoten auf einem gemeinsamen physikalischen Medium identifizieren – sie enthalten keinen Netzwerkanteil, denn das Netz ergibt sich aus dem Medium selbst (Broadcast-Domain).",
+    sourceRef: "rng_260617.md",
+  },
+  {
+    id: "rn3-ipv6-komprimierung",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    question:
+      "Geben Sie die IPv6-Adresse 2001:0db8:0000:0000:b450:0000:0000:00b4 in komprimierter Form an.",
+    answer:
+      "2001:db8::b450:0:0:b4. Regeln: führende Nullen jedes Blocks entfallen; die längste Folge aufeinanderfolgender Null-Blöcke wird durch „::“ ersetzt (nur einmal erlaubt). Hier werden damit die Blöcke 3 und 4 zusammengefasst; die weiteren Null-Blöcke bleiben als „0“ stehen, da „::“ nur einmal verwendet werden darf.",
+    sourceRef: "rng_260629.md",
+  },
+  {
+    id: "rn3-ipv4-in-ipv6",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    question: "Geben Sie die IPv4-Adresse 192.31.20.46 in IPv6-Notation an.",
+    answer:
+      "::ffff:192.31.20.46 (IPv4-mapped-IPv6-Adresse) oder alternativ ::192.31.20.46. Schreibweise mit eingebetteter IPv4-Dotted-Decimal-Darstellung in den letzten 32 Bit.",
+    sourceRef: "rng_260629.md",
+  },
+  {
+    id: "rn3-atm-zellen-rechnung",
+    courseId: "rechnernetze",
+    chapter: 3,
+    chapterTitle: "Bitübertragung & Anschlussnetze",
+    confidence: "low",
+    question:
+      "Ein 96 Byte großes IP-Paket soll mit ATM über ADSL transportiert werden. Wie viele ATM-Zellen werden benötigt?",
+    answer:
+      "Eine ATM-Zelle transportiert 48 Byte Nutzlast. Für 96 Byte benötigt man ⌈96/48⌉ = 2 ATM-Zellen (AAL5-Encapsulation wird hier vernachlässigt).",
+    sourceRef: "rng_260608.md",
+  },
+
+  // ─────────────── Kapitel RN 4 – Sicherungsschicht & MAC ────────────────
+
+  {
+    id: "rn4-byte-stuffing-beispiel",
+    courseId: "rechnernetze",
+    chapter: 4,
+    chapterTitle: "Sicherungsschicht & MAC",
+    confidence: "low",
+    question:
+      "Datenstrom: A B ESC C ESC FLAG FLAG D. Geben Sie den Datenstrom nach Stopfen auf Byte-Ebene an.",
+    answer:
+      "A B ESC ESC C ESC ESC ESC FLAG ESC FLAG D. Beim Byte-Stuffing wird jedes vorkommende ESC durch ESC ESC und jedes FLAG durch ESC FLAG verdoppelt, damit FLAG nur noch als Begrenzer auftritt.",
+    sourceRef: "rng_260605.md",
+  },
+  {
+    id: "rn4-byte-stuffing-overhead",
+    courseId: "rechnernetze",
+    chapter: 4,
+    chapterTitle: "Sicherungsschicht & MAC",
+    confidence: "low",
+    question: "Wie groß ist der maximale Overhead bei Byte Stuffing in Prozent?",
+    answer:
+      "Der maximale Overhead beträgt 100 %: Im ungünstigsten Fall besteht die Nutzlast ausschließlich aus Zeichen, die gestopft werden müssen (ESC oder FLAG), wobei jedes Zeichen verdoppelt wird – die Datenmenge kann sich also höchstens verdoppeln.",
+    sourceRef: "rng_260605.md",
+  },
+  {
+    id: "rn4-hdlc-enstopfen",
+    courseId: "rechnernetze",
+    chapter: 4,
+    chapterTitle: "Sicherungsschicht & MAC",
+    confidence: "low",
+    question:
+      "Enstopfen Sie die HDLC-Sequenz 0110 0111 11 / 0 1111 0111 11 / 1 (Bitfolge ohne Trennzeichen angeben).",
+    answer:
+      "0110011111011110111111. Beim HDLC-Bit-Stuffing wird nach fünf aufeinanderfolgenden Einsen ein eingefügtes Null-Bit entfernt; die Begrenzer-Flags (01111110) am Anfang/Ende entfallen in der Enstopfung.",
+    sourceRef: "rng_260605.md",
+  },
+  {
+    id: "rn4-ppp-frame-reihenfolge",
+    courseId: "rechnernetze",
+    chapter: 4,
+    chapterTitle: "Sicherungsschicht & MAC",
+    confidence: "low",
+    question: "Bringen Sie die Elemente eines PPP-Frames in die übertragungsgerechte Reihenfolge.",
+    answer:
+      "Flag – Address – Control – Protocol – Payload – Checksum (FCS) – Flag. Ein PPP-Frame beginnt und endet mit dem Flag (01111110), gefolgt von Address, Control, dem Protocol-Feld, den Nutzdaten, der Prüfsumme und erneut dem Flag.",
+    sourceRef: "rng_260608.md",
+  },
+  {
+    id: "rn4-csma-vs-aloha",
+    courseId: "rechnernetze",
+    chapter: 4,
+    chapterTitle: "Sicherungsschicht & MAC",
+    confidence: "low",
+    question:
+      "Warum ermöglicht CSMA eine effizientere Kanalauslastung als ALOHA? Geben Sie ein konkretes Beispiel.",
+    answer:
+      "Bei CSMA hört der Sender vor dem Senden den Kanal ab („listen before talk“) und überträgt erst, wenn der Kanal frei ist – dadurch werden viele Kollisionen im Voraus vermieden, während ALOHA blind sendet. Beispiel: Bei 1-persistent CSMA senden mehrere Stationen nur nach Freisein des Kanals; die Auslastung steigt gegenüber ALOHA (Smax ≈ 18 % Pure, ≈ 37 % Slotted) deutlich an.",
+    sourceRef: "rng_260617.md",
+  },
+  {
+    id: "rn4-can-arbitration",
+    courseId: "rechnernetze",
+    chapter: 4,
+    chapterTitle: "Sicherungsschicht & MAC",
+    confidence: "low",
+    question:
+      "Ein Kanal verknüpft Bits nach Art eines Booleschen ODER. Vier Teilnehmer mit Adressen 0011, 0100, 1001, 1010 greifen gleichzeitig zu. Eine logische Eins setzt sich durch. Welcher Teilnehmer erhält den Zugriff?",
+    answer:
+      "Teilnehmer mit Adresse 1010. Bei bitweiser ODER-Verknüpfung setzt sich die jeweils höhere Adresse durch (die dominante Eins gewinnt pro Bitposition). 1010 ist hier die höchste Adresse und setzt sich in jeder Bitposition gegen die anderen durch.",
+    sourceRef: "rng_260605.md",
+  },
+
+  // ─────────────── Kapitel RN 5 – Vermittlungsschicht & IP ───────────────
+
+  {
+    id: "rn5-subnetz-hostzahl",
+    courseId: "rechnernetze",
+    chapter: 5,
+    chapterTitle: "Vermittlungsschicht & IP",
+    confidence: "low",
+    question:
+      "Ein Netz hat die Subnetzmaske 255.255.240.0. Wie viele Hosts passen in das Netz?",
+    answer:
+      "255.255.240.0 = /20, also 32 – 20 = 12 Host-Bits. Anzahl Hosts = 2^12 – 2 = 4094 (abzüglich Netz- und Broadcast-Adresse).",
+    sourceRef: "rng_260629.md",
+  },
+  {
+    id: "rn5-datagram-netzwerke",
+    courseId: "rechnernetze",
+    chapter: 5,
+    chapterTitle: "Vermittlungsschicht & IP",
+    confidence: "low",
+    mcqOptions: [
+      { id: "rn5-dg-opt-a", text: "Router treffen Entscheidungen basierend auf der Zieladresse in jedem Paket.", correct: true },
+      { id: "rn5-dg-opt-b", text: "Daten werden in diskreten Paketen übertragen.", correct: true },
+      { id: "rn5-dg-opt-c", text: "Datagram-Netzwerke sind skalierbar und können viele Benutzer unterstützen.", correct: true },
+      { id: "rn5-dg-opt-d", text: "Datagram-Netzwerke bieten verbindungsorientierte Kommunikation.", correct: false },
+      { id: "rn5-dg-opt-e", text: "Es gibt eine Garantie für die Zustellung der Pakete in der richtigen Reihenfolge.", correct: false },
+      { id: "rn5-dg-opt-f", text: "Router speichern Zustandsinformationen über aktive Verbindungen.", correct: false },
+    ],
+    question: "Welche Aussagen beschreiben korrekt die Eigenschaften klassischer Datagram-Netzwerke?",
+    answer:
+      "Datagram-Netzwerke sind verbindungslos: Daten werden in diskreten Paketen übertragen, jeder Router entscheidet pro Paket anhand der Zieladresse. Sie sind skalierbar und verwalten keinen Verbindungs-Zustand auf den Routern. Eine Zustellungsgarantie oder Reihenfolgegarantie gibt es nicht.",
+    sourceRef: "rng_260629.md",
+  },
+  {
+    id: "rn5-split-horizon",
+    courseId: "rechnernetze",
+    chapter: 5,
+    chapterTitle: "Vermittlungsschicht & IP",
+    confidence: "low",
+    question:
+      "Erklären Sie „Split Horizon with Poisoned Reverse“ als Lösung des Count-to-Infinity-Problems.",
+    answer:
+      "Beim Distance-Vector-Routing kann Count-to-Infinity entstehen, wenn ein Router einem Nachbarn eine Route zurückmeldet, die er gerade von diesem gelernt hat. Bei Split Horizon wird eine von Nachbar N gelernte Route in Updates an N ganz weggelassen (Simple Split Horizon). Bei „Poisoned Reverse“ wird sie stattdessen mit Metrik Unendlich zurückgemeldet, sodass N diesen Pfad nicht erneut nutzt. Das löst Schleifen zwischen zwei Routern, nicht aber generell bei drei und mehr.",
+    sourceRef: "rng_260624.md",
   },
 ];

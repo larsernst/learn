@@ -3,20 +3,26 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { resolveCourse } from "../../resolve-course";
 
-export default async function CramPage({ params }: { params: { id: string } }) {
+export default async function CramPage({
+  params,
+}: {
+  params: { courseId: string; id: string };
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const course = await resolveCourse(params.courseId);
 
   const q = await prisma.question.findUnique({ where: { id: params.id } });
-  if (!q) notFound();
+  if (!q || q.courseId !== course.id) notFound();
 
   return (
     <div className="page page--narrow" style={{ paddingTop: 64 }}>
-      <p className="eyebrow">Vorschau (ohne Bewertung)</p>
+      <p className="eyebrow">{course.title} · Vorschau (ohne Bewertung)</p>
       <div className="row row--between" style={{ flexWrap: "wrap" }}>
         <h1 style={{ fontSize: 24 }}>Kapitel {q.chapter} · {q.chapterTitle}</h1>
-        <Link href="/katalog" className="btn btn--ghost">
+        <Link href={`/kurs/${course.id}/katalog`} className="btn btn--ghost">
           ← Zurück zum Katalog
         </Link>
       </div>
@@ -35,10 +41,10 @@ export default async function CramPage({ params }: { params: { id: string } }) {
       </p>
 
       <div className="row" style={{ marginTop: 16 }}>
-        <Link href="/lernen" className="btn btn--primary">
+        <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary">
           Jetzt lernen
         </Link>
-        <Link href="/pruefung" className="btn btn--secondary">
+        <Link href={`/kurs/${course.id}/pruefung`} className="btn btn--secondary">
           Prüfung proben
         </Link>
       </div>

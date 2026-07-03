@@ -13,6 +13,7 @@ export type McqSelectionMode = "single" | "multi";
 
 export interface QuestionPublic {
   id: string;
+  courseId: string | null;
   chapter: number;
   chapterTitle: string;
   question: string;
