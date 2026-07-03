@@ -22,6 +22,7 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
 
   async function loadNext() {
     setLoading(true);
+    setSubmitting(false);
     setRevealed(false);
     setDraft("");
     setSelected([]);
@@ -97,7 +98,6 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
           ? "Wird heute erneut angezeigt."
           : `Nächste Wiederholung ${intervalLabel(result.intervalDays)}.`,
     });
-    scheduleNext();
   }
 
   async function submitMcq() {
@@ -132,14 +132,6 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
         : "Falsch – wird heute erneut angezeigt.",
     });
     setRevealed(true);
-    scheduleNext(1600);
-  }
-
-  function scheduleNext(delay = 900) {
-    setTimeout(() => {
-      setSubmitting(false);
-      loadNext();
-    }, delay);
   }
 
   if (loading) {
@@ -255,6 +247,14 @@ export default function StudyClient({ deck = "all" }: { deck?: "all" | "difficul
         >
           {feedback.text}
         </p>
+      )}
+
+      {feedback && (
+        <div className="row" style={{ justifyContent: "center" }}>
+          <button className="btn btn--primary" onClick={loadNext}>
+            Nächste Frage
+          </button>
+        </div>
       )}
     </div>
   );
