@@ -39,12 +39,12 @@ describe("gradeToQuality", () => {
 });
 
 describe("nextIntervalDays", () => {
-  it("follows the 1 / 6 / n*EF progression", () => {
+  it("follows the capped progression (max 2 days)", () => {
     const ef = 2.5;
     expect(nextIntervalDays(1, 0, ef)).toBe(1);
-    expect(nextIntervalDays(2, 1, ef)).toBe(6);
-    expect(nextIntervalDays(3, 6, ef)).toBe(15);
-    expect(nextIntervalDays(4, 15, ef)).toBe(38);
+    expect(nextIntervalDays(2, 1, ef)).toBe(2);
+    expect(nextIntervalDays(3, 6, ef)).toBe(2);
+    expect(nextIntervalDays(4, 15, ef)).toBe(2);
   });
 
   it("returns 0 for repetitions before the first review", () => {
@@ -73,7 +73,7 @@ describe("applySm2", () => {
     expect(after.dueAt.toISOString().slice(0, 10)).toBe("2026-07-01");
   });
 
-  it("progresses 1 -> 6 -> ~15 days for 'good' on a new card", () => {
+  it("progresses 1 -> 2 -> 2 days for 'good' on a new card (capped)", () => {
     const now = new Date("2026-07-01T00:00:00Z");
     let state = initialState();
     state = applySm2(state, "good", now);
@@ -83,12 +83,12 @@ describe("applySm2", () => {
 
     state = applySm2(state, "good", now);
     expect(state.repetitions).toBe(2);
-    expect(state.intervalDays).toBe(6);
-    expect(state.dueAt.toISOString().slice(0, 10)).toBe("2026-07-07");
+    expect(state.intervalDays).toBe(2);
+    expect(state.dueAt.toISOString().slice(0, 10)).toBe("2026-07-03");
 
     state = applySm2(state, "good", now);
     expect(state.repetitions).toBe(3);
-    expect(state.intervalDays).toBe(Math.round(6 * state.easeFactor));
+    expect(state.intervalDays).toBe(2);
   });
 
   it("raises the ease factor on 'easy' and lowers it on 'hard'", () => {

@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       ...(courseFilter ?? {}),
     },
     include: { question: true },
-    orderBy: [{ lapses: "desc" }, { dueAt: "asc" }],
+    orderBy: [{ dueAt: "asc" }, { lastReviewedAt: "asc" }],
     take: 1,
   });
 

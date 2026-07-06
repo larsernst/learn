@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 
 const schema = z.object({
-  mcqEnabled: z.boolean(),
+  mcqEnabled: z.boolean().optional(),
+  simpleGrading: z.boolean().optional(),
 });
 
 export async function GET() {
@@ -14,9 +15,12 @@ export async function GET() {
   }
   const me = await prisma.user.findUnique({
     where: { id: user.sub },
-    select: { mcqEnabled: true },
+    select: { mcqEnabled: true, simpleGrading: true },
   });
-  return NextResponse.json({ mcqEnabled: me?.mcqEnabled ?? true });
+  return NextResponse.json({
+    mcqEnabled: me?.mcqEnabled ?? true,
+    simpleGrading: me?.simpleGrading ?? false,
+  });
 }
 
 export async function PATCH(request: Request) {
@@ -28,10 +32,13 @@ export async function PATCH(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Eingabe ungültig." }, { status: 400 });
   }
+  const data: { mcqEnabled?: boolean; simpleGrading?: boolean } = {};
+  if (parsed.data.mcqEnabled !== undefined) data.mcqEnabled = parsed.data.mcqEnabled;
+  if (parsed.data.simpleGrading !== undefined) data.simpleGrading = parsed.data.simpleGrading;
   const me = await prisma.user.update({
     where: { id: user.sub },
-    data: { mcqEnabled: parsed.data.mcqEnabled },
-    select: { mcqEnabled: true },
+    data,
+    select: { mcqEnabled: true, simpleGrading: true },
   });
-  return NextResponse.json({ mcqEnabled: me.mcqEnabled });
+  return NextResponse.json({ mcqEnabled: me.mcqEnabled, simpleGrading: me.simpleGrading });
 }

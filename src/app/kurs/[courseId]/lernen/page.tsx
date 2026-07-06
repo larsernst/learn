@@ -18,6 +18,10 @@ export default async function LernenPage({
 
   const now = new Date();
   const deck = searchParams.deck === "difficult" ? "difficult" : "all";
+  const me = await prisma.user.findUnique({
+    where: { id: user.sub },
+    select: { simpleGrading: true },
+  });
   const dueToday = await prisma.review.count({
     where: {
       userId: user.sub,
@@ -57,7 +61,7 @@ export default async function LernenPage({
           Schwierig{difficultDue > 0 ? ` (${difficultDue})` : ""}
         </a>
       </div>
-      <StudyClient deck={deck} courseId={course.id} />
+      <StudyClient deck={deck} courseId={course.id} simpleGrading={me?.simpleGrading ?? false} />
       <p className="muted desktop-only" style={{ fontSize: 13, marginTop: 16 }}>
         Tastatur: <strong>Leertaste/Enter</strong> = Aufdecken/Bestätigen ·{" "}
         <strong>1–4</strong> = Again/Hard/Good/Easy (Freie Erinnerung) ·{" "}

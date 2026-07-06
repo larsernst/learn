@@ -26,7 +26,7 @@ export const SM2_DEFAULTS = {
   easeFloor: 1.3,
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const MAX_INTERVAL_DAYS = 2;
 
 export function clampEase(ef: number): number {
   return Math.max(SM2_DEFAULTS.easeFloor, ef);
@@ -47,9 +47,9 @@ export function gradeToQuality(grade: ReviewGrade): number {
 
 export function nextIntervalDays(repetitions: number, prevInterval: number, ef: number): number {
   if (repetitions <= 0) return 0;
-  if (repetitions === 1) return 1;
-  if (repetitions === 2) return 6;
-  return Math.round(prevInterval * ef);
+  if (repetitions === 1) return Math.min(1, MAX_INTERVAL_DAYS);
+  if (repetitions === 2) return Math.min(6, MAX_INTERVAL_DAYS);
+  return Math.min(Math.round(prevInterval * ef), MAX_INTERVAL_DAYS);
 }
 
 export function applySm2(prev: Sm2UpdateInput, grade: ReviewGrade, now: Date = new Date()): Sm2UpdateInput {

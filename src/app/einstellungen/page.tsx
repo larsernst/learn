@@ -10,7 +10,7 @@ export default async function EinstellungenPage() {
 
   const me = await prisma.user.findUnique({
     where: { id: user.sub },
-    select: { name: true, email: true, mcqEnabled: true, createdAt: true },
+    select: { name: true, email: true, mcqEnabled: true, simpleGrading: true, createdAt: true },
   });
   if (!me) redirect("/login");
 
@@ -31,7 +31,7 @@ export default async function EinstellungenPage() {
           Mitglied seit {me.createdAt.toLocaleDateString("de-DE")}.
         </p>
         <hr className="divider" />
-        <SettingsClient initialMcqEnabled={me.mcqEnabled} />
+        <SettingsClient initialMcqEnabled={me.mcqEnabled} initialSimpleGrading={me.simpleGrading} />
         <hr className="divider" />
         <div>
           <strong>Passwort ändern</strong>

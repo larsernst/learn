@@ -13,9 +13,11 @@ type Feedback =
 export default function StudyClient({
   deck = "all",
   courseId,
+  simpleGrading = false,
 }: {
   deck?: "all" | "difficult";
   courseId: string;
+  simpleGrading?: boolean;
 }) {
   const [data, setData] = useState<ReviewNextResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -228,6 +230,7 @@ export default function StudyClient({
           onReveal={() => setRevealed(true)}
           submitting={submitting}
           onGrade={gradeRecall}
+          simpleGrading={simpleGrading}
         />
       )}
 
@@ -275,6 +278,7 @@ function RecallQuestion(props: {
   onReveal: () => void;
   submitting: boolean;
   onGrade: (g: ReviewGrade) => void;
+  simpleGrading: boolean;
 }) {
   return (
     <>
@@ -292,6 +296,30 @@ function RecallQuestion(props: {
         <button className="btn btn--primary" onClick={props.onReveal}>
           Musterantwort zeigen
         </button>
+      ) : props.simpleGrading ? (
+        <div>
+          <p className="eyebrow" style={{ marginBottom: 8 }}>
+            War deine Antwort richtig?
+          </p>
+          <div className="review-actions">
+            <button
+              className="grade-btn grade-btn--again"
+              disabled={props.submitting}
+              onClick={() => props.onGrade("again")}
+              aria-label="Falsch (Taste 1)"
+            >
+              Falsch<small>nochmal</small>
+            </button>
+            <button
+              className="grade-btn grade-btn--good"
+              disabled={props.submitting}
+              onClick={() => props.onGrade("good")}
+              aria-label="Richtig (Taste 2)"
+            >
+              Richtig<small>gewusst</small>
+            </button>
+          </div>
+        </div>
       ) : (
         <div>
           <p className="eyebrow" style={{ marginBottom: 8 }}>
