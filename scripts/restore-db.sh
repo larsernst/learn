@@ -75,7 +75,9 @@ fi
 #     erneut ausgeführt, da das Backup von einer älteren App-Version stammen
 #     kann und ein neueres Schema erwartet (idempotent).
 echo "Stelle wiederher …"
-docker compose exec -T db pg_restore -U lernapp -d lernapp -c "$DUMP"
+# Datei wird auf dem Host gelesen und per stdin an pg_restore im Container
+# übergeben (der Container hat keinen Zugriff auf das Host-Dateisystem).
+docker compose exec -T db pg_restore -U lernapp -d lernapp -c < "$DUMP"
 
 echo ""
 echo "Wiederherstellung abgeschlossen."
