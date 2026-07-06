@@ -83,3 +83,11 @@ export const adminUserPatchSchema = z
       v.removeRoles !== undefined,
     { message: "Keine Daten zum Aktualisieren." }
   );
+
+export const adminSettingsSchema = z
+  .object({
+    matureThresholdDays: z.number().int().min(1).max(365).optional(),
+  })
+  .refine((v) => v.matureThresholdDays !== undefined, {
+    message: "matureThresholdDays erforderlich.",
+  });

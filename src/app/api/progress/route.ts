@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import { getMatureThresholdDays } from "@/lib/settings";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -23,7 +24,8 @@ export async function GET(request: Request) {
 
   const learned = reviews.length;
   const dueToday = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
-  const mature = reviews.filter((r) => r.intervalDays >= 21).length;
+  const matureThreshold = await getMatureThresholdDays();
+  const mature = reviews.filter((r) => r.intervalDays >= matureThreshold).length;
   const totalLapses = reviews.reduce((sum, r) => sum + r.lapses, 0);
 
   const byChapterRaw = await prisma.question.groupBy({

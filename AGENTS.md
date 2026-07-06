@@ -57,6 +57,8 @@ Prisma-Binary-Targets: `native` + `linux-musl` (für Docker-Alpine-Images).
 
 - Sprache der UI: **Deutsch**.
 - Keine Kommentare im Code, außer es wird ausdrücklich gewünscht.
+  Ausnahme: `prisma/migrations/*/migration.sql` dürfen einen `--`-Header
+  enthalten, der den Zweck der Migration beschreibt (Konvention 0001–0008).
 - Neue Fragen/Antworten ausschließlich in `fragenkatalog.ts`pflegen,
   danach `npm run db:seed`. Neue Kurse zusätzlich in `courses.ts` anlegen.
 - Kurs-Routing: Inhalte liegen unter `/kurs/[courseId]/*` (lernen, pruefung,

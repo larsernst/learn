@@ -10,6 +10,7 @@ export default async function AdminPage() {
       <div className="row" style={{ gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <a className="navlink" href="/admin" style={{ fontWeight: 600 }}>Fragen</a>
         <a className="navlink" href="/admin/nutzer">Nutzer</a>
+        <a className="navlink" href="/admin/einstellungen">Einstellungen</a>
       </div>
       <div className="card">
         <p className="muted" style={{ fontSize: 14, marginBottom: 16 }}>

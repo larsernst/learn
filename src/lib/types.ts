@@ -27,3 +27,5 @@ export interface ReviewNextResponse {
   review: { question: QuestionPublic } | null;
   isNew: boolean;
 }
+
+export type SettingsPatch = { mcqEnabled?: boolean; simpleGrading?: boolean };

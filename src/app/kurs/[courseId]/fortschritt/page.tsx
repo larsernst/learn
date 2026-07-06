@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getMatureThresholdDays } from "@/lib/settings";
 import ProgressClient from "./progress-client";
 import { KursNav } from "../kurs-nav";
 import { resolveCourse } from "../resolve-course";
@@ -31,7 +32,8 @@ export default async function FortschrittPage({
 
   const learned = reviews.length;
   const dueToday = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
-  const mature = reviews.filter((r) => r.intervalDays >= 21).length;
+  const matureThreshold = await getMatureThresholdDays();
+  const mature = reviews.filter((r) => r.intervalDays >= matureThreshold).length;
   const totalLapses = reviews.reduce((s, r) => s + r.lapses, 0);
 
   const perChapterMap = new Map<number, { chapter: number; chapterTitle: string; total: number; learned: number }>();

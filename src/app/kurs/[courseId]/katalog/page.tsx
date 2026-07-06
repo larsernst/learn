@@ -2,19 +2,24 @@ import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { intervalLabel } from "@/lib/sm2";
+import { getMatureThresholdDays } from "@/lib/settings";
 import Link from "next/link";
 import { KursNav } from "../kurs-nav";
 import { resolveCourse } from "../resolve-course";
 
 type Status = "neu" | "faellig" | "gelernt" | "gefestigt";
 
-function statusOf(review: {
-  intervalDays: number;
-  dueAt: Date;
-} | null, now: Date): Status {
+function statusOf(
+  review: {
+    intervalDays: number;
+    dueAt: Date;
+  } | null,
+  now: Date,
+  matureThreshold: number
+): Status {
   if (!review) return "neu";
   if (review.dueAt.getTime() <= now.getTime()) return "faellig";
-  if (review.intervalDays >= 21) return "gefestigt";
+  if (review.intervalDays >= matureThreshold) return "gefestigt";
   return "gelernt";
 }
 
@@ -72,7 +77,8 @@ export default async function KatalogPage({
   const total = questions.length;
   const learned = reviews.length;
   const due = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
-  const mature = reviews.filter((r) => r.intervalDays >= 21).length;
+  const matureThreshold = await getMatureThresholdDays();
+  const mature = reviews.filter((r) => r.intervalDays >= matureThreshold).length;
   const totalLapses = reviews.reduce((s, r) => s + r.lapses, 0);
   const avgEase =
     reviews.length === 0
@@ -145,7 +151,8 @@ export default async function KatalogPage({
                 const r = reviewMap.get(q.id) ?? null;
                 const status = statusOf(
                   r ? { intervalDays: r.intervalDays, dueAt: r.dueAt } : null,
-                  now
+                  now,
+                  matureThreshold
                 );
                 const isMcq = Array.isArray(q.mcqOptions) && q.mcqOptions !== null;
                 return (

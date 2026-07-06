@@ -80,12 +80,14 @@ export default function StudyClient({
         }
         return;
       }
-      const grades: Record<string, ReviewGrade> = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+      const grades: Record<string, ReviewGrade> = simpleGrading
+        ? { "1": "again", "2": "good" }
+        : { "1": "again", "2": "hard", "3": "good", "4": "easy" };
       if (grades[e.key]) gradeRecall(grades[e.key]);
     }
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [loading, data, revealed, submitting]);
+  }, [loading, data, revealed, submitting, simpleGrading]);
 
   async function gradeRecall(grade: ReviewGrade) {
     if (!data?.review) return;
@@ -271,6 +273,26 @@ export default function StudyClient({
   );
 }
 
+type GradeButtonConfig = {
+  grade: ReviewGrade;
+  label: string;
+  subtitle: string;
+  modifier?: "again" | "good";
+  ariaLabel: string;
+};
+
+const SIMPLE_GRADES: GradeButtonConfig[] = [
+  { grade: "again", label: "Falsch", subtitle: "nochmal", modifier: "again", ariaLabel: "Falsch (Taste 1)" },
+  { grade: "good", label: "Richtig", subtitle: "gewusst", modifier: "good", ariaLabel: "Richtig (Taste 2)" },
+];
+
+const FULL_GRADES: GradeButtonConfig[] = [
+  { grade: "again", label: "Again", subtitle: "völlig falsch", modifier: "again", ariaLabel: "Again – völlig falsch (Taste 1)" },
+  { grade: "hard", label: "Hard", subtitle: "mit Mühe", ariaLabel: "Hard – mit Mühe (Taste 2)" },
+  { grade: "good", label: "Good", subtitle: "korrekt", modifier: "good", ariaLabel: "Good – korrekt (Taste 3)" },
+  { grade: "easy", label: "Easy", subtitle: "mühelos", ariaLabel: "Easy – mühelos (Taste 4)" },
+];
+
 function RecallQuestion(props: {
   draft: string;
   onDraft: (v: string) => void;
@@ -296,68 +318,24 @@ function RecallQuestion(props: {
         <button className="btn btn--primary" onClick={props.onReveal}>
           Musterantwort zeigen
         </button>
-      ) : props.simpleGrading ? (
-        <div>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>
-            War deine Antwort richtig?
-          </p>
-          <div className="review-actions">
-            <button
-              className="grade-btn grade-btn--again"
-              disabled={props.submitting}
-              onClick={() => props.onGrade("again")}
-              aria-label="Falsch (Taste 1)"
-            >
-              Falsch<small>nochmal</small>
-            </button>
-            <button
-              className="grade-btn grade-btn--good"
-              disabled={props.submitting}
-              onClick={() => props.onGrade("good")}
-              aria-label="Richtig (Taste 2)"
-            >
-              Richtig<small>gewusst</small>
-            </button>
-          </div>
-        </div>
       ) : (
         <div>
           <p className="eyebrow" style={{ marginBottom: 8 }}>
-            Wie gut warst du?
+            {props.simpleGrading ? "War deine Antwort richtig?" : "Wie gut warst du?"}
           </p>
           <div className="review-actions">
-            <button
-              className="grade-btn grade-btn--again"
-              disabled={props.submitting}
-              onClick={() => props.onGrade("again")}
-              aria-label="Again – völlig falsch (Taste 1)"
-            >
-              Again<small>völlig falsch</small>
-            </button>
-            <button
-              className="grade-btn"
-              disabled={props.submitting}
-              onClick={() => props.onGrade("hard")}
-              aria-label="Hard – mit Mühe (Taste 2)"
-            >
-              Hard<small>mit Mühe</small>
-            </button>
-            <button
-              className="grade-btn grade-btn--good"
-              disabled={props.submitting}
-              onClick={() => props.onGrade("good")}
-              aria-label="Good – korrekt (Taste 3)"
-            >
-              Good<small>korrekt</small>
-            </button>
-            <button
-              className="grade-btn"
-              disabled={props.submitting}
-              onClick={() => props.onGrade("easy")}
-              aria-label="Easy – mühelos (Taste 4)"
-            >
-              Easy<small>mühelos</small>
-            </button>
+            {(props.simpleGrading ? SIMPLE_GRADES : FULL_GRADES).map((btn) => (
+              <button
+                key={btn.grade}
+                className={`grade-btn${btn.modifier ? ` grade-btn--${btn.modifier}` : ""}`}
+                disabled={props.submitting}
+                onClick={() => props.onGrade(btn.grade)}
+                aria-label={btn.ariaLabel}
+              >
+                {btn.label}
+                <small>{btn.subtitle}</small>
+              </button>
+            ))}
           </div>
         </div>
       )}

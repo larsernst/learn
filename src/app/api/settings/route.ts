@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
+import type { SettingsPatch } from "@/lib/types";
 
 const schema = z.object({
   mcqEnabled: z.boolean().optional(),
@@ -32,7 +33,7 @@ export async function PATCH(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Eingabe ungültig." }, { status: 400 });
   }
-  const data: { mcqEnabled?: boolean; simpleGrading?: boolean } = {};
+  const data: SettingsPatch = {};
   if (parsed.data.mcqEnabled !== undefined) data.mcqEnabled = parsed.data.mcqEnabled;
   if (parsed.data.simpleGrading !== undefined) data.simpleGrading = parsed.data.simpleGrading;
   const me = await prisma.user.update({

@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getMatureThresholdDays } from "@/lib/settings";
 import Link from "next/link";
 import { KursNav } from "./kurs-nav";
 import { resolveCourse } from "./resolve-course";
@@ -26,7 +27,8 @@ export default async function CourseOverviewPage({
   });
   const learnedIds = new Set(reviews.map((r) => r.questionId));
   const dueToday = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
-  const mature = reviews.filter((r) => r.intervalDays >= 21).length;
+  const matureThreshold = await getMatureThresholdDays();
+  const mature = reviews.filter((r) => r.intervalDays >= matureThreshold).length;
 
   const total = questions.length;
   const learned = reviews.length;

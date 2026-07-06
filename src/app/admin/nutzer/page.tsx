@@ -10,6 +10,7 @@ export default async function AdminNutzerPage() {
       <div className="row" style={{ gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <a className="navlink" href="/admin">Fragen</a>
         <a className="navlink" href="/admin/nutzer" style={{ fontWeight: 600 }}>Nutzer</a>
+        <a className="navlink" href="/admin/einstellungen">Einstellungen</a>
       </div>
       <div className="card">
         <NutzerClient />

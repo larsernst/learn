@@ -33,6 +33,12 @@ model UserRole {
   @@index([userId])
 }
 
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model Course {
   id          String     @id
   slug        String     @unique

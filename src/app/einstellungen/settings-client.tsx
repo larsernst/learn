@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { SettingsPatch } from "@/lib/types";
 
 export default function SettingsClient({
   initialMcqEnabled,
@@ -14,7 +15,7 @@ export default function SettingsClient({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  async function patch(data: { mcqEnabled?: boolean; simpleGrading?: boolean }) {
+  async function patch(data: SettingsPatch) {
     setSaved(false);
     setSaving(true);
     const res = await fetch("/api/settings", {

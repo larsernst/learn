@@ -47,7 +47,7 @@ export function gradeToQuality(grade: ReviewGrade): number {
 
 export function nextIntervalDays(repetitions: number, prevInterval: number, ef: number): number {
   if (repetitions <= 0) return 0;
-  if (repetitions === 1) return Math.min(1, MAX_INTERVAL_DAYS);
+  if (repetitions === 1) return 1;
   if (repetitions === 2) return Math.min(6, MAX_INTERVAL_DAYS);
   return Math.min(Math.round(prevInterval * ef), MAX_INTERVAL_DAYS);
 }

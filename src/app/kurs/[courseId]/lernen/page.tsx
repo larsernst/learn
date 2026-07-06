@@ -64,7 +64,8 @@ export default async function LernenPage({
       <StudyClient deck={deck} courseId={course.id} simpleGrading={me?.simpleGrading ?? false} />
       <p className="muted desktop-only" style={{ fontSize: 13, marginTop: 16 }}>
         Tastatur: <strong>Leertaste/Enter</strong> = Aufdecken/Bestätigen ·{" "}
-        <strong>1–4</strong> = Again/Hard/Good/Easy (Freie Erinnerung) ·{" "}
+        <strong>{me?.simpleGrading ? "1–2" : "1–4"}</strong> ={" "}
+        {me?.simpleGrading ? "Falsch/Richtig" : "Again/Hard/Good/Easy"} (Freie Erinnerung) ·{" "}
         <strong>1–n</strong> = Option togglen (MCQ)
       </p>
     </div>
