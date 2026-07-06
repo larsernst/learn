@@ -564,7 +564,7 @@ button {
 }
 
 .tab--active {
-  background: var(--ds-ink);
+  background: var(--ds-background-brand-bold);
   color: var(--ds-ink-on-dark);
 }
 
