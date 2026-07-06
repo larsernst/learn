@@ -25,10 +25,15 @@ Ablauf je Karte:
    Antwort vergleichen. Bei Multiple-Choice erfolgt die Auswertung
    automatisch beim Absenden.
 4. **Selbst bewerten**:
-   - **Again** – komplett falsch / leer → Karte ist heute erneut fällig.
+   - **Again / Falsch** – komplett falsch / leer → Karte ist heute erneut
+     fällig (kommt später in der Sitzung nochmal).
    - **Hard** – richtig, aber unsicher / langsam → kurzer Intervall.
-   - **Good** – korrekt → normaler SM-2-Intervall.
+   - **Good / Richtig** – korrekt → normaler SM-2-Intervall.
    - **Easy** – mühelos → langer Intervall, seltener wiederholen.
+
+   In den **Einstellungen** lässt sich die *einfache Bewertung*
+   (Richtig/Falsch) einschalten: Freitext-Fragen bieten dann nur noch zwei
+   Stufen statt vier (Richtig = Good, Falsch = Again).
 
 Multiple-Choice-Modus kannst du in den **Einstellungen** ein- oder
 ausschalten – ausgeschaltet werden alle Fragen als Freitext-Recall
@@ -37,8 +42,10 @@ geübt.
 ## 3. Fälligkeiten verstehen
 
 SM-2 plant die nächste Wiederholung automatisch: schwierige Karten
-kommen häufiger, einfache seltener. Wenn für heute nichts mehr fällig
-ist, sagt die App „Für heute erledigt" – dann ist Pause richtig.
+kommen häufiger, einfache seltener. Das Intervall ist global auf
+maximal 2 Tage begrenzt, sodass der Stoff eng in kurzen Abständen
+wiederkehrt. Wenn für heute nichts mehr fällig ist, sagt die App „Für
+heute erledigt" – dann ist Pause richtig.
 
 ## 4. Fortschritt prüfen
 
@@ -48,7 +55,8 @@ Unter **/kurs/betriebssysteme/fortschritt** siehst du:
   (insgesamt über 130 Fragen in zwei Kursen: Betriebssysteme und
   Rechnernetze).
 - **Heute fällig** – Anzahl offener Wiederholungen.
-- **Gefestigt** – Karten mit Intervall ≥ 21 Tage (Langzeitgedächtnis).
+- **Gefestigt** – Karten, deren Intervall den konfigurierbaren
+  Schwellwert erreicht (Standard 2 Tage = SM-2-Maximalintervall).
 - **Je Kapitel** – Fortschritt pro Kapitel, um Lücken zu erkennen.
 
 ## Tipps

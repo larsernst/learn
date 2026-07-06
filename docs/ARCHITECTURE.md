@@ -58,17 +58,23 @@ oder sich selbst löschen.
 Implementiert als reine Funktionen in `src/lib/sm2.ts`. Der Algorithmus
 folgt der klassischen SM-2-Variante mit vier UI-Grades
 (`again / hard / good / easy`), gemappt auf SM-2-Qualitäten
-(`1 / 3 / 4 / 5`).
+(`1 / 3 / 4 / 5`). Der simpleGrading-Modus (pro Nutzer in `/einstellungen`
+umschaltbar) reduziert Freitext-Fragen auf zwei Grades: **Richtig**
+(`good`) und **Falsch** (`again`); MCQ bleibt unberührt. Die Intervalle
+sind global auf `MAX_INTERVAL_DAYS` (aktuell 2 Tage) begrenzt.
 
 | Grade | Repetitionen | Intervalldauer |
 |---|---|---|
 | again | zurück auf 0 | 0 (heute erneut) |
-| good | +1 | 1 → 6 → `prev × EF` |
+| good | +1 | 1 → `min(6, MAX)` → `min(prev × EF, MAX)` |
 | hard | +1 | wie good, aber Ease-Faktor sinkt |
 | easy | +1 | wie good, aber Ease-Faktor steigt |
 
 Ease-Faktor startet bei 2.5 und wird je Bewertung angepasst, nach unten
-begrenzt durch `SM2_DEFAULTS.easeFloor = 1.3`.
+begrenzt durch `SM2_DEFAULTS.easeFloor = 1.3`. Der Schwellwert „Gefestigt"
+(`matureThresholdDays`, Standard = `MAX_INTERVAL_DAYS`) ist global in der
+`AppSetting`-Tabelle konfigurierbar und wird über
+`src/lib/settings.ts` gelesen.
 
 Pro (User, Frage) existiert genau ein `Review`-Datensatz mit
 `easeFactor`, `intervalDays`, `repetitions`, `lapses`, `dueAt`,
@@ -77,10 +83,13 @@ Pro (User, Frage) existiert genau ein `Review`-Datensatz mit
 ## Datenmodell (Prisma)
 
 - `User`: `id`, `email` (unique), `name`, `passwordHash`, `mcqEnabled`,
-  Zeitstempel. 1—N `Review`, `ReviewEvent`, `UserRole`.
+  `simpleGrading`, Zeitstempel. 1—N `Review`, `ReviewEvent`, `UserRole`.
 - `UserRole`: `userId` + `role` (z. B. `"admin"`), Unique-Constraint auf
   `(userId, role)`. Wird mit dem User kaskadiert gelöscht. Ermöglicht
   mehrere Rollen pro Nutzer.
+- `AppSetting`: globale Key/Value-Konfiguration (`key` = PK, `value`,
+  `updatedAt`). Aktuell belegt: `matureThresholdDays`. Pflege via
+  `/admin/einstellungen`; Zugriff über `src/lib/settings.ts`.
 - `Course`: `id` (String-PK), `slug` (unique), `title`, `description`,
   `order`, `published`. Neue Kurse werden in
   `prisma/seed-data/courses.ts` angelegt.
@@ -100,8 +109,10 @@ Pro (User, Frage) existiert genau ein `Review`-Datensatz mit
 
 ## Frage-Auswahl
 
-- `/api/review/next`: liefert zuerst die älteste fällige Karte (höchste
-  `lapses` zuerst), sonst die nächste noch nie gelernte Frage, sonst
+- `/api/review/next`: liefert die älteste fällige Karte, geordnet nach
+  `dueAt asc`, dann `lastReviewedAt asc` – gerade bewertete Karten rutschen
+  dadurch nach hinten und werden nicht sofort wiederholt (außer sie sind
+  die einzige fällige). Sonst die nächste noch nie gelernte Frage, sonst
   `null` („für heute erledigt"). Unterstützt `deck=difficult` (nur Karten
   mit `lapses >= 1`) und einen `courseId`-Filter.
 - `/api/review/submit`: schreibt den neuen SM-2-Zustand via `upsert` und
