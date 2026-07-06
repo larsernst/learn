@@ -1,20 +1,9 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { applySm2, isMcqCorrect, mcqGrade, SM2_DEFAULTS, type ReviewGrade } from "@/lib/sm2";
-import type { McqOption } from "@/lib/types";
-
-const schema = z
-  .object({
-    questionId: z.string().min(1),
-    grade: z.enum(["again", "hard", "good", "easy"]).optional(),
-    selectedOptionIds: z.array(z.string()).optional(),
-    isNew: z.boolean().optional(),
-  })
-  .refine((v) => v.grade !== undefined || v.selectedOptionIds !== undefined, {
-    message: "Entweder 'grade' (Freie Erinnerung) oder 'selectedOptionIds' (MCQ) erforderlich.",
-  });
+import { applySm2, SM2_DEFAULTS } from "@/lib/sm2";
+import { reviewSubmitSchema } from "@/lib/validation";
+import { resolveReviewGrade } from "@/lib/review-grade";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -22,34 +11,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const parsed = reviewSubmitSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Eingabe ungültig.", issues: parsed.error.issues },
       { status: 400 }
     );
   }
-  const { questionId, grade, selectedOptionIds, isNew } = parsed.data;
+  const { questionId, selectedOptionIds, isNew } = parsed.data;
 
   const question = await prisma.question.findUnique({ where: { id: questionId } });
   if (!question) {
     return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
   }
 
-  let resolvedGrade: ReviewGrade;
-  let mcqCorrect: boolean | null = null;
-  let correctOptionIds: string[] | null = null;
-
-  if (selectedOptionIds) {
-    const options = Array.isArray(question.mcqOptions)
-      ? (question.mcqOptions as unknown as McqOption[])
-      : [];
-    correctOptionIds = options.filter((o) => o.correct).map((o) => o.id);
-    mcqCorrect = isMcqCorrect(selectedOptionIds, correctOptionIds);
-    resolvedGrade = mcqGrade(mcqCorrect);
-  } else {
-    resolvedGrade = grade!;
-  }
+  const { resolvedGrade, mcqCorrect, correctOptionIds } = resolveReviewGrade(question, parsed.data);
 
   const existing = await prisma.review.findUnique({
     where: { userId_questionId: { userId: user.sub, questionId } },

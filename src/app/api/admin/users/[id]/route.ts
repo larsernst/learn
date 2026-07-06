@@ -1,26 +1,8 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi, ADMIN_ROLE } from "@/lib/auth";
-
-const patchSchema = z
-  .object({
-    name: z.string().min(1).optional(),
-    email: z.string().email().optional(),
-    mcqEnabled: z.boolean().optional(),
-    addRoles: z.array(z.string().min(1)).optional(),
-    removeRoles: z.array(z.string().min(1)).optional(),
-  })
-  .refine(
-    (v) =>
-      v.name !== undefined ||
-      v.email !== undefined ||
-      v.mcqEnabled !== undefined ||
-      v.addRoles !== undefined ||
-      v.removeRoles !== undefined,
-    { message: "Keine Daten zum Aktualisieren." }
-  );
+import { adminUserPatchSchema as patchSchema } from "@/lib/validation";
 
 type Params = { params: { id: string } };
 

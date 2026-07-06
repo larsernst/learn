@@ -12,11 +12,12 @@
 ![CI](https://github.com/larsernst/dhge-betriebssysteme/actions/workflows/ci.yml/badge.svg)
 ![Status](https://img.shields.io/badge/Status-Lern--Projekt-orange?style=for-the-badge)
 
-Eine TypeScript-/Next.js-Webanwendung zum Vorbereiten auf die Prüfung
-„Betriebssysteme – Grundlagen".
-Die App enthält **alle 100 Fragen** des offiziellen Fragenkatalogs mit
-Modellantworten, die aus den Vorlesungsfolien erstellt wurden, und nutzt
-**Spaced Repetition (SM-2)** mit freier Erinnerung (Selbsteinschätzung).
+Eine TypeScript-/Next.js-Webanwendung zum Vorbereiten auf die DHGE-Prüfungen
+„Betriebssysteme – Grundlagen" und „Rechnernetze". Die App enthält
+**131 Prüfungsfragen** (100 Betriebssysteme über 6 Kapitel, 31 Rechnernetze
+über 5 Kapitel) mit Modellantworten, die aus den Vorlesungsfolien erstellt
+wurden, und nutzt **Spaced Repetition (SM-2)** mit freier Erinnerung
+(Selbsteinschätzung) und Multiple-Choice.
 
 > **Hinweis:** Die Quelldateien der Vorlesung liegen unter `resources/` und
 > werden **nicht** in das Repository eingecheckt (siehe `.gitignore`). Die
@@ -26,21 +27,29 @@ Modellantworten, die aus den Vorlesungsfolien erstellt wurden, und nutzt
 ## Funktionsumfang
 
 - Konto erstellen / anmelden (Passwort-Hashing mit bcryptjs, JWT-Session-Cookie).
-- Alle 100 Prüfungsfragen über 6 Kapitel hinweg.
+- **Zwei Kurse**: Betriebssysteme (100 Fragen, 6 Kapitel) und Rechnernetze
+  (31 Fragen, 5 Kapitel), jeweils über `/kurs/[courseId]/*` erreichbar.
 - Freie Erinnerung: Frage lesen → selbst antworten → Musterantwort aufdecken →
   selbst bewerten (`Again / Hard / Good / Easy`).
 - Multiple-Choice: „Nennen Sie …"-Fragen werden als Mehrfachauswahl
   (auto-ausgewertet) angezeigt – richtig → `Good`, falsch → `Again`.
 - SM-2 Spaced-Repetition-Algorithmus plant die nächste Fälligkeit je Karte;
   falsch bewertete Karten erscheinen am selben Tag erneut.
-- Fortschritts-Dashboard (`/fortschritt`): gelernt %, heute fällig, gefestigt,
-  je-Kapitel-Statistik.
-- Katalog-Uebersicht (`/katalog`): alle 100 Fragen mit Status, Intervalldauer,
-  Wiederholungs- und Fehlzählung sowie Aggregate-Statistik.
+- Prüfungsmodus (`/kurs/[courseId]/pruefung`): simuliert eine Klausur mit
+  10/30/allen Fragen und optionaler SM-2-Übernahme.
+- Fortschritts-Dashboard (`/kurs/[courseId]/fortschritt`): gelernt %, heute
+  fällig, gefestigt, je-Kapitel-Statistik.
+- Statistik-Seite (`/kurs/[courseId]/statistik`): aktuelle Serie, 12-Wochen-
+  Aktivitäts-Heatmap, Ø Ease-Faktor, MCQ-Trefferquote, schwierigste Fragen.
+- Katalog-Uebersicht (`/kurs/[courseId]/katalog`): alle Fragen mit Status,
+  Intervalldauer, Wiederholungs- und Fehlzählung.
+- **Rollenbasiertes Admin** (`/admin`): Fragen als JSON hochladen, Nutzer
+  verwalten (Rollen, Passwort-Reset, Name/E-Mail, Löschen) mit Self-Protection.
 - Atlassian-inspiriertes, reduziertes Design (Tokens aus `DESIGN.md`).
 - Komplett dockerisiert via `docker-compose.yml` (PostgreSQL + Next.js-App).
-- Unit-Tests (Vitest) für SM-2, MCQ-Auswertung, Passwort-Hashing, Session-Tokens.
-- E2E-Tests (Playwright) für Lernfluss, Auth-Edge-Cases, MCQ und Katalog.
+- Unit-Tests (Vitest) für SM-2, MCQ-Auswertung, Serialize, Validierung,
+  Passwort-Hashing, Session-Tokens und mehr.
+- E2E-Tests (Playwright) für Lernfluss, Prüfung, Statistik, MCQ, Admin und mehr.
 
 ## Schnellstart mit Docker
 
@@ -56,7 +65,7 @@ docker compose up --build -d
 ```
 
 Beim ersten Start führt der Container automatisch `prisma migrate deploy`
-und den Seed aus, sodass die 100 Fragen in der Datenbank liegen.
+und den Seed aus, sodass die 131 Fragen beider Kurse in der Datenbank liegen.
 
 > **Wichtig:** Beim Start prüft die App, dass `JWT_SECRET` gesetzt und kein
 > Platzhalter mehr ist – sonst beendet sich der Web-Container sofort mit einer
@@ -66,10 +75,17 @@ und den Seed aus, sodass die 100 Fragen in der Datenbank liegen.
 
 - **Passwort-Hashing** mit bcryptjs (cost 10), **Session** als signiertes
   JWT (HS256) in einem `httpOnly`-Cookie.
-- **Rate-Limiting** auf `/api/auth/login` und `/api/auth/register`
-  (≈10 Versuche/Minute pro IP, danach 429 mit `Retry-After`).
+- **Rollenbasiertes Admin** via `UserRole` in der Datenbank – Rollen werden
+  bei jeder Anfrage neu aus der DB gelesen (ein entzogener Admin ist sofort
+  gesperrt). Den ersten Admin legt man per CLI an:
+  `npm run db:make-admin -- --email user@example.com`.
+- **Rate-Limiting** auf `/api/auth/login`, `/api/auth/register` und
+  `/api/auth/password` (≈10 Versuche/Minute pro IP, danach 429 mit
+  `Retry-After`).
 - **CSRF-Schutz** für `/api/auth/logout` über `Origin`/`Sec-Fetch-Site`-Check
   (optional weitere Origins über `ALLOWED_ORIGINS` in `.env`).
+- **Security-Header**: `X-Content-Type-Options`, `X-Frame-Options: DENY`,
+  `Referrer-Policy`, `Permissions-Policy`, HSTS (nur bei HTTPS).
 - **DB-Backups:** `sh scripts/backup-db.sh` erzeugt ein binäres
   `pg_dump`-Dump im Ordner `backups/`. Wiederherstellung:
   `docker compose exec -T db pg_restore -U lernapp -d lernapp -c < backups/<datei>.dump`
@@ -84,7 +100,7 @@ Voraussetzungen: Node ≥ 20, eine laufende PostgreSQL-Instanz.
 npm install
 cp .env.example .env            # DATABASE_URL + JWT_SECRET anpassen
 npx prisma migrate dev          # Schema anlegen + Client erzeugen
-npm run db:seed                 # 100 Fragen laden
+npm run db:seed                 # 131 Fragen beider Kurse laden
 npm run dev
 ```
 
@@ -105,30 +121,44 @@ Details: [`docs/TESTING.md`](docs/TESTING.md).
 ```
 src/
   app/                  Next.js App-Router (Seiten + API-Routen)
-    api/auth/           register / login / logout / me
+    api/auth/           register / login / logout / me / password
     api/review/         next / submit (SM-2)
-    api/progress/       Statistik
-    lernen/             Lern-Sitzung (Review-Karte)
-    fortschritt/        Fortschritts-Dashboard
+    api/exam/           questions / submit (Prüfungsmodus)
+    api/progress/       Fortschritts-Aggregate
+    api/settings/       MCQ-Toggle
+    api/admin/          questions / users (rollengeschützt)
+    kurs/[courseId]/    kursbezogen: lernen / pruefung / fortschritt /
+                        statistik / katalog (+ [id]-Detailansicht)
+    admin/              Fragen-Upload + Nutzerverwaltung
+    einstellungen/      MCQ-Toggle, Passwort ändern
     login|registrieren/ Auth-Seiten
   lib/
     sm2.ts              SM-2-Algorithmus (pure Funktionen, getestet)
+    review-grade.ts     Bewertungsauflösung (Recall vs. MCQ)
+    serialize.ts        Antwort-Sicherheit (stript correct-Flags)
+    validation.ts       Zod-Schemata für alle API-Routen
     session.ts          Jose-JWT + httpOnly-Cookie
     password.ts         bcryptjs Hashing/Verify
+    auth.ts             Rollen-Check (DB-basiert, requireAdmin*)
     prisma.ts           Prisma-Client (Singleton)
     design-tokens.ts    Tokens aus DESIGN.md
 prisma/
-  schema.prisma         User / Question / Review
-  seed.ts               Schreibt den Fragenkatalog in die DB
+  schema.prisma         User / UserRole / Course / Question /
+                        Review / ReviewEvent
+  seed.ts               Schreibt den Fragenkatalog idempotent in die DB
   seed-data/
-    fragenkatalog.ts    100 Fragen + Antworten (Quelle: Vorlesung)
+    courses.ts          Kurs-Metadaten (id, slug, Reihenfolge, published)
+    fragenkatalog.ts    131 Fragen + Antworten (Quelle: Vorlesung)
 tests/
-  unit/                 Vitest: sm2, password, session
-  e2e/                  Playwright: Lernfluss
+  unit/                 Vitest: sm2, serialize, review-grade, validation,
+                        exam, stats, session, password, rate-limit, …
+  e2e/                  Playwright: Lernfluss, Prüfung, Statistik, MCQ,
+                        Admin, Mobile, Smoke
 docker-compose.yml      Postgres + Web
 Dockerfile              Multi-Stage-Build
 DESIGN.md               Design-System-Vorgabe
-docs/                   Doku (TESTING, ARCHITECTURE, LERNEN)
+docs/                   Doku (ARCHITECTURE, TESTING, LERNEN,
+                        FRAGENKATALOG, CONTENT_REVIEW)
 ```
 
 ## Lizenz & Nutzung

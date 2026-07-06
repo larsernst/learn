@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { AUTH_RATE_LIMIT, getClientIp, rateLimit, rateLimitResponse } from "@/lib/rate-limit";
-
-const schema = z.object({
-  currentPassword: z.string().min(1),
-  newPassword: z.string().min(8).max(128),
-});
+import { passwordChangeSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -22,7 +17,7 @@ export async function POST(request: Request) {
     return rateLimitResponse(rl.retryAfterSec, "Zu viele Versuche. Bitte später erneut.");
   }
 
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const parsed = passwordChangeSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Eingabe ungültig." }, { status: 400 });
   }

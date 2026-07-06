@@ -1,30 +1,8 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/auth";
-
-const mcqOptionSchema = z.object({
-  id: z.string().min(1),
-  text: z.string().min(1),
-  correct: z.boolean(),
-});
-
-const questionSchema = z.object({
-  id: z.string().min(1),
-  courseId: z.string().min(1).optional(),
-  chapter: z.number().int().min(1),
-  chapterTitle: z.string().min(1),
-  question: z.string().min(1),
-  answer: z.string().min(1),
-  sourceRef: z.string().min(1),
-  confidence: z.enum(["high", "low"]).optional(),
-  mcqOptions: z.array(mcqOptionSchema).optional(),
-});
-
-const bodySchema = z.object({
-  questions: z.array(questionSchema).min(1),
-});
+import { adminQuestionsBodySchema as bodySchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const guard = await requireAdminApi();

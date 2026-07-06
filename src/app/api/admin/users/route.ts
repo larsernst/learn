@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
-
-const resetPasswordSchema = z.object({
-  userId: z.string().min(1),
-  newPassword: z.string().min(8, "Passwort muss mindestens 8 Zeichen lang sein."),
-});
+import { adminResetPasswordSchema as resetPasswordSchema } from "@/lib/validation";
 
 const userSelect = {
   id: true,

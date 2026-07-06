@@ -31,3 +31,75 @@ jobs:
         env:
           DATABASE_URL: "postgresql://nobody:nobody@localhost:5432/nobody?schema=public"
           JWT_SECRET: "ci-build-secret-not-used-at-runtime-1234567890"
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: e2e
+          POSTGRES_PASSWORD: e2e
+          POSTGRES_DB: e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U e2e -d e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: "postgresql://e2e:e2e@localhost:5432/e2e?schema=public"
+      JWT_SECRET: "ci-e2e-secret-please-replace-with-something-long-enough"
+      SESSION_COOKIE_SECURE: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - run: npx prisma migrate deploy
+
+      - run: npm run db:seed
+
+      - run: npm run build
+
+      # App im Hintergrund starten und auf den Port warten.
+      - run: npm run start &
+        env:
+          PORT: 3000
+
+      - name: Warte auf App-Bereitschaft
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/ > /dev/null; then
+              echo "App ist bereit."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App nicht rechtzeitig bereit." >&2
+          exit 1
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+        env:
+          BASE_URL: "http://localhost:3000"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

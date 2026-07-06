@@ -1,48 +1,72 @@
 import { test, expect } from "@playwright/test";
 
-const unique = (prefix: string) =>
-  `${prefix}+${Date.now()}-${Math.floor(Math.random() * 1_000_000)}@e2e.test`;
+// Diese Tests laufen als authentifizierter Admin (Storage-State aus
+// admin.setup.ts). Sie prüfen den positiven Admin-Pfad sowie die
+// Self-Protection-Guards.
 
-async function login(page: import("@playwright/test").Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("E-Mail").fill(email);
-  await page.getByLabel(/^Passwort$/).fill("testpass1234");
-  await page.getByRole("button", { name: "Anmelden" }).click();
-  await page.waitForURL("**/lernen");
-}
-
-test.describe("Admin-Rollen-Auth", () => {
-  test("normaler Nutzer bekommt keinen Admin-Zugriff (403)", async ({ request }) => {
-    const email = unique("nonadmin");
-    await request.post("/api/auth/register", {
-      data: { name: "Non Admin", email, password: "testpass1234" },
-    });
-
+test.describe("Admin-Bereich (authentifiziert)", () => {
+  test("Admin-Seite lädt und Nutzerliste ist sichtbar", async ({ page, request }) => {
     const res = await request.get("/api/admin/users");
-    expect([401, 403]).toContain(res.status());
+    expect(res.ok()).toBeTruthy();
+    const data = await res.json();
+    expect(Array.isArray(data.users)).toBeTruthy();
+
+    await page.goto("/admin/nutzer");
+    await expect(page.getByRole("heading", { name: /Nutzer/ })).toBeVisible();
+    await expect(page.getByLabel("Suche")).toBeVisible();
   });
 
-  test("Admin sieht Nutzerliste und /admin-Seite", async ({ page, request }) => {
-    const email = unique("admin");
-    await request.post("/api/auth/register", {
-      data: { name: "Admin User", email, password: "testpass1234" },
+  test("Admin kann Nutzerliste durchsuchen", async ({ page }) => {
+    await page.goto("/admin/nutzer");
+    await expect(page.getByText(/Nutzer$/)).toBeVisible({ timeout: 15000 });
+
+    await page.getByLabel("Suche").fill("gibt-es-nicht-xyz");
+    await expect(page.getByText("Keine Nutzer gefunden.")).toBeVisible({ timeout: 10000 });
+  });
+
+  test("Self-Protection: Admin kann sich nicht selbst die Admin-Rolle entziehen", async ({ request }) => {
+    const me = await request.get("/api/auth/me");
+    const meBody = await me.json();
+    const myId = meBody.user.sub;
+
+    const res = await request.patch(`/api/admin/users/${myId}`, {
+      data: { removeRoles: ["admin"] },
     });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/Admin-Rolle entziehen/);
+  });
 
-    // Promote via direkten Datenbankzugriff ist im E2E nicht trivial;
-    // wir nutzen den internen Bootstrap-Endpunkt (CLI-Skript) stattdessen
-    // nicht. Stattdessen: Admin-Rolle per API nur möglich, wenn man schon
-    // Admin ist. Daher überspringen wir die Förderung im E2E und prüfen
-    // nur den Nicht-Admin-Pfad hier. Der Förderungs-Pfad ist durch die
-    // Unit-Tests (make-admin.test.ts) abgedeckt.
-    //
-    // Ein vollständiger Admin-E2E-Test würde einen vorgewärmten Admin-Nutzer
-    // (storageState) erfordern, der außerhalb dieses Test-Setups liegt.
+  test("Self-Protection: Admin kann sich nicht selbst löschen", async ({ request }) => {
+    const me = await request.get("/api/auth/me");
+    const meBody = await me.json();
+    const myId = meBody.user.sub;
 
-    await login(page, email);
+    const res = await request.delete(`/api/admin/users/${myId}`);
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/selbst löschen/);
+  });
 
-    // Nicht-Admin wird von /admin weggeleitet.
-    await page.goto("/admin");
-    await page.waitForURL("**/");
-    expect(page.url()).not.toMatch(/\/admin/);
+  test("Admin kann einen fremden Nutzer bearbeiten", async ({ request }) => {
+    const list = await request.get("/api/admin/users");
+    const { users } = await list.json();
+    const target = users.find(
+      (u: { id: string; email: string; roles: string[] }) =>
+        u.email.endsWith("@e2e.test") && !u.roles.includes("admin")
+    );
+
+    if (!target) {
+      test.skip(true, "Kein passender Fremd-Nutzer vorhanden.");
+      return;
+    }
+
+    const newName = `Bearbeitet ${Date.now()}`;
+    const res = await request.patch(`/api/admin/users/${target.id}`, {
+      data: { name: newName },
+    });
+    expect(res.ok()).toBeTruthy();
+    const body = await res.json();
+    expect(body.user.name).toBe(newName);
   });
 });

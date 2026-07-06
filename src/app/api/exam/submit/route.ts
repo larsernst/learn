@@ -1,22 +1,10 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { gradeExamAttempt, type ExamAttempt } from "@/lib/exam";
 import { applySm2, mcqGrade, SM2_DEFAULTS } from "@/lib/sm2";
 import type { McqOption } from "@/lib/types";
-
-const answerSchema = z.object({
-  questionId: z.string().min(1),
-  mode: z.enum(["recall", "mcq"]),
-  correct: z.boolean().optional(),
-  selectedOptionIds: z.array(z.string()).optional(),
-});
-
-const schema = z.object({
-  answers: z.array(answerSchema).min(1),
-  saveToSm2: z.boolean().optional(),
-});
+import { examSubmitSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -24,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const parsed = examSubmitSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Eingabe ungültig.", issues: parsed.error.issues },

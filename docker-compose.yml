@@ -26,8 +26,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: "postgresql://lernapp:lernapp@db:5432/lernapp?schema=public"
-      JWT_SECRET: "${JWT_SECRET:-please-change-me-to-a-long-random-secret}"
-      NEXTAUTH_SECRET: "${JWT_SECRET:-please-change-me-to-a-long-random-secret}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET muss als Umgebungsvariable gesetzt werden}"
       SESSION_COOKIE_SECURE: "${SESSION_COOKIE_SECURE:-false}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
       NEXT_PUBLIC_APP_NAME: "Lern-App"

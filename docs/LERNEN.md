@@ -9,22 +9,30 @@ anmeldest).
 
 ## 2. Lern-Sitzung starten
 
-Unter **/lernen** erscheint die nächste fällige Karte – entweder eine
-Wiederholung (SM-2 hat sie als fällig markiert) oder eine neue Frage,
-die du noch nie gesehen hast.
+Unter **/kurs/betriebssysteme/lernen** (bzw. dem entsprechenden Kurs)
+erscheint die nächste fällige Karte – entweder eine Wiederholung
+(SM-2 hat sie als fällig markiert) oder eine neue Frage, die du noch nie
+gesehen hast.
 
 Ablauf je Karte:
 
 1. **Frage lesen.**
 2. **Frei antworten** ins Textfeld (schreibe, woran du dich erinnerst –
-   je aktiver du abrufst, desto fester prägt es sich ein).
+   je aktiver du abrufst, desto fester prägt es sich ein). Bei Fragen mit
+   Multiple-Choice-Optionen kannst du stattdessen die (ggf. mehreren)
+   zutreffenden Antworten anklicken.
 3. **Musterantwort aufdecken** („Musterantwort zeigen") und mit deiner
-   Antwort vergleichen.
+   Antwort vergleichen. Bei Multiple-Choice erfolgt die Auswertung
+   automatisch beim Absenden.
 4. **Selbst bewerten**:
    - **Again** – komplett falsch / leer → Karte ist heute erneut fällig.
    - **Hard** – richtig, aber unsicher / langsam → kurzer Intervall.
    - **Good** – korrekt → normaler SM-2-Intervall.
    - **Easy** – mühelos → langer Intervall, seltener wiederholen.
+
+Multiple-Choice-Modus kannst du in den **Einstellungen** ein- oder
+ausschalten – ausgeschaltet werden alle Fragen als Freitext-Recall
+geübt.
 
 ## 3. Fälligkeiten verstehen
 
@@ -34,9 +42,11 @@ ist, sagt die App „Für heute erledigt" – dann ist Pause richtig.
 
 ## 4. Fortschritt prüfen
 
-Unter **/fortschritt** siehst du:
+Unter **/kurs/betriebssysteme/fortschritt** siehst du:
 
-- **Gelernt %** – wie viele der 100 Fragen du schon einmal beantwortet hast.
+- **Gelernt %** – wie viele der Fragen du schon einmal beantwortet hast
+  (insgesamt über 130 Fragen in zwei Kursen: Betriebssysteme und
+  Rechnernetze).
 - **Heute fällig** – Anzahl offener Wiederholungen.
 - **Gefestigt** – Karten mit Intervall ≥ 21 Tage (Langzeitgedächtnis).
 - **Je Kapitel** – Fortschritt pro Kapitel, um Lücken zu erkennen.
