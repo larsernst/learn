@@ -69,15 +69,25 @@ if [ "$CONFIRM" -ne 1 ]; then
 fi
 
 # ── Restore ─────────────────────────────────────────────────────────────
-# -c  DROP DATABASE/CREATE DATABASE vor dem Restore (bereinigt den Stand).
-#     Zuvor sichern wir die DB via pg_dump, falls der Restore rückgängig
-#     gemacht werden muss. Danach werden die Migrations-/Seed-Schritte
-#     erneut ausgeführt, da das Backup von einer älteren App-Version stammen
-#     kann und ein neueres Schema erwartet (idempotent).
+# Die Datenbank wird komplett verworfen und neu angelegt, statt
+# pg_restore -c (per-Object-DROP) zu nutzen. Per-Object-DROP scheitert
+# nämlich an FK-Abhängigkeiten, wenn das Zielschema Tabellen enthält, die
+# im Backup nicht vorhanden sind (z. B. UserRole aus einer neueren
+# Migration). Danach werden die Migrations-/Seed-Schritte ausgeführt, da
+# das Backup von einer älteren App-Version stammen kann und ein neueres
+# Schema erwartet (idempotent).
+echo "Leere Datenbank …"
+docker compose exec -T db psql -U lernapp -d postgres -v ON_ERROR_STOP=1 -c \
+  "DROP DATABASE IF EXISTS lernapp WITH (FORCE);"
+docker compose exec -T db psql -U lernapp -d postgres -v ON_ERROR_STOP=1 -c \
+  "CREATE DATABASE lernapp OWNER lernapp;"
+
 echo "Stelle wiederher …"
 # Datei wird auf dem Host gelesen und per stdin an pg_restore im Container
 # übergeben (der Container hat keinen Zugriff auf das Host-Dateisystem).
-docker compose exec -T db pg_restore -U lernapp -d lernapp -c < "$DUMP"
+# --no-owner/--no-privileges, damit Dumps von anderen Instanzen (anderer
+# Owner) sauber eingespielt werden.
+docker compose exec -T db pg_restore -U lernapp -d lernapp --no-owner --no-privileges --exit-on-error < "$DUMP"
 
 echo ""
 echo "Wiederherstellung abgeschlossen."
