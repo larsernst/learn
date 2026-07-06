@@ -12,6 +12,7 @@ const mcqOptionSchema = z.object({
 
 const questionSchema = z.object({
   id: z.string().min(1),
+  courseId: z.string().min(1).optional(),
   chapter: z.number().int().min(1),
   chapterTitle: z.string().min(1),
   question: z.string().min(1),
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       where: { id: q.id },
       create: {
         id: q.id,
+        courseId: q.courseId ?? null,
         chapter: q.chapter,
         chapterTitle: q.chapterTitle,
         question: q.question,
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
         confidence: q.confidence ?? null,
       },
       update: {
+        courseId: q.courseId ?? null,
         chapter: q.chapter,
         chapterTitle: q.chapterTitle,
         question: q.question,
