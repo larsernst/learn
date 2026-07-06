@@ -55,6 +55,7 @@ jobs:
       DATABASE_URL: "postgresql://e2e:e2e@localhost:5432/e2e?schema=public"
       JWT_SECRET: "ci-e2e-secret-please-replace-with-something-long-enough"
       SESSION_COOKIE_SECURE: "false"
+      DISABLE_RATE_LIMIT: "true"
 
     steps:
       - uses: actions/checkout@v4

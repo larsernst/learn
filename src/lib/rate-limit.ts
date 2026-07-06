@@ -26,6 +26,9 @@ export function rateLimit(
   windowMs: number,
   now: number = Date.now()
 ): RateLimitResult {
+  if (process.env.DISABLE_RATE_LIMIT === "true") {
+    return { ok: true, retryAfterSec: 0, remaining: limit, limit };
+  }
   sweep(now);
   const b = buckets.get(key);
   if (!b || b.resetAt <= now) {

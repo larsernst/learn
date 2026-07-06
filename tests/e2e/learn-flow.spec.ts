@@ -46,7 +46,7 @@ test.describe("Lern-Sitzung mit SM-2", () => {
 
     await page.goto("/fortschritt");
     await expect(page.getByRole("heading", { name: "Dein Stand" })).toBeVisible();
-    await expect(page.locator("text=\\d+%").first()).toBeVisible();
+    await expect(page.getByText(/\d+%/).first()).toBeVisible();
   });
 });
 
