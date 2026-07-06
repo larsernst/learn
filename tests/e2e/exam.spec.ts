@@ -47,8 +47,8 @@ test.describe("Pruefungssimulation", () => {
       await page.waitForTimeout(300);
     }
 
-    await expect(page.getByText(/Ergebnis/)).toBeVisible();
-    await expect(page.locator("text=\\d+ / \\d+").first()).toBeVisible();
+    await expect(page.locator(".card--brand .eyebrow", { hasText: "Ergebnis" })).toBeVisible();
+    await expect(page.locator(".card--brand", { hasText: /\d+ \/ \d+/ })).toBeVisible();
 
     // Optional ins SM-2 uebernehmen
     const saveBtn = page.getByRole("button", { name: "Ins SM-2 übernehmen" });

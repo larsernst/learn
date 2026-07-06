@@ -7,7 +7,7 @@ test("Smoke: Homepage -> Registrierung -> Lern-Sitzung -> Fortschritt", async ({
   const email = unique("smoke");
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Betriebssysteme verstehen/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Mehrere Kurse|Betriebssysteme/ })).toBeVisible();
 
   await page.goto("/registrieren");
   await page.getByLabel("Name").fill("Smoke Tester");

@@ -27,10 +27,9 @@ test.describe("Mobile (iPhone 12 – 390x844)", () => {
     await page.locator(".mobile-nav-toggle").click();
     await expect(page.locator(".mobile-nav-panel")).toBeVisible();
 
-    // Ueber Menue zu /katalog navigieren
-    await page.locator(".mobile-nav-link", { hasText: "Katalog" }).click();
-    await page.waitForURL("**/katalog");
-    await expect(page.getByRole("heading", { name: "Alle Fragen" })).toBeVisible();
+    // Ueber Menue zur Uebersicht (Startseite) navigieren
+    await page.locator(".mobile-nav-link", { hasText: "Übersicht" }).click();
+    await page.waitForURL("**/");
     // Panel ist nach Klick geschlossen
     await expect(page.locator(".mobile-nav-panel")).toBeHidden();
   });
@@ -53,12 +52,14 @@ test.describe("Mobile (iPhone 12 – 390x844)", () => {
     );
     expect(overflow).toBeLessThanOrEqual(0);
 
-    // Eine Karte anzeigen lassen
+    // Eine Karte anzeigen lassen – Freie-Erinnerung (Musterantwort zeigen)
+    // oder MCQ (.mcq-option) oder "erledigt"-Screen.
     const reveal = page.getByRole("button", { name: "Musterantwort zeigen" });
-    const auswerten = page.getByRole("button", { name: "Auswerten" });
-    const showVisible = await reveal.isVisible().catch(() => false);
-    const evalVisible = await auswerten.isVisible().catch(() => false);
-    expect(showVisible || evalVisible).toBeTruthy();
+    const mcqOpts = page.locator(".mcq-option input[type=checkbox]");
+    const done = page.getByRole("heading", { name: /erledigt/ });
+    await expect(
+      reveal.or(mcqOpts.first()).or(done)
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("Homepage ohne horizontalen Overflow", async ({ page }) => {

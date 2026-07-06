@@ -14,15 +14,25 @@ test.describe("Lern-Sitzung mit SM-2", () => {
     await page.getByRole("button", { name: "Konto erstellen" }).click();
 
     await page.waitForURL("**/lernen");
-    await expect(page.getByText("Musterantwort zeigen")).toBeVisible();
+    // Die erste Karte kann Freie-Erinnerung oder MCQ sein (je nach Frage).
+    const reveal = page.getByRole("button", { name: "Musterantwort zeigen" });
+    const auswerten = page.getByRole("button", { name: "Auswerten" });
+    await expect(reveal.or(auswerten)).toBeVisible();
     await expect(page.getByText(/Kapitel \d/).first()).toBeVisible();
 
-    await page.getByRole("button", { name: "Musterantwort zeigen" }).click();
-    await expect(page.getByText("Musterantwort").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: "Good" })).toBeVisible();
-
-    await page.getByRole("button", { name: "Good" }).click();
-    await expect(page.getByText(/Nächste Wiederholung|heute erneut/)).toBeVisible({ timeout: 5000 });
+    if (await auswerten.isVisible().catch(() => false)) {
+      // MCQ-Karte: eine Option ankreuzen und auswerten.
+      await page.locator(".mcq-option input[type=checkbox]").first().check();
+      await auswerten.click();
+    } else {
+      await reveal.click();
+      await expect(page.getByText("Musterantwort").first()).toBeVisible();
+      await expect(page.getByRole("button", { name: "Good" })).toBeVisible();
+      await page.getByRole("button", { name: "Good" }).click();
+    }
+    await expect(page.getByText(/Nächste Wiederholung|heute erneut|Richtig!|Falsch/)).toBeVisible({
+      timeout: 5000,
+    });
 
     await expect(async () => {
       const showBtn = page.getByRole("button", { name: "Musterantwort zeigen" });

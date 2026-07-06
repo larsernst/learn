@@ -18,7 +18,10 @@ test.describe("Admin-Bereich (authentifiziert)", () => {
 
   test("Admin kann Nutzerliste durchsuchen", async ({ page }) => {
     await page.goto("/admin/nutzer");
-    await expect(page.getByText(/Nutzer$/)).toBeVisible({ timeout: 15000 });
+    // Warten, bis die Nutzerliste geladen ist (Anzahl-Span erscheint).
+    await expect(page.locator("span.muted", { hasText: /\d+ Nutzer/ })).toBeVisible({
+      timeout: 15000,
+    });
 
     await page.getByLabel("Suche").fill("gibt-es-nicht-xyz");
     await expect(page.getByText("Keine Nutzer gefunden.")).toBeVisible({ timeout: 10000 });

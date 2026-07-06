@@ -51,12 +51,14 @@ test.describe("Multiple-Choice (Nennen-Fragen)", () => {
     // Freie-Erinnerungs-Karten mit "Easy" verwerfen, bis eine MCQ-Karte kommt.
     let attempts = 0;
     while (attempts < 40) {
-      const auswerten = page.getByRole("button", { name: "Auswerten" });
-      if (await auswerten.isVisible().catch(() => false)) {
-        // MCQ-Karte erreicht
-        await expect(page.getByText(/Mehrere Antworten sind richtig/)).toBeVisible();
-        const firstOption = page.locator(".mcq-option input[type=checkbox]").first();
-        await firstOption.check();
+      const mcqOptions = page.locator(".mcq-option input[type=checkbox]");
+      const mcqVisible = (await mcqOptions.count()) > 0;
+      if (mcqVisible) {
+        // MCQ-Karte erreicht. Hinweis prüfen, Option ankreuzen, auswerten.
+        await expect(page.getByText(/Mehrere Antworten sind richtig|Eine Antwort ist richtig/)).toBeVisible();
+        await mcqOptions.first().check();
+        // Nach dem Ankreuzen heisst der Button "Auswerten".
+        const auswerten = page.getByRole("button", { name: "Auswerten" });
         await auswerten.click();
         await expect(page.getByText(/Richtig!|Falsch/)).toBeVisible({ timeout: 5000 });
         await expect(page.locator(".mcq-option--correct").first()).toBeVisible();
@@ -70,7 +72,7 @@ test.describe("Multiple-Choice (Nennen-Fragen)", () => {
         attempts++;
         continue;
       }
-      // Weder Auswerten noch Aufdecken (z. B. "erledigt"-Screen)
+      // Weder MCQ noch Aufdecken (z. B. "erledigt"-Screen)
       await page.goto("/lernen");
       await page.waitForLoadState("networkidle");
       attempts++;
@@ -125,14 +127,15 @@ test.describe("MCQ-Toggle (Einstellungen)", () => {
     // Eine Bewertung vornehmen, damit die erste Karte durch ist.
     // Dann MCQ ausschalten -> naechste Karte (falls MCQ-Frage) sollte als Recall erscheinen.
     const reveal = page.getByRole("button", { name: "Musterantwort zeigen" });
-    const auswerten = page.getByRole("button", { name: "Auswerten" });
+    const mcqOpts = page.locator(".mcq-option input[type=checkbox]");
     if (await reveal.isVisible().catch(() => false)) {
       await reveal.click();
       await page.getByRole("button", { name: "Good" }).click();
       await page.waitForTimeout(1100);
-    } else if (await auswerten.isVisible().catch(() => false)) {
-      await page.locator(".mcq-option input[type=checkbox]").first().check();
-      await auswerten.click();
+    } else if ((await mcqOpts.count()) > 0) {
+      // MCQ-Karte: Option ankreuzen, dann wird der Button zu "Auswerten".
+      await mcqOpts.first().check();
+      await page.getByRole("button", { name: "Auswerten" }).click();
       await page.waitForTimeout(1700);
     }
 
