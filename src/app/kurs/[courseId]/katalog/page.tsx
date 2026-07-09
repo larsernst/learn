@@ -139,17 +139,9 @@ export default async function KatalogPage({
               <h2 style={{ margin: 0 }}>
                 Kapitel {c.chapter} · {c.chapterTitle}
               </h2>
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <span className="badge badge--muted">
-                  {learnedInChapter}/{c.items.length} · {pct}%
-                </span>
-                <Link
-                  href={`/kurs/${course.id}/lernen?chapter=${c.chapter}`}
-                  className="btn btn--secondary btn--sm"
-                >
-                  Kapitel lernen
-                </Link>
-              </div>
+              <span className="badge badge--muted">
+                {learnedInChapter}/{c.items.length} · {pct}%
+              </span>
             </div>
             <div className="progress" style={{ marginTop: 12, marginBottom: 16 }}>
               <div className="progress__bar" style={{ width: `${pct}%` }} />

@@ -592,6 +592,26 @@ button {
   border-radius: inherit;
 }
 
+.chapter-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.chapter-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ds-space-sm);
+}
+
+.chapter-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-sm);
+  margin-top: 16px;
+}
+
 /* Grids */
 .grid {
   display: grid;

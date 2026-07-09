@@ -87,21 +87,30 @@ export default async function CourseOverviewPage({
         {chapters.map((c) => {
           const cpct = c.total === 0 ? 0 : Math.round((c.learned / c.total) * 100);
           return (
-            <div className="card" key={c.chapter}>
-              <div className="row row--between">
-                <strong>
-                  Kapitel {c.chapter} · {c.chapterTitle}
-                </strong>
+            <div className="card chapter-card" key={c.chapter}>
+              <div className="chapter-card__head">
+                <div>
+                  <span className="eyebrow">Kapitel {c.chapter}</span>
+                  <h3 style={{ margin: "4px 0 0 0" }}>{c.chapterTitle}</h3>
+                </div>
                 <span className="badge badge--muted">
                   {c.learned}/{c.total}
                 </span>
               </div>
-              <div className="progress" style={{ marginTop: 12 }}>
+              <div className="progress" style={{ marginTop: 16 }}>
                 <div className="progress__bar" style={{ width: `${cpct}%` }} />
               </div>
-              <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
-                {cpct}% gelernt
-              </p>
+              <div className="chapter-card__foot">
+                <span className="muted" style={{ fontSize: 14 }}>
+                  {cpct}% gelernt
+                </span>
+                <Link
+                  href={`/kurs/${course.id}/lernen?chapter=${c.chapter}`}
+                  className="btn btn--secondary btn--sm"
+                >
+                  Kapitel lernen
+                </Link>
+              </div>
             </div>
           );
         })}
