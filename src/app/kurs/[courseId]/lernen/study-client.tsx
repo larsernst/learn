@@ -32,6 +32,7 @@ export default function StudyClient({
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [error, setError] = useState<string | null>(null);
   const [reviewLearned, setReviewLearned] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState<ReviewGrade | null>(null);
 
   async function loadNext(opts?: { reviewLearned?: boolean }) {
     const rl = opts?.reviewLearned ?? reviewLearned;
@@ -42,6 +43,7 @@ export default function StudyClient({
     setSelected([]);
     setFeedback(null);
     setError(null);
+    setSelectedGrade(null);
     const params = new URLSearchParams();
     if (deck === "difficult") params.set("deck", "difficult");
     params.set("courseId", courseId);
@@ -103,6 +105,7 @@ export default function StudyClient({
 
   async function gradeRecall(grade: ReviewGrade) {
     if (!data?.review) return;
+    setSelectedGrade(grade);
     setSubmitting(true);
     const res = await fetch("/api/review/submit", {
       method: "POST",
@@ -258,6 +261,7 @@ export default function StudyClient({
           submitting={submitting}
           onGrade={gradeRecall}
           simpleGrading={simpleGrading}
+          selectedGrade={selectedGrade}
         />
       )}
 
@@ -326,6 +330,7 @@ function RecallQuestion(props: {
   submitting: boolean;
   onGrade: (g: ReviewGrade) => void;
   simpleGrading: boolean;
+  selectedGrade: ReviewGrade | null;
 }) {
   return (
     <>
@@ -349,18 +354,25 @@ function RecallQuestion(props: {
             {props.simpleGrading ? "War deine Antwort richtig?" : "Wie gut warst du?"}
           </p>
           <div className="review-actions">
-            {(props.simpleGrading ? SIMPLE_GRADES : FULL_GRADES).map((btn) => (
-              <button
-                key={btn.grade}
-                className={`grade-btn${btn.modifier ? ` grade-btn--${btn.modifier}` : ""}`}
-                disabled={props.submitting}
-                onClick={() => props.onGrade(btn.grade)}
-                aria-label={btn.ariaLabel}
-              >
-                {btn.label}
-                <small>{btn.subtitle}</small>
-              </button>
-            ))}
+            {(props.simpleGrading ? SIMPLE_GRADES : FULL_GRADES).map((btn) => {
+              const isSelected = props.selectedGrade === btn.grade;
+              const cls = ["grade-btn"];
+              if (btn.modifier) cls.push(`grade-btn--${btn.modifier}`);
+              if (isSelected) cls.push("grade-btn--selected");
+              return (
+                <button
+                  key={btn.grade}
+                  className={cls.join(" ")}
+                  disabled={props.submitting}
+                  onClick={() => props.onGrade(btn.grade)}
+                  aria-label={btn.ariaLabel}
+                  aria-pressed={isSelected}
+                >
+                  {btn.label}
+                  <small>{btn.subtitle}</small>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

@@ -700,6 +700,33 @@ button {
   color: var(--ds-chart-green);
 }
 
+.grade-btn--selected {
+  background: var(--ds-background-canvas);
+  box-shadow: inset 0 0 0 2px currentColor;
+  opacity: 1;
+}
+
+.grade-btn--selected.grade-btn--again {
+  background: var(--ds-chart-red);
+  color: var(--ds-ink-on-dark);
+  border-color: var(--ds-chart-red);
+}
+
+.grade-btn--selected.grade-btn--good {
+  background: var(--ds-chart-green);
+  color: var(--ds-ink-on-dark);
+  border-color: var(--ds-chart-green);
+}
+
+.grade-btn--selected small {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.grade-btn:disabled.grade-btn--selected {
+  opacity: 1;
+}
+
 .grade-btn small {
   font-size: 11px;
   color: var(--ds-text-subtle);
