@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
-const ADMIN_ROLE = "admin";
+import { ADMIN_ROLE, EDITOR_ROLE } from "@/lib/roles";
 
 type User = {
   id: string;
@@ -250,6 +249,7 @@ function UserRow({
   }
 
   const isAdmin = user.roles.includes(ADMIN_ROLE);
+  const isEditor = user.roles.includes(EDITOR_ROLE);
 
   return (
     <div className="card" style={{ padding: 16 }}>
@@ -258,6 +258,9 @@ function UserRow({
           <strong>
             {user.name}{" "}
             {isAdmin && <span className="badge badge--muted" style={{ fontSize: 11 }}>Admin</span>}
+            {!isAdmin && isEditor && (
+              <span className="badge badge--muted" style={{ fontSize: 11 }}>Editor</span>
+            )}
           </strong>
           <span className="muted" style={{ fontSize: 13 }}>{user.email}</span>
           <span className="muted" style={{ fontSize: 12 }}>
@@ -276,6 +279,15 @@ function UserRow({
             }
           >
             {isAdmin ? "Admin entziehen" : "Zum Admin machen"}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() =>
+              onSave(user.id, isEditor ? { removeRoles: [EDITOR_ROLE] } : { addRoles: [EDITOR_ROLE] })
+            }
+          >
+            {isEditor ? "Editor entziehen" : "Zum Editor machen"}
           </button>
           <button type="button" className="btn btn--ghost btn--sm" onClick={onEdit}>
             Bearbeiten

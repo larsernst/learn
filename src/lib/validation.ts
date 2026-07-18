@@ -102,6 +102,33 @@ export const adminResetPasswordSchema = z.object({
   newPassword: z.string().min(8, "Passwort muss mindestens 8 Zeichen lang sein."),
 });
 
+// Course-Metadaten für Editor-CRUD (Phase 2). Slug wird vom Server aus dem
+// Titel abgeleitet, falls nicht gesetzt.
+export const courseCreateSchema = z.object({
+  title: z.string().min(1).max(120),
+  description: z.string().max(2000).optional(),
+  slug: z.string().min(1).max(120).optional(),
+  status: z.enum(["draft", "published"]).optional(),
+});
+
+export const coursePatchSchema = z
+  .object({
+    title: z.string().min(1).max(120).optional(),
+    description: z.string().max(2000).optional(),
+    slug: z.string().min(1).max(120).optional(),
+    status: z.enum(["draft", "published"]).optional(),
+    order: z.number().int().optional(),
+  })
+  .refine(
+    (v) =>
+      v.title !== undefined ||
+      v.description !== undefined ||
+      v.slug !== undefined ||
+      v.status !== undefined ||
+      v.order !== undefined,
+    { message: "Keine Daten zum Aktualisieren." }
+  );
+
 export const adminUserPatchSchema = z
   .object({
     name: z.string().min(1).optional(),

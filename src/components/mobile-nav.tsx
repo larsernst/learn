@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 interface MobileNavProps {
-  user: { name: string; isAdmin?: boolean } | null;
+  user: { name: string; isAdmin?: boolean; isEditor?: boolean } | null;
 }
 
 export function MobileNav({ user }: MobileNavProps) {
@@ -48,6 +48,11 @@ export function MobileNav({ user }: MobileNavProps) {
                 {user.isAdmin && (
                   <Link href="/admin" className="mobile-nav-link" onClick={() => setOpen(false)}>
                     Admin
+                  </Link>
+                )}
+                {!user.isAdmin && user.isEditor && (
+                  <Link href="/admin/kurse" className="mobile-nav-link" onClick={() => setOpen(false)}>
+                    Meine Kurse
                   </Link>
                 )}
                 <Link href="/einstellungen" className="mobile-nav-link" onClick={() => setOpen(false)}>

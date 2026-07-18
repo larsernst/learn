@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, isEditor } from "@/lib/auth";
 import type { SessionPayload } from "@/lib/session";
 
 export type CourseStatus = "draft" | "published";
@@ -12,7 +12,7 @@ export interface CourseWithOwnership {
 
 // Rein (keine DB): darf ein Nutzer den Kurs sehen?
 // true für veröffentlichte Kurse (jeder); Drafts nur für Admins, Besitzer
-// und (später, Phase 2) Editoren mit Kurszuweisung.
+// und Editoren (die ihren eigenen Draft sehen dürfen).
 export function canViewCourse(
   user: Pick<SessionPayload, "sub" | "roles"> | null | undefined,
   course: Pick<CourseWithOwnership, "status" | "ownerId">
@@ -24,14 +24,15 @@ export function canViewCourse(
   return false;
 }
 
-// Darf ein Nutzer den Kurs bearbeiten? Admins immer; sonst nur der Besitzer.
-// (Phase 2 erweitert das um eine Editor-Rolle mit Kurszuweisung.)
+// Darf ein Nutzer den Kurs bearbeiten? Admins immer; Editoren nur für eigene
+// Kurse (ownerId === user.sub). Ein Editor ohne Besitz ist kein Autor.
 export function canEditCourse(
   user: Pick<SessionPayload, "sub" | "roles"> | null | undefined,
   course: Pick<CourseWithOwnership, "ownerId">
 ): boolean {
   if (!user) return false;
   if (isAdmin(user)) return true;
+  if (!isEditor(user)) return false;
   return course.ownerId !== null && course.ownerId === user.sub;
 }
 

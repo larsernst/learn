@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { getCurrentUserWithRoles, isAdmin } from "@/lib/auth";
+import { getCurrentUserWithRoles, isAdmin, isEditor } from "@/lib/auth";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
@@ -49,6 +49,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         Admin
                       </Link>
                     )}
+                    {!isAdmin(user) && isEditor(user) && (
+                      <Link href="/admin/kurse" className="navlink" title="Deine Kurse">
+                        Meine Kurse
+                      </Link>
+                    )}
                     <Link href="/einstellungen" className="navlink" title="Einstellungen">
                       Einstell.
                     </Link>
@@ -69,7 +74,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </>
                 )}
               </nav>
-              <MobileNav user={user ? { name: user.name, isAdmin: isAdmin(user) } : null} />
+              <MobileNav
+                user={
+                  user
+                    ? { name: user.name, isAdmin: isAdmin(user), isEditor: isEditor(user) }
+                    : null
+                }
+              />
             </div>
           </div>
         </header>

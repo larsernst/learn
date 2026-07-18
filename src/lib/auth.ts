@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 
-export const ADMIN_ROLE = "admin";
-
-export function isAdmin(user: { roles: string[] } | null | undefined): boolean {
-  return !!user && user.roles.includes(ADMIN_ROLE);
-}
+// Re-export der rollen-spezifischen Konstanten/Checks aus roles.ts (server-
+// und client-tauglich). Server-Konsumenten importieren weiter aus auth.ts;
+// Client-Komponenten importieren direkt aus roles.ts.
+export { ADMIN_ROLE, EDITOR_ROLE, isAdmin, isEditor } from "@/lib/roles";
+import { isAdmin, isEditor } from "@/lib/roles";
 
 // Liefert den aktuellen Nutzer mit frisch aus der DB geladenen Rollen.
 // Rollen werden pro Request aus der DB gelesen (nicht nur dem JWT vertraut),
@@ -23,7 +23,7 @@ export async function getCurrentUserWithRoles(): Promise<SessionPayload | null> 
   return { ...base, roles: roleRows.map((r) => r.role) };
 }
 
-type GuardResult =
+export type GuardResult =
   | { ok: true; user: SessionPayload }
   | { ok: false; response: NextResponse };
 
@@ -48,3 +48,24 @@ export async function requireAdminPage(): Promise<SessionPayload> {
   return user;
 }
 
+// Schuetzt API-Routen für Editoren: 401 wenn nicht eingeloggt, 403 wenn weder
+// Editor noch Admin.
+export async function requireEditorApi(): Promise<GuardResult> {
+  const user = await getCurrentUserWithRoles();
+  if (!user) {
+    return { ok: false, response: NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 }) };
+  }
+  if (!isEditor(user)) {
+    return { ok: false, response: NextResponse.json({ error: "Keine Editor-Berechtigung." }, { status: 403 }) };
+  }
+  return { ok: true, user };
+}
+
+// Schuetzt Server-Component-Seiten für Editoren: leitet Nicht-Angemeldete zu
+// /login, angemeldete ohne Editor-Recht zu / weiter.
+export async function requireEditorPage(): Promise<SessionPayload> {
+  const user = await getCurrentUserWithRoles();
+  if (!user) redirect("/login");
+  if (!isEditor(user)) redirect("/");
+  return user;
+}

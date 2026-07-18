@@ -4,7 +4,9 @@ import { canEditCourse, canViewCourse } from "@/lib/course-access";
 type User = { sub: string; roles: string[] };
 
 const admin: User = { sub: "admin-1", roles: ["admin"] };
+const editor: User = { sub: "editor-1", roles: ["editor"] };
 const owner: User = { sub: "owner-1", roles: [] };
+const editorOwner: User = { sub: "editor-1", roles: ["editor"] };
 const stranger: User = { sub: "stranger-1", roles: [] };
 
 describe("canViewCourse", () => {
@@ -46,8 +48,16 @@ describe("canEditCourse", () => {
     expect(canEditCourse(admin, { ownerId: "someone-else" })).toBe(true);
   });
 
-  it("allows the owner to edit their own course", () => {
-    expect(canEditCourse(owner, { ownerId: "owner-1" })).toBe(true);
+  it("allows an editor to edit their own course", () => {
+    expect(canEditCourse(editorOwner, { ownerId: "editor-1" })).toBe(true);
+  });
+
+  it("denies an editor editing someone else's course", () => {
+    expect(canEditCourse(editor, { ownerId: "owner-1" })).toBe(false);
+  });
+
+  it("denies a plain owner (without editor role) editing their own course", () => {
+    expect(canEditCourse(owner, { ownerId: "owner-1" })).toBe(false);
   });
 
   it("denies strangers editing someone else's course", () => {
@@ -55,6 +65,6 @@ describe("canEditCourse", () => {
   });
 
   it("denies editing a course with no owner for non-admins", () => {
-    expect(canEditCourse(owner, { ownerId: null })).toBe(false);
+    expect(canEditCourse(editor, { ownerId: null })).toBe(false);
   });
 });
