@@ -1,6 +1,6 @@
 generator client {
-  provider        = "prisma-client-js"
-  binaryTargets   = ["native", "linux-musl"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
 }
 
 datasource db {
@@ -9,18 +9,19 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  name         String
-  passwordHash String
-  mcqEnabled   Boolean       @default(true)
-  simpleGrading Boolean      @default(false)
-  newQuestionsFirst Boolean  @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  reviews      Review[]
-  events       ReviewEvent[]
-  roles        UserRole[]
+  id                String        @id @default(cuid())
+  email             String        @unique
+  name              String
+  passwordHash      String
+  mcqEnabled        Boolean       @default(true)
+  simpleGrading     Boolean       @default(false)
+  newQuestionsFirst Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  reviews           Review[]
+  events            ReviewEvent[]
+  roles             UserRole[]
+  ownedCourses      Course[]      @relation("CourseOwner")
 }
 
 model UserRole {
@@ -47,9 +48,29 @@ model Course {
   description String
   order       Int        @default(0)
   published   Boolean    @default(true)
+  ownerId     String?
+  owner       User?      @relation("CourseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  status      String     @default("published")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   questions   Question[]
+  chapters    Chapter[]
+}
+
+model Chapter {
+  id          String     @id @default(cuid())
+  courseId    String
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  slug        String
+  title       String
+  description String?
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+
+  @@unique([courseId, slug])
+  @@index([courseId, order])
 }
 
 model Question {
@@ -58,6 +79,8 @@ model Question {
   course       Course?       @relation(fields: [courseId], references: [id])
   chapter      Int
   chapterTitle String
+  chapterId    String?
+  chapterRef   Chapter?      @relation(fields: [chapterId], references: [id], onDelete: SetNull)
   question     String
   answer       String
   sourceRef    String
@@ -71,19 +94,19 @@ model Question {
 }
 
 model Review {
-  id              String   @id @default(cuid())
-  userId          String
-  questionId      String
-  user            User     @relation(fields: [userId], references: [id], onDelete:Cascade)
-  question        Question @relation(fields: [questionId], references: [id], onDelete:Cascade)
-  easeFactor      Float    @default(2.5)
-  intervalDays    Int      @default(0)
-  repetitions     Int      @default(0)
-  lapses          Int      @default(0)
-  dueAt           DateTime @default(now())
-  lastReviewedAt  DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(cuid())
+  userId         String
+  questionId     String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question       Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  easeFactor     Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  lapses         Int       @default(0)
+  dueAt          DateTime  @default(now())
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@unique([userId, questionId])
   @@index([userId, dueAt])

@@ -21,8 +21,10 @@ BASE_URL=http://<your-host>:<port> npm run test:e2e
 - Fragenkatalog-Daten: `prisma/seed-data/fragenkatalog.ts` (nur diese Datei
   enthält die Fragen/Antworten). Jede Frage trägt `courseId`.
 - Kurs-Metadaten: `prisma/seed-data/courses.ts` (id, slug, title, beschreibung,
-  Reihenfolge, published). Neuer Kurs → dort eintragen + Fragen in
-  `fragenkatalog.ts` mit entsprechendem `courseId`.
+  Reihenfolge, published, chapters[]). Neuer Kurs → dort eintragen (inkl.
+  Kapiteln) + Fragen in `fragenkatalog.ts` mit entsprechendem `courseId`.
+  Kapitel sind seit Migration 0011 eigene DB-Objekte (`Chapter`-Tabelle);
+  der Seed legt sie aus `courses.ts` an.
 - Design-Tokens: `src/lib/design-tokens.ts` + `src/app/globals.css`
   (Vorgabe: `DESIGN.md`).
 - Prüfungsmodus: `src/lib/exam.ts` (Fragenauswahl, Bewertung).
