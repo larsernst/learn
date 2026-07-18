@@ -1,5 +1,4 @@
-import { isMcqCorrect } from "@/lib/sm2";
-import type { McqOption } from "@/lib/types";
+import { gradeAttempt, normalizeQuestionTask } from "@/lib/tasks/registry";
 
 export function shuffle<T>(arr: readonly T[]): T[] {
   const a = arr.slice();
@@ -16,12 +15,13 @@ export function selectExamQuestions<T>(all: readonly T[], count: number): T[] {
   return shuffled.slice(0, Math.floor(count));
 }
 
-export interface ExamAttempt {
-  questionId: string;
-  mode: "recall" | "mcq";
-  correct?: boolean;
-  selectedOptionIds?: string[];
-}
+export type ExamAttempt =
+  | { questionId: string; taskType: "recall"; correct: boolean }
+  | {
+      questionId: string;
+      taskType: "mcq";
+      selectedOptionIds: string[];
+    };
 
 export interface ExamGradeRow {
   questionId: string;
@@ -34,18 +34,30 @@ export interface ExamGradeResult {
   total: number;
 }
 
+interface ExamQuestionRef {
+  taskType: string | null;
+  payload: unknown;
+  mcqOptions?: unknown;
+}
+
 export function gradeExamAttempt(
   attempts: ExamAttempt[],
-  questionsById: Map<string, { mcqOptions: McqOption[] | null }>
+  questionsById: Map<string, ExamQuestionRef>
 ): ExamGradeResult {
   const perQuestion: ExamGradeRow[] = attempts.map((a) => {
+    const q = questionsById.get(a.questionId);
     let correct = false;
-    if (a.mode === "mcq" && a.selectedOptionIds) {
-      const q = questionsById.get(a.questionId);
-      const correctIds = (q?.mcqOptions ?? []).filter((o) => o.correct).map((o) => o.id);
-      correct = isMcqCorrect(a.selectedOptionIds, correctIds);
-    } else {
+
+    if (a.taskType === "recall") {
       correct = a.correct === true;
+    } else if (a.taskType === "mcq" && q) {
+      const normalized = normalizeQuestionTask(q.taskType, q.payload, q.mcqOptions);
+      if (normalized.type === "mcq") {
+        const result = gradeAttempt(normalized.type, normalized.payload, {
+          selectedOptionIds: a.selectedOptionIds,
+        });
+        correct = result.correct;
+      }
     }
     return { questionId: a.questionId, correct };
   });

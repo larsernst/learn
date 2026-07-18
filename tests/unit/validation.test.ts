@@ -63,40 +63,61 @@ describe("passwordChangeSchema", () => {
 });
 
 describe("reviewSubmitSchema", () => {
-  it("accepts a recall grade", () => {
+  it("accepts a recall submission with taskType=recall and a grade", () => {
     expect(
-      reviewSubmitSchema.safeParse({ questionId: "q1", grade: "good" }).success
+      reviewSubmitSchema.safeParse({
+        questionId: "q1",
+        taskType: "recall",
+        grade: "good",
+      }).success
     ).toBe(true);
   });
 
-  it("accepts MCQ selectedOptionIds", () => {
+  it("accepts an MCQ submission with taskType=mcq and selectedOptionIds", () => {
     expect(
-      reviewSubmitSchema.safeParse({ questionId: "q1", selectedOptionIds: ["a"] }).success
+      reviewSubmitSchema.safeParse({
+        questionId: "q1",
+        taskType: "mcq",
+        selectedOptionIds: ["a"],
+      }).success
     ).toBe(true);
   });
 
-  it("rejects when neither grade nor selectedOptionIds is given", () => {
+  it("rejects when taskType is missing", () => {
     expect(reviewSubmitSchema.safeParse({ questionId: "q1" }).success).toBe(false);
   });
 
-  it("rejects an invalid grade enum value", () => {
+  it("rejects an unknown taskType", () => {
     expect(
-      reviewSubmitSchema.safeParse({ questionId: "q1", grade: "medium" }).success
+      reviewSubmitSchema.safeParse({ questionId: "q1", taskType: "cloze" }).success
+    ).toBe(false);
+  });
+
+  it("rejects an invalid grade enum value on recall", () => {
+    expect(
+      reviewSubmitSchema.safeParse({
+        questionId: "q1",
+        taskType: "recall",
+        grade: "medium",
+      }).success
     ).toBe(false);
   });
 
   it("rejects an empty questionId", () => {
     expect(
-      reviewSubmitSchema.safeParse({ questionId: "", grade: "good" }).success
+      reviewSubmitSchema.safeParse({ questionId: "", taskType: "recall", grade: "good" }).success
     ).toBe(false);
   });
 });
 
 describe("examSubmitSchema", () => {
-  it("accepts a valid exam submission", () => {
+  it("accepts a valid exam submission with taskType discriminator", () => {
     expect(
       examSubmitSchema.safeParse({
-        answers: [{ questionId: "q1", mode: "mcq", selectedOptionIds: ["a"] }],
+        answers: [
+          { questionId: "q1", taskType: "mcq", selectedOptionIds: ["a"] },
+          { questionId: "q2", taskType: "recall", correct: true },
+        ],
         saveToSm2: true,
       }).success
     ).toBe(true);
@@ -106,10 +127,10 @@ describe("examSubmitSchema", () => {
     expect(examSubmitSchema.safeParse({ answers: [] }).success).toBe(false);
   });
 
-  it("rejects an invalid mode", () => {
+  it("rejects an unknown taskType", () => {
     expect(
       examSubmitSchema.safeParse({
-        answers: [{ questionId: "q1", mode: "flashcard" }],
+        answers: [{ questionId: "q1", taskType: "flashcard" }],
       }).success
     ).toBe(false);
   });

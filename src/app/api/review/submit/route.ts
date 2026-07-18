@@ -18,14 +18,18 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  const { questionId, selectedOptionIds, isNew } = parsed.data;
+  const body = parsed.data;
+  const { questionId, isNew } = body;
 
   const question = await prisma.question.findUnique({ where: { id: questionId } });
   if (!question) {
     return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
   }
 
-  const { resolvedGrade, mcqCorrect, correctOptionIds } = resolveReviewGrade(question, parsed.data);
+  const { resolvedGrade, correct, correctOptionIds } = resolveReviewGrade(
+    { taskType: question.taskType, payload: question.payload, mcqOptions: question.mcqOptions },
+    body
+  );
 
   const existing = await prisma.review.findUnique({
     where: { userId_questionId: { userId: user.sub, questionId } },
@@ -73,12 +77,15 @@ export async function POST(request: Request) {
     },
   });
 
+  // Dual-Write: korrektes Flag sowohl in die neue `correct`-Spalte als auch
+  // (vorerst) in die legacy `mcqCorrect`-Spalte, bis Cleanup-Migration fällt.
   await prisma.reviewEvent.create({
     data: {
       userId: user.sub,
       questionId,
       grade: resolvedGrade,
-      mcqCorrect: mcqCorrect,
+      correct,
+      mcqCorrect: correct,
     },
   });
 
@@ -86,8 +93,8 @@ export async function POST(request: Request) {
     ok: true,
     review: updated,
     isNew: isNew ?? !existing,
-    mode: selectedOptionIds ? ("mcq" as const) : ("recall" as const),
-    mcqCorrect,
+    taskType: body.taskType,
+    correct,
     correctOptionIds,
     nextDue: next.dueAt,
     intervalDays: next.intervalDays,

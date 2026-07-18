@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { gradeExamAttempt, type ExamAttempt } from "@/lib/exam";
 import { applySm2, mcqGrade, SM2_DEFAULTS } from "@/lib/sm2";
-import type { McqOption } from "@/lib/types";
 import { examSubmitSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -27,9 +26,9 @@ export async function POST(request: Request) {
     questions.map((q) => [
       q.id,
       {
-        mcqOptions: Array.isArray(q.mcqOptions)
-          ? (q.mcqOptions as unknown as McqOption[])
-          : null,
+        taskType: q.taskType,
+        payload: q.payload,
+        mcqOptions: q.mcqOptions,
       },
     ])
   );
@@ -86,11 +85,13 @@ export async function POST(request: Request) {
           lastReviewedAt: next.lastReviewedAt,
         },
       });
+      // Dual-Write: korrektes Flag in beide Spalten (correct neu, mcqCorrect legacy).
       await prisma.reviewEvent.create({
         data: {
           userId: user.sub,
           questionId: row.questionId,
           grade,
+          correct: row.correct,
           mcqCorrect: row.correct,
         },
       });

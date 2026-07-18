@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { QuestionPublic } from "@/lib/types";
+import { McqRenderer } from "@/components/questions/McqRenderer";
+import { RecallRenderer } from "@/components/questions/RecallRenderer";
 
 type Phase = "setup" | "running" | "result";
 
 interface AnswerRecord {
   questionId: string;
-  mode: "recall" | "mcq";
+  taskType: "recall" | "mcq";
   correct?: boolean;
   selectedOptionIds?: string[];
 }
@@ -59,7 +61,9 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
   }
 
   const current = questions[index];
-  const isMcq = !!current?.mcqOptions && current.mcqOptions.length > 0;
+  const currentMcqPayload =
+    current && current.taskType === "mcq" ? current.taskPayload : null;
+  const isMcq = !!currentMcqPayload && currentMcqPayload !== null;
 
   function recordAndNext(answer: AnswerRecord) {
     const nextAnswers = [...answers, answer];
@@ -93,14 +97,14 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
 
   function markRecall(correct: boolean) {
     if (!current) return;
-    recordAndNext({ questionId: current.id, mode: "recall", correct });
+    recordAndNext({ questionId: current.id, taskType: "recall", correct });
   }
 
   function submitMcq() {
     if (!current || selected.length === 0) return;
     recordAndNext({
       questionId: current.id,
-      mode: "mcq",
+      taskType: "mcq",
       selectedOptionIds: selected,
     });
   }
@@ -227,85 +231,39 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
           <p className="review-question">{current.question}</p>
         </div>
 
-        {isMcq ? (
-          <>
-            <p className="muted" style={{ fontSize: 14 }}>
-              Mehrere Antworten können richtig sein.
-            </p>
-            <div className="stack">
-              {current.mcqOptions!.map((o) => {
-                const checked = selected.includes(o.id);
-                return (
-                  <label
-                    key={o.id}
-                    className={`mcq-option${checked ? " mcq-option--selected" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() =>
-                        setSelected((prev) =>
-                          prev.includes(o.id)
-                            ? prev.filter((x) => x !== o.id)
-                            : [...prev, o.id]
-                        )
-                      }
-                    />
-                    <span>{o.text}</span>
-                  </label>
-                );
-              })}
-            </div>
-            <button
-              className="btn btn--primary"
-              disabled={selected.length === 0}
-              onClick={submitMcq}
-            >
-              Bestätigen & nächste
-            </button>
-          </>
+        {isMcq && currentMcqPayload ? (
+          <McqRenderer
+            options={currentMcqPayload.options}
+            selectionMode={currentMcqPayload.selectionMode}
+            selected={selected}
+            disabled={false}
+            correctIds={null}
+            onToggle={(id) =>
+              setSelected((prev) =>
+                prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+              )
+            }
+            onSubmit={submitMcq}
+            revealed={false}
+          />
         ) : (
           <>
-            <div className="field">
-              <label htmlFor="exam-draft">Deine Antwort</label>
-              <textarea
-                id="exam-draft"
-                className="textarea"
-                placeholder="Schreibe frei, woran du dich erinnerst …"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-            </div>
-            {!revealed ? (
-              <button className="btn btn--primary" onClick={() => setRevealed(true)}>
-                Musterantwort zeigen
-              </button>
-            ) : (
-              <>
-                <div>
-                  <p className="eyebrow" style={{ marginBottom: 8 }}>
-                    Musterantwort
-                  </p>
-                  <div className="review-answer">{current.answer}</div>
-                </div>
+            <RecallRenderer
+              draft={draft}
+              onDraft={setDraft}
+              revealed={revealed}
+              onReveal={() => setRevealed(true)}
+              submitting={false}
+              onGrade={(g) => markRecall(g === "good" || g === "easy")}
+              simpleGrading={true}
+            />
+            {revealed && (
+              <div>
                 <p className="eyebrow" style={{ marginBottom: 8 }}>
-                  Hast du es richtig gewusst?
+                  Musterantwort
                 </p>
-                <div className="review-actions">
-                  <button
-                    className="grade-btn grade-btn--again"
-                    onClick={() => markRecall(false)}
-                  >
-                    Falsch<small>selbst bewertet</small>
-                  </button>
-                  <button
-                    className="grade-btn grade-btn--good"
-                    onClick={() => markRecall(true)}
-                  >
-                    Richtig<small>selbst bewertet</small>
-                  </button>
-                </div>
-              </>
+                <div className="review-answer">{current.answer}</div>
+              </div>
             )}
           </>
         )}

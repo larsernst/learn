@@ -3,6 +3,38 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdminApi } from "@/lib/auth";
 import { adminQuestionsBodySchema as bodySchema } from "@/lib/validation";
+import { normalizeQuestionTask } from "@/lib/tasks/registry";
+import type { TaskType } from "@/lib/tasks/types";
+
+// Wandelt ein validiertes Frage-Objekt (das sowohl das neue taskType/payload-
+// als auch das legacy mcqOptions-Format haben kann) in die kanonische Form
+// { taskType, payload, mcqOptionsLegacy } um. mcqOptionsLegacy wird für den
+// Dual-Write beibehalten, bis die Cleanup-Migration die Spalte entfernt.
+function toTaskFields(q: {
+  taskType?: "recall" | "mcq";
+  payload?: unknown;
+  mcqOptions?: { id: string; text: string; correct: boolean }[];
+}): { taskType: string; payload: unknown; mcqOptions: unknown } {
+  // taskType + payload (neu)
+  if (q.taskType === "recall") {
+    return { taskType: "recall", payload: null, mcqOptions: null };
+  }
+  if (q.taskType === "mcq") {
+    const options = (q.payload as { options?: unknown[] } | undefined)?.options ?? [];
+    return { taskType: "mcq", payload: { options }, mcqOptions: options };
+  }
+  // legacy: mcqOptions gesetzt
+  if (q.mcqOptions !== undefined) {
+    const normalized = normalizeQuestionTask("mcq", { options: q.mcqOptions }, q.mcqOptions);
+    return {
+      taskType: normalized.type,
+      payload: normalized.payload,
+      mcqOptions: q.mcqOptions,
+    };
+  }
+  // default: recall
+  return { taskType: "recall", payload: null, mcqOptions: null };
+}
 
 export async function POST(request: Request) {
   const guard = await requireAdminApi();
@@ -20,6 +52,8 @@ export async function POST(request: Request) {
   let updated = 0;
   for (const q of parsed.data.questions) {
     const exists = await prisma.question.findUnique({ where: { id: q.id }, select: { id: true } });
+    const taskFields = toTaskFields(q);
+    const payloadValue = taskFields.payload ?? Prisma.JsonNull;
     await prisma.question.upsert({
       where: { id: q.id },
       create: {
@@ -30,8 +64,10 @@ export async function POST(request: Request) {
         question: q.question,
         answer: q.answer,
         sourceRef: q.sourceRef,
-        mcqOptions: q.mcqOptions ?? Prisma.JsonNull,
+        mcqOptions: taskFields.mcqOptions ?? Prisma.JsonNull,
         confidence: q.confidence ?? null,
+        taskType: taskFields.taskType,
+        payload: payloadValue,
       },
       update: {
         courseId: q.courseId ?? null,
@@ -40,8 +76,10 @@ export async function POST(request: Request) {
         question: q.question,
         answer: q.answer,
         sourceRef: q.sourceRef,
-        mcqOptions: q.mcqOptions ?? Prisma.JsonNull,
+        mcqOptions: taskFields.mcqOptions ?? Prisma.JsonNull,
         confidence: q.confidence ?? null,
+        taskType: taskFields.taskType,
+        payload: payloadValue,
       },
     });
     if (exists) updated++;
@@ -67,7 +105,9 @@ export async function GET() {
       sourceRef: true,
       mcqOptions: true,
       confidence: true,
+      taskType: true,
+      payload: true,
     },
   });
-  return NextResponse.json({ questions });
+  return NextResponse.json({ questions: questions as (typeof questions[number] & { taskType: TaskType | null })[] });
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { serializeQuestion, stripMcq } from "@/lib/serialize";
-import type { McqOption } from "@/lib/types";
+import { serializeQuestion } from "@/lib/serialize";
+import type { SerializableQuestion } from "@/lib/serialize";
 
-const baseQuestion = {
+const baseQuestion: SerializableQuestion = {
   id: "q-1",
   courseId: "betriebssysteme",
   chapter: 2,
@@ -10,108 +10,33 @@ const baseQuestion = {
   question: "Was ist ein Prozess?",
   answer: "Ein in Ausführung befindliches Programm.",
   sourceRef: "bs/kapitel-2.md",
+  taskType: "recall",
+  payload: null,
 };
 
-function options(correctIndices: number[]): McqOption[] {
-  return ["a", "b", "c", "d"].map((id, i) => ({
-    id,
-    text: `Option ${id}`,
-    correct: correctIndices.includes(i),
-  }));
+function mcqPayload(correct: boolean[]) {
+  return {
+    options: correct.map((c, i) => ({
+      id: String.fromCharCode(97 + i),
+      text: `Option ${i + 1}`,
+      correct: c,
+    })),
+  };
 }
 
-describe("stripMcq", () => {
-  it("removes the correct flag from every option", () => {
-    const out = stripMcq(options([0, 2]));
-    for (const o of out) {
-      expect(o).not.toHaveProperty("correct");
-      expect(Object.keys(o).sort()).toEqual(["id", "text"]);
-    }
-  });
+function withMcq(correct: boolean[]): SerializableQuestion {
+  return { ...baseQuestion, taskType: "mcq", payload: mcqPayload(correct) };
+}
 
-  it("preserves all ids and texts as a permutation of the input", () => {
-    const opts = options([1]);
-    const out = stripMcq(opts);
-    expect(out.map((o) => o.id).sort()).toEqual(opts.map((o) => o.id).sort());
-    expect(out.map((o) => o.text).sort()).toEqual(opts.map((o) => o.text).sort());
-    expect(out).toHaveLength(opts.length);
-  });
-
-  it("returns a permutation of the input order", () => {
-    const opts = options([]);
-    const out = stripMcq(opts);
-    const originalKey = opts.map((o) => `${o.id}|${o.text}`).join(";");
-    const outKey = out.map((o) => `${o.id}|${o.text}`).sort().join(";");
-    expect(outKey.split(";").sort().join(";")).toEqual(
-      originalKey.split(";").sort().join(";")
-    );
-  });
-
-  it("handles an empty options array", () => {
-    expect(stripMcq([])).toEqual([]);
-  });
-});
-
-describe("serializeQuestion", () => {
-  it("returns null mcq fields when mcqEnabled is false", () => {
-    const out = serializeQuestion(
-      { ...baseQuestion, mcqOptions: options([0]) },
-      false
-    );
-    expect(out.mcqOptions).toBeNull();
-    expect(out.mcqSelectionMode).toBeNull();
-  });
-
-  it("returns null mcq fields when mcqOptions is null", () => {
-    const out = serializeQuestion({ ...baseQuestion, mcqOptions: null }, true);
-    expect(out.mcqOptions).toBeNull();
-    expect(out.mcqSelectionMode).toBeNull();
-  });
-
-  it("returns null mcq fields when mcqOptions is not an array", () => {
-    const out = serializeQuestion(
-      { ...baseQuestion, mcqOptions: "not-an-array" },
-      true
-    );
-    expect(out.mcqOptions).toBeNull();
-    expect(out.mcqSelectionMode).toBeNull();
-  });
-
-  it("derives single selection when exactly one option is correct", () => {
-    const out = serializeQuestion(
-      { ...baseQuestion, mcqOptions: options([0]) },
-      true
-    );
-    expect(out.mcqSelectionMode).toBe("single");
-    expect(out.mcqOptions).not.toBeNull();
-  });
-
-  it("derives multi selection when several options are correct", () => {
-    const out = serializeQuestion(
-      { ...baseQuestion, mcqOptions: options([0, 2]) },
-      true
-    );
-    expect(out.mcqSelectionMode).toBe("multi");
-  });
-
-  it("never leaks the word 'correct' or any correct-flag in the serialized output", () => {
-    const out = serializeQuestion(
-      { ...baseQuestion, mcqOptions: options([0, 1, 2, 3]) },
-      true
-    );
-    const json = JSON.stringify(out);
-    expect(json).not.toContain("correct");
-    // Belt-and-braces: no option object carries a `correct` key.
-    for (const o of out.mcqOptions ?? []) {
-      expect(o).not.toHaveProperty("correct");
-    }
+describe("serializeQuestion (recall)", () => {
+  it("serializes a recall question with taskType=recall and null payload", () => {
+    const out = serializeQuestion(baseQuestion, true);
+    expect(out.taskType).toBe("recall");
+    expect(out.taskPayload).toBeNull();
   });
 
   it("passes through non-mcq fields unchanged", () => {
-    const out = serializeQuestion(
-      { ...baseQuestion, mcqOptions: null },
-      true
-    );
+    const out = serializeQuestion(baseQuestion, true);
     expect(out.id).toBe(baseQuestion.id);
     expect(out.courseId).toBe(baseQuestion.courseId);
     expect(out.chapter).toBe(baseQuestion.chapter);
@@ -119,5 +44,66 @@ describe("serializeQuestion", () => {
     expect(out.question).toBe(baseQuestion.question);
     expect(out.answer).toBe(baseQuestion.answer);
     expect(out.sourceRef).toBe(baseQuestion.sourceRef);
+  });
+});
+
+describe("serializeQuestion (mcq)", () => {
+  it("serializes an MCQ question with taskType=mcq and populated payload", () => {
+    const out = serializeQuestion(withMcq([true, false]), true);
+    expect(out.taskType).toBe("mcq");
+    expect(out.taskPayload).not.toBeNull();
+  });
+
+  it("derives single selection when exactly one option is correct", () => {
+    const out = serializeQuestion(withMcq([true, false, false]), true);
+    const payload = out.taskPayload as { selectionMode: string };
+    expect(payload.selectionMode).toBe("single");
+  });
+
+  it("derives multi selection when several options are correct", () => {
+    const out = serializeQuestion(withMcq([true, false, true]), true);
+    const payload = out.taskPayload as { selectionMode: string };
+    expect(payload.selectionMode).toBe("multi");
+  });
+
+  it("degrades MCQ to recall when mcqEnabled is false", () => {
+    const out = serializeQuestion(withMcq([true, false]), false);
+    expect(out.taskType).toBe("recall");
+    expect(out.taskPayload).toBeNull();
+  });
+
+  it("never leaks the word 'correct' or any correct-flag in the serialized output", () => {
+    const out = serializeQuestion(withMcq([true, true, false, true]), true);
+    const json = JSON.stringify(out);
+    expect(json).not.toContain("correct");
+    const payload = out.taskPayload as { options: Record<string, unknown>[] };
+    for (const o of payload.options) {
+      expect(o).not.toHaveProperty("correct");
+    }
+  });
+});
+
+describe("serializeQuestion (legacy compatibility)", () => {
+  it("derives taskType from legacy mcqOptions when taskType is null", () => {
+    const legacy: SerializableQuestion = {
+      ...baseQuestion,
+      taskType: null,
+      payload: null,
+      mcqOptions: mcqPayload([true, false]).options,
+    };
+    const out = serializeQuestion(legacy, true);
+    expect(out.taskType).toBe("mcq");
+    expect(out.taskPayload).not.toBeNull();
+  });
+
+  it("treats null taskType with no mcqOptions as recall", () => {
+    const legacy: SerializableQuestion = {
+      ...baseQuestion,
+      taskType: null,
+      payload: null,
+    };
+    const out = serializeQuestion(legacy, true);
+    expect(out.taskType).toBe("recall");
+    expect(out.taskPayload).toBeNull();
   });
 });

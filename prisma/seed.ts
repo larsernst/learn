@@ -33,6 +33,18 @@ async function main() {
 
   for (const q of FRAGENKATALOG) {
     const courseId = q.courseId ?? DEFAULT_COURSE_ID;
+    // Neues taskType/payload-Modell (Migration 0010). Wenn der Katalog-Eintrag
+    // taskType explizit setzt, gewinnt das; sonst Legacy-Ableitung aus mcqOptions.
+    // mcqOptions bleibt als Legacy-Spalte befüllt (Dual-Write), bis die
+    // Cleanup-Migration fällt.
+    const hasMcq = Array.isArray(q.mcqOptions) && q.mcqOptions.length > 0;
+    const taskType = q.taskType ?? (hasMcq ? "mcq" : "recall");
+    const payload =
+      q.taskType !== undefined && q.payload !== undefined
+        ? q.payload
+        : hasMcq
+        ? { options: q.mcqOptions }
+        : null;
     await prisma.question.upsert({
       where: { id: q.id },
       create: {
@@ -45,6 +57,8 @@ async function main() {
         sourceRef: q.sourceRef,
         mcqOptions: q.mcqOptions ?? null,
         confidence: q.confidence ?? null,
+        taskType,
+        payload,
       },
       update: {
         courseId,
@@ -55,6 +69,8 @@ async function main() {
         sourceRef: q.sourceRef,
         mcqOptions: q.mcqOptions ?? null,
         confidence: q.confidence ?? null,
+        taskType,
+        payload,
       },
     });
   }

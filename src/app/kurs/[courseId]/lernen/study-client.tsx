@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { intervalLabel, type ReviewGrade } from "@/lib/sm2";
 import type { QuestionPublic, ReviewNextResponse } from "@/lib/types";
+import { McqRenderer } from "@/components/questions/McqRenderer";
+import { RecallRenderer } from "@/components/questions/RecallRenderer";
 
 type Feedback =
   | { kind: "recall"; text: string }
@@ -71,23 +73,22 @@ export default function StudyClient({
 
   useEffect(() => {
     if (loading || !data || !data.review) return;
-    const r = data.review;
-    const mcqOpts = r.question.mcqOptions;
-    const mcqMode = mcqOpts !== null && mcqOpts !== undefined && mcqOpts.length > 0;
+    const q = data.review.question;
+    const mcqPayload = q.taskType === "mcq" ? q.taskPayload : null;
+    const isMcq = mcqPayload !== null && mcqPayload !== undefined;
     function handle(e: KeyboardEvent) {
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         if (!revealed) setRevealed(true);
-        else if (mcqMode && !submitting) submitMcq();
+        else if (isMcq && !submitting) submitMcq();
       }
       if (!revealed || submitting) return;
-      if (mcqMode) {
+      if (isMcq && mcqPayload) {
         const idx = Number(e.key) - 1;
-        const opts = mcqOpts!;
-        if (opts[idx]) {
-          const id = opts[idx].id;
-          const selMode = r.question.mcqSelectionMode ?? "multi";
+        if (idx >= 0 && idx < mcqPayload.options.length) {
+          const id = mcqPayload.options[idx].id;
+          const selMode = mcqPayload.selectionMode ?? "multi";
           selMode === "single"
             ? setSelected([id])
             : setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -111,7 +112,12 @@ export default function StudyClient({
     const res = await fetch("/api/review/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questionId: data.review.question.id, grade, isNew: data.isNew }),
+      body: JSON.stringify({
+        questionId: data.review.question.id,
+        taskType: "recall",
+        grade,
+        isNew: data.isNew,
+      }),
     });
     if (!res.ok) {
       setSubmitting(false);
@@ -137,6 +143,7 @@ export default function StudyClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         questionId: data.review.question.id,
+        taskType: "mcq",
         selectedOptionIds: selected,
         isNew: data.isNew,
       }),
@@ -147,11 +154,11 @@ export default function StudyClient({
       return;
     }
     const result = (await res.json()) as {
-      mcqCorrect: boolean | null;
+      correct: boolean | null;
       correctOptionIds: string[] | null;
       intervalDays: number;
     };
-    const correct = result.mcqCorrect === true;
+    const correct = result.correct === true;
     setFeedback({
       kind: "mcq",
       correct,
@@ -210,7 +217,8 @@ export default function StudyClient({
   }
 
   const q = data.review.question;
-  const isMcq = q.mcqOptions !== null && q.mcqOptions !== undefined && q.mcqOptions.length > 0;
+  const mcqPayload = q.taskType === "mcq" ? q.taskPayload : null;
+  const isMcq = mcqPayload !== null && mcqPayload !== undefined;
   const correctIds = feedback?.kind === "mcq" ? feedback.correctIds : null;
 
   return (
@@ -236,15 +244,15 @@ export default function StudyClient({
         <p className="review-question">{q.question}</p>
       </div>
 
-      {isMcq ? (
-        <McqQuestion
-          options={q.mcqOptions!}
-          selectionMode={q.mcqSelectionMode ?? "multi"}
+      {isMcq && mcqPayload ? (
+        <McqRenderer
+          options={mcqPayload.options}
+          selectionMode={mcqPayload.selectionMode}
           selected={selected}
           disabled={submitting || revealed}
           correctIds={correctIds}
           onToggle={
-            q.mcqSelectionMode === "single"
+            mcqPayload.selectionMode === "single"
               ? (id) => setSelected([id])
               : (id) =>
                   setSelected((prev) =>
@@ -255,7 +263,7 @@ export default function StudyClient({
           revealed={revealed}
         />
       ) : (
-        <RecallQuestion
+        <RecallRenderer
           draft={draft}
           onDraft={setDraft}
           revealed={revealed}
@@ -301,147 +309,5 @@ export default function StudyClient({
         </div>
       )}
     </div>
-  );
-}
-
-type GradeButtonConfig = {
-  grade: ReviewGrade;
-  label: string;
-  subtitle: string;
-  modifier?: "again" | "good";
-  ariaLabel: string;
-};
-
-const SIMPLE_GRADES: GradeButtonConfig[] = [
-  { grade: "again", label: "Falsch", subtitle: "nochmal", modifier: "again", ariaLabel: "Falsch (Taste 1)" },
-  { grade: "good", label: "Richtig", subtitle: "gewusst", modifier: "good", ariaLabel: "Richtig (Taste 2)" },
-];
-
-const FULL_GRADES: GradeButtonConfig[] = [
-  { grade: "again", label: "Again", subtitle: "völlig falsch", modifier: "again", ariaLabel: "Again – völlig falsch (Taste 1)" },
-  { grade: "hard", label: "Hard", subtitle: "mit Mühe", ariaLabel: "Hard – mit Mühe (Taste 2)" },
-  { grade: "good", label: "Good", subtitle: "korrekt", modifier: "good", ariaLabel: "Good – korrekt (Taste 3)" },
-  { grade: "easy", label: "Easy", subtitle: "mühelos", ariaLabel: "Easy – mühelos (Taste 4)" },
-];
-
-function RecallQuestion(props: {
-  draft: string;
-  onDraft: (v: string) => void;
-  revealed: boolean;
-  onReveal: () => void;
-  submitting: boolean;
-  onGrade: (g: ReviewGrade) => void;
-  simpleGrading: boolean;
-  selectedGrade: ReviewGrade | null;
-}) {
-  return (
-    <>
-      <div className="field">
-        <label htmlFor="draft">Deine Antwort</label>
-        <textarea
-          id="draft"
-          className="textarea"
-          placeholder="Schreibe frei, woran du dich erinnerst …"
-          value={props.draft}
-          onChange={(e) => props.onDraft(e.target.value)}
-        />
-      </div>
-      {!props.revealed ? (
-        <button className="btn btn--primary" onClick={props.onReveal}>
-          Musterantwort zeigen
-        </button>
-      ) : (
-        <div>
-          <p className="eyebrow" style={{ marginBottom: 8 }}>
-            {props.simpleGrading ? "War deine Antwort richtig?" : "Wie gut warst du?"}
-          </p>
-          <div className="review-actions">
-            {(props.simpleGrading ? SIMPLE_GRADES : FULL_GRADES).map((btn) => {
-              const isSelected = props.selectedGrade === btn.grade;
-              const cls = ["grade-btn"];
-              if (btn.modifier) cls.push(`grade-btn--${btn.modifier}`);
-              if (isSelected) cls.push("grade-btn--selected");
-              return (
-                <button
-                  key={btn.grade}
-                  className={cls.join(" ")}
-                  disabled={props.submitting}
-                  onClick={() => props.onGrade(btn.grade)}
-                  aria-label={btn.ariaLabel}
-                  aria-pressed={isSelected}
-                >
-                  {btn.label}
-                  <small>{btn.subtitle}</small>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-function McqQuestion(props: {
-  options: { id: string; text: string }[];
-  selectionMode: "single" | "multi";
-  selected: string[];
-  disabled: boolean;
-  correctIds: string[] | null;
-  revealed: boolean;
-  onToggle: (id: string) => void;
-  onSubmit: () => void;
-}) {
-  const isSingle = props.selectionMode === "single";
-  const selectionCount = props.selected.length;
-  const inputType = isSingle ? "radio" : "checkbox";
-  return (
-    <>
-      <p className="muted" style={{ fontSize: 14 }}>
-        {isSingle
-          ? "Wähle die richtige Antwort."
-          : "Mehrere Antworten sind richtig. Wähle alle zutreffenden aus."}
-      </p>
-      <div className="stack">
-        {props.options.map((o) => {
-          const checked = props.selected.includes(o.id);
-          const isCorrect = props.correctIds?.includes(o.id) ?? false;
-          let cls = "mcq-option";
-          if (props.revealed) {
-            if (isCorrect) cls += " mcq-option--correct";
-            else if (checked) cls += " mcq-option--wrong";
-          } else if (checked) {
-            cls += " mcq-option--selected";
-          }
-          return (
-            <label
-              key={o.id}
-              className={cls}
-              role={isSingle ? "radio" : "checkbox"}
-              aria-checked={checked}
-            >
-              <input
-                type={inputType}
-                name={isSingle ? "mcq-single" : undefined}
-                checked={checked}
-                disabled={props.disabled}
-                onChange={() => props.onToggle(o.id)}
-                tabIndex={0}
-              />
-              <span>{o.text}</span>
-            </label>
-          );
-        })}
-      </div>
-      {!props.revealed ? (
-        <button
-          className="btn btn--primary"
-          onClick={props.onSubmit}
-          disabled={props.disabled || selectionCount === 0}
-        >
-          {selectionCount === 0 ? "Bitte Optionen wählen" : "Auswerten"}
-        </button>
-      ) : null}
-    </>
   );
 }

@@ -1,12 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { gradeExamAttempt, selectExamQuestions, shuffle, type ExamAttempt } from "@/lib/exam";
-import type { McqOption } from "@/lib/types";
 
-const OPTS: McqOption[] = [
+interface Opt {
+  id: string;
+  text: string;
+  correct: boolean;
+}
+
+const OPTS: Opt[] = [
   { id: "a", text: "A", correct: true },
   { id: "b", text: "B", correct: false },
   { id: "c", text: "C", correct: true },
 ];
+
+const questionsById = new Map<
+  string,
+  { taskType: string | null; payload: unknown; mcqOptions?: unknown }
+>([
+  ["mcq1", { taskType: "mcq", payload: { options: OPTS }, mcqOptions: OPTS }],
+  ["recall1", { taskType: "recall", payload: null, mcqOptions: null }],
+]);
 
 describe("shuffle", () => {
   it("returns a new array with the same elements", () => {
@@ -40,14 +53,9 @@ describe("selectExamQuestions", () => {
 });
 
 describe("gradeExamAttempt", () => {
-  const questionsById = new Map<string, { mcqOptions: McqOption[] | null }>([
-    ["mcq1", { mcqOptions: OPTS }],
-    ["recall1", { mcqOptions: null }],
-  ]);
-
   it("grades MCQ by comparing selected vs correct set", () => {
     const attempts: ExamAttempt[] = [
-      { questionId: "mcq1", mode: "mcq", selectedOptionIds: ["a", "c"] },
+      { questionId: "mcq1", taskType: "mcq", selectedOptionIds: ["a", "c"] },
     ];
     const res = gradeExamAttempt(attempts, questionsById);
     expect(res.score).toBe(1);
@@ -56,7 +64,7 @@ describe("gradeExamAttempt", () => {
 
   it("marks an MCQ with wrong selection as incorrect", () => {
     const attempts: ExamAttempt[] = [
-      { questionId: "mcq1", mode: "mcq", selectedOptionIds: ["a", "b"] },
+      { questionId: "mcq1", taskType: "mcq", selectedOptionIds: ["a", "b"] },
     ];
     const res = gradeExamAttempt(attempts, questionsById);
     expect(res.score).toBe(0);
@@ -65,17 +73,25 @@ describe("gradeExamAttempt", () => {
 
   it("trusts the self-marked correct flag for recall questions", () => {
     const attempts: ExamAttempt[] = [
-      { questionId: "recall1", mode: "recall", correct: true },
-      { questionId: "recall1", mode: "recall", correct: false },
+      { questionId: "recall1", taskType: "recall", correct: true },
     ];
-    // Note: same questionId twice here is unrealistic but tests the flag logic.
     const res = gradeExamAttempt(attempts, questionsById);
     expect(res.score).toBe(1);
-    expect(res.total).toBe(2);
+    expect(res.total).toBe(1);
   });
 
-  it("treats missing correct flag as incorrect", () => {
-    const attempts: ExamAttempt[] = [{ questionId: "recall1", mode: "recall" }];
+  it("treats a recall attempt with correct=false as incorrect", () => {
+    const attempts: ExamAttempt[] = [
+      { questionId: "recall1", taskType: "recall", correct: false },
+    ];
+    const res = gradeExamAttempt(attempts, questionsById);
+    expect(res.perQuestion[0].correct).toBe(false);
+  });
+
+  it("handles missing question gracefully (treated as incorrect)", () => {
+    const attempts: ExamAttempt[] = [
+      { questionId: "unknown", taskType: "mcq", selectedOptionIds: ["a"] },
+    ];
     const res = gradeExamAttempt(attempts, questionsById);
     expect(res.perQuestion[0].correct).toBe(false);
   });

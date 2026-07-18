@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { mcqAttemptSchema } from "@/lib/tasks/mcq/attempt";
+import { mcqPayloadSchema } from "@/lib/tasks/mcq/payload";
+import { recallAttemptSchema } from "@/lib/tasks/recall/attempt";
 
 export const loginSchema = z.object({
   email: z.string().email(),
@@ -16,50 +19,83 @@ export const passwordChangeSchema = z.object({
   newPassword: z.string().min(8).max(128),
 });
 
-export const reviewSubmitSchema = z
-  .object({
-    questionId: z.string().min(1),
-    grade: z.enum(["again", "hard", "good", "easy"]).optional(),
-    selectedOptionIds: z.array(z.string()).optional(),
-    isNew: z.boolean().optional(),
-  })
-  .refine((v) => v.grade !== undefined || v.selectedOptionIds !== undefined, {
-    message: "Entweder 'grade' (Freie Erinnerung) oder 'selectedOptionIds' (MCQ) erforderlich.",
-  });
-
-export const examAnswerSchema = z.object({
-  questionId: z.string().min(1),
-  mode: z.enum(["recall", "mcq"]),
-  correct: z.boolean().optional(),
-  selectedOptionIds: z.array(z.string()).optional(),
-});
-
-export const examSubmitSchema = z.object({
-  answers: z.array(examAnswerSchema).min(1),
-  saveToSm2: z.boolean().optional(),
-});
-
 export const mcqOptionSchema = z.object({
   id: z.string().min(1),
   text: z.string().min(1),
   correct: z.boolean(),
 });
 
-export const questionSchema = z.object({
-  id: z.string().min(1),
-  courseId: z.string().min(1).optional(),
-  chapter: z.number().int().min(1),
-  chapterTitle: z.string().min(1),
-  question: z.string().min(1),
-  answer: z.string().min(1),
-  sourceRef: z.string().min(1),
-  confidence: z.enum(["high", "low"]).optional(),
-  mcqOptions: z.array(mcqOptionSchema).optional(),
+// Review-Submit: diskriminiert nach taskType. Attempt-Schemas kommen aus
+// den Task-Bundles (Single Source of Truth für die Lerner-Eingabe).
+export const reviewSubmitSchema = z.discriminatedUnion("taskType", [
+  recallAttemptSchema.extend({
+    questionId: z.string().min(1),
+    taskType: z.literal("recall"),
+    isNew: z.boolean().optional(),
+  }),
+  mcqAttemptSchema.extend({
+    questionId: z.string().min(1),
+    taskType: z.literal("mcq"),
+    isNew: z.boolean().optional(),
+  }),
+]);
+
+// Exam-Answer: diskriminiert nach taskType. Recall wird im Exam selbst
+// bewertet (correct: boolean), MCQ serverseitig ausgewertet.
+export const examAnswerSchema = z.discriminatedUnion("taskType", [
+  z.object({
+    questionId: z.string().min(1),
+    taskType: z.literal("recall"),
+    correct: z.boolean(),
+  }),
+  z.object({
+    questionId: z.string().min(1),
+    taskType: z.literal("mcq"),
+    selectedOptionIds: z.array(z.string().min(1)),
+  }),
+]);
+
+export const examSubmitSchema = z.object({
+  answers: z.array(examAnswerSchema).min(1),
+  saveToSm2: z.boolean().optional(),
 });
+
+// Admin-/Seed-Fragen. Akzeptiert bewusst beide Formate:
+//   (a) neu:  taskType + payload
+//   (b) alt:  mcqOptions (legacy, wird intern zu taskType/payload gemappt)
+// So bleibt der bestehende JSON-Upload funktionstüchtig, bis die
+// Editor-Oberfläche (Phase 2) das neue Format primär nutzt.
+export const questionSchema = z
+  .object({
+    id: z.string().min(1),
+    courseId: z.string().min(1).optional(),
+    chapter: z.number().int().min(1),
+    chapterTitle: z.string().min(1),
+    question: z.string().min(1),
+    answer: z.string().min(1),
+    sourceRef: z.string().min(1),
+    confidence: z.enum(["high", "low"]).optional(),
+    taskType: z.enum(["recall", "mcq"]).optional(),
+    payload: z.unknown().optional(),
+    mcqOptions: z.array(mcqOptionSchema).optional(),
+  })
+  .refine((v) => !(v.taskType !== undefined && v.mcqOptions !== undefined), {
+    message: "Entweder 'taskType'/'payload' oder 'mcqOptions' angeben, nicht beides.",
+  })
+  .refine(
+    (v) =>
+      v.taskType === "mcq" ||
+      v.mcqOptions !== undefined ||
+      v.taskType === "recall" ||
+      v.taskType === undefined,
+    { message: "Unbekannter taskType." }
+  );
 
 export const adminQuestionsBodySchema = z.object({
   questions: z.array(questionSchema).min(1),
 });
+
+export const mcqPayloadAdminSchema = mcqPayloadSchema;
 
 export const adminResetPasswordSchema = z.object({
   userId: z.string().min(1),

@@ -13,6 +13,13 @@ export interface CatalogQuestion {
   answer: string;
   sourceRef: string;
   confidence?: "high" | "low";
+  // Neu (Migration 0010): expliziter Task-Typ + typspezifischer Payload.
+  // taskType: "recall" | "mcq" | (später: dragdrop | cloze | order | code)
+  // Für recall ist payload null; für mcq { options: McqOption[] }.
+  // Wenn nicht gesetzt, leitet der Seed taskType aus mcqOptions ab (Legacy).
+  taskType?: "recall" | "mcq";
+  payload?: unknown;
+  // Legacy: wird beibehalten, bis die Cleanup-Migration mcqOptions entfernt.
   mcqOptions?: McqOption[];
 }
 

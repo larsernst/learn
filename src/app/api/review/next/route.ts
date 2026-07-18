@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
-import { serializeQuestion } from "@/lib/serialize";
+import { serializeQuestion, type SerializableQuestion } from "@/lib/serialize";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -41,7 +41,12 @@ export async function GET(request: Request) {
     });
     if (learnedReviews.length > 0) {
       return NextResponse.json({
-        review: { question: serializeQuestion(learnedReviews[0].question, mcqEnabled) },
+        review: {
+          question: serializeQuestion(
+            learnedReviews[0].question as SerializableQuestion,
+            mcqEnabled
+          ),
+        },
         isNew: false,
         deck: difficultOnly ? "difficult" : "all",
       });
@@ -79,7 +84,12 @@ export async function GET(request: Request) {
 
   const dueResponse = dueFound
     ? {
-        review: { question: serializeQuestion(dueReviews[0].question, mcqEnabled) },
+        review: {
+          question: serializeQuestion(
+            dueReviews[0].question as SerializableQuestion,
+            mcqEnabled
+          ),
+        },
         isNew: false,
         deck: difficultOnly ? ("difficult" as const) : ("all" as const),
       }
@@ -87,7 +97,9 @@ export async function GET(request: Request) {
 
   const newResponse = nextNew
     ? {
-        review: { question: serializeQuestion(nextNew, mcqEnabled) },
+        review: {
+          question: serializeQuestion(nextNew as SerializableQuestion, mcqEnabled),
+        },
         isNew: true,
         deck: "all" as const,
       }

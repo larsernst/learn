@@ -63,6 +63,8 @@ model Question {
   sourceRef    String
   mcqOptions   Json?
   confidence   String?
+  taskType     String?
+  payload      Json?
   createdAt    DateTime      @default(now())
   reviews      Review[]
   events       ReviewEvent[]
@@ -93,6 +95,7 @@ model ReviewEvent {
   questionId String
   grade      String
   mcqCorrect Boolean?
+  correct    Boolean?
   at         DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)

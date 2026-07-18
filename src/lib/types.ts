@@ -1,15 +1,9 @@
-export interface McqOption {
-  id: string;
-  text: string;
-  correct: boolean;
-}
+import type { TaskType } from "@/lib/tasks/types";
+import type { McqPublic } from "@/lib/tasks/mcq/payload";
 
-export interface McqOptionPublic {
-  id: string;
-  text: string;
-}
-
-export type McqSelectionMode = "single" | "multi";
+// Public-Payload je Task-Typ (was der Client sieht, ohne Geheimnisse).
+// null für recall (kein Payload), McqPublic für mcq.
+export type TaskPublicPayload = null | McqPublic;
 
 export interface QuestionPublic {
   id: string;
@@ -19,8 +13,8 @@ export interface QuestionPublic {
   question: string;
   answer: string;
   sourceRef: string;
-  mcqOptions: McqOptionPublic[] | null;
-  mcqSelectionMode: McqSelectionMode | null;
+  taskType: TaskType;
+  taskPayload: TaskPublicPayload;
 }
 
 export interface ReviewNextResponse {

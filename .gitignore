@@ -53,3 +53,5 @@ prisma/migrations/dev.db*
 
 # Misc
 *.pem
+# ZCode agent session metadata
+.zcode/

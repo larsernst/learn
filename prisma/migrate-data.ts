@@ -103,6 +103,87 @@ async function main() {
   for (const row of distribution) {
     console.log(`  ${row.courseId ?? "(null)"}: ${row._count._all}`);
   }
+
+  // 5. Task-Typ-Backfill (Migration 0010): Fragen ohne taskType erhalten
+  //    taskType='mcq' + payload={options:...}, wenn mcqOptions vorhanden,
+  //    sonst taskType='recall' + payload=NULL. Idempotent: nur Zeilen mit
+  //    taskType IS NULL werden berührt.
+  await backfillTaskTypes();
+}
+
+async function backfillTaskTypes() {
+  let questionsWithoutTaskType: { id: string; mcqOptions: unknown }[];
+  try {
+    questionsWithoutTaskType = await prisma.question.findMany({
+      where: { taskType: null },
+      select: { id: true, mcqOptions: true },
+    });
+  } catch (e) {
+    console.warn(
+      "Hinweis: Spalte taskType nicht vorhanden – Migration 0010 ausgelassen?\n" +
+        "  npx prisma migrate deploy",
+      e
+    );
+    return;
+  }
+
+  if (questionsWithoutTaskType.length === 0) {
+    console.log("Task-Typ-Backfill: alle Fragen bereits mit taskType versehen – nichts zu tun.");
+  } else {
+    let mcqCount = 0;
+    let recallCount = 0;
+    for (const q of questionsWithoutTaskType) {
+      const hasMcq = Array.isArray(q.mcqOptions) && q.mcqOptions.length > 0;
+      if (hasMcq) {
+        if (!isDryRun) {
+          await prisma.question.update({
+            where: { id: q.id },
+            data: { taskType: "mcq", payload: { options: q.mcqOptions } },
+          });
+        }
+        mcqCount++;
+      } else {
+        if (!isDryRun) {
+          await prisma.question.update({
+            where: { id: q.id },
+            data: { taskType: "recall", payload: null },
+          });
+        }
+        recallCount++;
+      }
+    }
+    console.log(
+      `Task-Typ-Backfill: ${mcqCount} MCQ-Frage(n), ${recallCount} Recall-Frage(n) aktualisiert.` +
+        (isDryRun ? " (Dry-Run)" : "")
+    );
+  }
+
+  // ReviewEvent.correct auffüllen: wo correct IS NULL, aber mcqCorrect gesetzt.
+  try {
+    const eventsWithoutCorrect = await prisma.reviewEvent.count({
+      where: { correct: null, NOT: { mcqCorrect: null } },
+    });
+    if (eventsWithoutCorrect > 0) {
+      if (!isDryRun) {
+        const r = await prisma.reviewEvent.updateMany({
+          where: { correct: null, NOT: { mcqCorrect: null } },
+          data: { correct: prisma.reviewEvent.fields.mcqCorrect },
+        });
+        console.log(`ReviewEvent.correct: ${r.count} Event(s) aus mcqCorrect übernommen.`);
+      } else {
+        console.log(
+          `ReviewEvent.correct: ${eventsWithoutCorrect} Event(s) würden aus mcqCorrect übernommen werden. (Dry-Run)`
+        );
+      }
+    } else {
+      console.log("ReviewEvent.correct: bereits vollständig – nichts zu tun.");
+    }
+  } catch (e) {
+    console.warn(
+      "Hinweis: Spalte correct/mcqCorrect auf ReviewEvent nicht vorhanden – Migration 0010 ausgelassen?",
+      e
+    );
+  }
 }
 
 main()
