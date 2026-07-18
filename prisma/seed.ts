@@ -18,6 +18,7 @@ async function main() {
         description: c.description,
         order: c.order,
         published: c.published,
+        status: c.published ? "published" : "draft",
       },
       update: {
         slug: c.slug,
@@ -25,8 +26,34 @@ async function main() {
         description: c.description,
         order: c.order,
         published: c.published,
+        status: c.published ? "published" : "draft",
       },
     });
+  }
+
+  // Chapter aus courses.ts seeden (Migration 0011). Idempotent per (courseId, slug).
+  const totalChapters = COURSES.reduce((n, c) => n + (c.chapters?.length ?? 0), 0);
+  if (totalChapters > 0) {
+    console.log(`Seede ${totalChapters} Kapitel …`);
+    for (const c of COURSES) {
+      for (const ch of c.chapters ?? []) {
+        await prisma.chapter.upsert({
+          where: { courseId_slug: { courseId: c.id, slug: ch.slug } },
+          create: {
+            courseId: c.id,
+            slug: ch.slug,
+            title: ch.title,
+            description: ch.description ?? null,
+            order: ch.order,
+          },
+          update: {
+            title: ch.title,
+            description: ch.description ?? null,
+            order: ch.order,
+          },
+        });
+      }
+    }
   }
 
   console.log(`Seede ${FRAGENKATALOG.length} Fragen aus dem Fragenkatalog …`);

@@ -109,6 +109,108 @@ async function main() {
   //    sonst taskType='recall' + payload=NULL. Idempotent: nur Zeilen mit
   //    taskType IS NULL werden berührt.
   await backfillTaskTypes();
+
+  // 6. Chapter-Backfill (Migration 0011): pro einmaligem (courseId, chapter,
+  //    chapterTitle) wird ein Chapter-Datensatz erzeugt und Question.chapterId
+  //    darauf gesetzt. Idempotent: bestehende Chapter werden am Slug erkannt.
+  await backfillChapters();
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function backfillChapters() {
+  let questionsForChapters: {
+    id: string;
+    courseId: string | null;
+    chapter: number;
+    chapterTitle: string;
+  }[];
+  try {
+    questionsForChapters = await prisma.question.findMany({
+      where: { chapterId: null },
+      select: { id: true, courseId: true, chapter: true, chapterTitle: true },
+    });
+  } catch (e) {
+    console.warn(
+      "Hinweis: Spalte chapterId nicht vorhanden – Migration 0011 ausgelassen?\n" +
+        "  npx prisma migrate deploy",
+      e
+    );
+    return;
+  }
+
+  if (questionsForChapters.length === 0) {
+    console.log("Chapter-Backfill: alle Fragen bereits mit chapterId versehen – nichts zu tun.");
+    return;
+  }
+
+  // Eindeutige (courseId, chapter, chapterTitle) bestimmen, mit stabiler Reihenfolge.
+  const chapterKeys = new Map<string, { courseId: string; chapter: number; chapterTitle: string; order: number }>();
+  for (const q of questionsForChapters) {
+    if (!q.courseId) continue;
+    const key = `${q.courseId}|${q.chapter}|${q.chapterTitle}`;
+    if (!chapterKeys.has(key)) {
+      chapterKeys.set(key, {
+        courseId: q.courseId,
+        chapter: q.chapter,
+        chapterTitle: q.chapterTitle,
+        order: q.chapter,
+      });
+    }
+  }
+
+  let chaptersCreated = 0;
+  const chapterIdByKey = new Map<string, string>();
+
+  for (const [, info] of chapterKeys) {
+    const slug = `${info.chapter}-${slugify(info.chapterTitle)}`;
+    const key = `${info.courseId}|${info.chapter}|${info.chapterTitle}`;
+    if (!isDryRun) {
+      const ch = await prisma.chapter.upsert({
+        where: { courseId_slug: { courseId: info.courseId, slug } },
+        create: {
+          courseId: info.courseId,
+          slug,
+          title: info.chapterTitle,
+          order: info.order,
+        },
+        update: {
+          title: info.chapterTitle,
+          order: info.order,
+        },
+      });
+      chapterIdByKey.set(key, ch.id);
+      if (ch.createdAt.getTime() >= Date.now() - 60_000) chaptersCreated++;
+    } else {
+      chapterIdByKey.set(key, `(dry-run:${key})`);
+    }
+  }
+
+  let questionsLinked = 0;
+  for (const q of questionsForChapters) {
+    if (!q.courseId) continue;
+    const key = `${q.courseId}|${q.chapter}|${q.chapterTitle}`;
+    const chapterId = chapterIdByKey.get(key);
+    if (!chapterId) continue;
+    if (!isDryRun) {
+      await prisma.question.update({
+        where: { id: q.id },
+        data: { chapterId },
+      });
+    }
+    questionsLinked++;
+  }
+
+  console.log(
+    `Chapter-Backfill: ${chapterKeys.size} eindeutige Kapitel, ${questionsLinked} Frage(n) verknüpft.` +
+      (isDryRun ? " (Dry-Run)" : "")
+  );
 }
 
 async function backfillTaskTypes() {
