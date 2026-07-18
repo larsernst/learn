@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { selectExamQuestions } from "@/lib/exam";
-import { serializeQuestion } from "@/lib/serialize";
+import { serializeQuestion, type SerializableQuestion } from "@/lib/serialize";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -27,7 +27,23 @@ export async function GET(request: Request) {
   const picked = selectExamQuestions(all, count);
 
   return NextResponse.json({
-    questions: picked.map((q) => serializeQuestion(q, mcqEnabled)),
+    questions: picked.map((q) =>
+      serializeQuestion(
+        {
+          id: q.id,
+          courseId: q.courseId,
+          chapter: q.chapter,
+          chapterTitle: q.chapterTitle,
+          question: q.question,
+          answer: q.answer,
+          sourceRef: q.sourceRef,
+          taskType: q.taskType,
+          payload: q.payload,
+          mcqOptions: q.mcqOptions,
+        } as SerializableQuestion,
+        mcqEnabled
+      )
+    ),
     total: all.length,
   });
 }
