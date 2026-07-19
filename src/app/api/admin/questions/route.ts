@@ -131,8 +131,13 @@ export async function POST(request: Request) {
     const targetCourseId = q.courseId ?? null;
     const sourceCourseId = existing?.courseId ?? null;
 
-    const sourcePerm = assertCourseEditPermission(guard.user, sourceCourseId, courses);
-    if (!sourcePerm.ok) return sourcePerm.response;
+    // Quell-Prüfung nur für bestehende Fragen (Verschieben/Überschreiben).
+    // Bei neuen Fragen gibt es keine Quelle – die Ziel-Prüfung genügt,
+    // sonst könnten Editoren nie Fragen anlegen (null = "verwaist").
+    if (existing) {
+      const sourcePerm = assertCourseEditPermission(guard.user, sourceCourseId, courses);
+      if (!sourcePerm.ok) return sourcePerm.response;
+    }
     const targetPerm = assertCourseEditPermission(guard.user, targetCourseId, courses);
     if (!targetPerm.ok) return targetPerm.response;
   }

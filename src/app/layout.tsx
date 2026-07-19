@@ -49,9 +49,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                         Admin
                       </Link>
                     )}
-                    {!isAdmin(user) && isEditor(user) && (
-                      <Link href="/admin/kurse" className="navlink" title="Deine Kurse">
-                        Meine Kurse
+                    {isEditor(user) && (
+                      <Link href="/editor" className="navlink" title="Kurse erstellen und bearbeiten">
+                        Editor
                       </Link>
                     )}
                     <Link href="/einstellungen" className="navlink" title="Einstellungen">

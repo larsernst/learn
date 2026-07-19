@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Markdown } from "@/components/markdown";
 
 type McqOptionData = { id: string; text: string; correct: boolean };
@@ -16,41 +17,25 @@ type QuestionData = {
   taskType: string | null;
 };
 
-type CourseData = {
+type CourseInfo = {
   id: string;
   title: string;
   slug: string;
   description: string;
   status: string;
-  canEdit: boolean;
-  questions: QuestionData[];
 };
 
-export default function KurseClient({
-  courses: initialCourses,
-  canCreate = false,
+export default function CurriculumClient({
+  course,
+  questions: initialQuestions,
 }: {
-  courses: CourseData[];
-  canCreate?: boolean;
+  course: CourseInfo;
+  questions: QuestionData[];
 }) {
-  const [courses, setCourses] = useState<CourseData[]>(initialCourses);
-  const [activeCourse, setActiveCourse] = useState(initialCourses[0]?.id ?? "");
-  const [questions, setQuestions] = useState<Record<string, QuestionData[]>>(
-    Object.fromEntries(initialCourses.map((c) => [c.id, c.questions]))
-  );
+  const [questions, setQuestions] = useState<QuestionData[]>(initialQuestions);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [showCourseForm, setShowCourseForm] = useState(false);
-  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
-
-  const course = courses.find((c) => c.id === activeCourse) ?? null;
-  const courseQuestions = questions[activeCourse] ?? [];
-
-  function notify(ok: boolean, msg: string) {
-    if (ok) setSuccess(msg);
-    else setError(msg);
-  }
 
   function groupByChapter(qs: QuestionData[]) {
     const map = new Map<number, { chapter: number; chapterTitle: string; items: QuestionData[] }>();
@@ -70,14 +55,11 @@ export default function KurseClient({
     setSuccess(null);
     const res = await fetch(`/api/admin/questions/${encodeURIComponent(q.id)}`, { method: "DELETE" });
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Löschen fehlgeschlagen.");
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Löschen fehlgeschlagen.");
       return;
     }
-    setQuestions((prev) => ({
-      ...prev,
-      [activeCourse]: (prev[activeCourse] ?? []).filter((x) => x.id !== q.id),
-    }));
+    setQuestions((prev) => prev.filter((x) => x.id !== q.id));
     setSuccess("Frage gelöscht.");
   }
 
@@ -94,12 +76,9 @@ export default function KurseClient({
       setError(body.error ?? "Speichern fehlgeschlagen.");
       return false;
     }
-    setQuestions((prev) => ({
-      ...prev,
-      [activeCourse]: (prev[activeCourse] ?? []).map((q) =>
-        q.id === id ? { ...q, question: data.question, answer: data.answer } : q
-      ),
-    }));
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, question: data.question, answer: data.answer } : q))
+    );
     setSuccess("Frage aktualisiert.");
     return true;
   }
@@ -124,7 +103,7 @@ export default function KurseClient({
       questions: [
         {
           id,
-          courseId: activeCourse,
+          courseId: course.id,
           chapter: data.chapter,
           chapterTitle: data.chapterTitle,
           question: data.question,
@@ -156,284 +135,95 @@ export default function KurseClient({
       confidence: data.confidence || null,
       taskType: data.taskType,
     };
-    setQuestions((prev) => ({
-      ...prev,
-      [activeCourse]: [...(prev[activeCourse] ?? []), newQ],
-    }));
+    setQuestions((prev) => [...prev, newQ]);
     setSuccess("Frage hinzugefügt.");
     setShowForm(false);
     return true;
-  }
-
-  async function createCourse(data: { title: string; description: string; status: "draft" | "published" }) {
-    setError(null);
-    setSuccess(null);
-    const res = await fetch("/api/courses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Kurs konnte nicht angelegt werden.");
-      return false;
-    }
-    const json = await res.json();
-    const newCourse: CourseData = {
-      id: json.course.id,
-      title: json.course.title,
-      slug: json.course.slug,
-      description: json.course.description,
-      status: json.course.status,
-      canEdit: true,
-      questions: [],
-    };
-    setCourses((prev) => [...prev, newCourse]);
-    setQuestions((prev) => ({ ...prev, [newCourse.id]: [] }));
-    setActiveCourse(newCourse.id);
-    setShowCourseForm(false);
-    setSuccess("Kurs angelegt.");
-    return true;
-  }
-
-  async function updateCourseMeta(
-    id: string,
-    data: { title: string; description: string; status: "draft" | "published" }
-  ) {
-    setError(null);
-    setSuccess(null);
-    const res = await fetch(`/api/courses/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Speichern fehlgeschlagen.");
-      return false;
-    }
-    const json = await res.json();
-    setCourses((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              title: json.course.title,
-              description: json.course.description,
-              status: json.course.status,
-              slug: json.course.slug,
-            }
-          : c
-      )
-    );
-    setEditingCourseId(null);
-    setSuccess("Kurs aktualisiert.");
-    return true;
-  }
-
-  async function deleteCourse(id: string, title: string) {
-    const count = questions[id]?.length ?? 0;
-    if (
-      !window.confirm(
-        `Kurs „${title}" wirklich löschen?` +
-          (count > 0
-            ? `\nDas entfernt ${count} Frage(n) inkl. aller Nutzerfortschritte. Das kann nicht rückgängig gemacht werden.`
-            : "")
-      )
-    ) {
-      return;
-    }
-    setError(null);
-    setSuccess(null);
-    const res = await fetch(`/api/courses/${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Löschen fehlgeschlagen.");
-      return;
-    }
-    setCourses((prev) => prev.filter((c) => c.id !== id));
-    setQuestions((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-    if (activeCourse === id) {
-      setActiveCourse(courses.find((c) => c.id !== id)?.id ?? "");
-    }
-    setSuccess("Kurs gelöscht.");
-  }
-
-  if (courses.length === 0) {
-    return (
-      <div className="stack">
-        <p className="muted">Noch keine Kurse vorhanden. Lege deinen ersten Kurs an.</p>
-        {canCreate && (
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={() => setShowCourseForm(true)}
-          >
-            Neuen Kurs anlegen
-          </button>
-        )}
-        {showCourseForm && (
-          <CourseForm
-            onSubmit={createCourse}
-            onCancel={() => setShowCourseForm(false)}
-          />
-        )}
-        {(error || success) && <Notice error={error} success={success} />}
-      </div>
-    );
   }
 
   return (
     <div className="stack">
       <Notice error={error} success={success} />
 
-      <div className="tabs">
-        {courses.map((c) => (
-          <a
-            key={c.id}
-            className={`tab${c.id === activeCourse ? " tab--active" : ""}`}
-            style={{ cursor: "pointer" }}
-            onClick={() => {
-              setActiveCourse(c.id);
-              setShowForm(false);
-              setError(null);
-              setSuccess(null);
-            }}
-          >
-            {c.title} ({questions[c.id]?.length ?? 0})
-            {c.status === "draft" && (
-              <span className="badge badge--muted" style={{ marginLeft: 6, fontSize: 10 }}>
-                Entwurf
+      <div className="card" style={{ padding: 16 }}>
+        <div className="row row--between" style={{ flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
+          <div className="stack" style={{ gap: 4, flex: 1, minWidth: 200 }}>
+            <strong>{course.title}</strong>
+            {course.description && (
+              <span className="muted" style={{ fontSize: 13 }}>{course.description}</span>
+            )}
+            <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+                {course.status === "published" ? "Veröffentlicht" : "Entwurf"}
               </span>
-            )}
-          </a>
-        ))}
-      </div>
-
-      {course && (
-        <div className="card" style={{ padding: 16 }}>
-          <div className="row row--between" style={{ flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
-            <div className="stack" style={{ gap: 4, flex: 1, minWidth: 200 }}>
-              <strong>{course.title}</strong>
-              {course.description && (
-                <span className="muted" style={{ fontSize: 13 }}>{course.description}</span>
-              )}
-              <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                <span className="badge badge--muted" style={{ fontSize: 11 }}>
-                  {course.status === "published" ? "Veröffentlicht" : "Entwurf"}
-                </span>
-                <span className="badge badge--muted" style={{ fontSize: 11 }}>
-                  /kurs/{course.slug}
-                </span>
-              </div>
+              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+                /kurs/{course.slug}
+              </span>
+              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+                {questions.length} Fragen
+              </span>
             </div>
-            {course.canEdit && (
-              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  onClick={() => setEditingCourseId(editingCourseId === course.id ? null : course.id)}
-                >
-                  {editingCourseId === course.id ? "Abbrechen" : "Kurs bearbeiten"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--sm"
-                  onClick={() => deleteCourse(course.id, course.title)}
-                >
-                  Kurs löschen
-                </button>
-              </div>
-            )}
+          </div>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <Link href={`/kurs/${course.id}`} className="btn btn--ghost btn--sm">
+              Als Lernender ansehen
+            </Link>
+            <Link href={`/editor/kurs/${course.id}/einstellungen`} className="btn btn--ghost btn--sm">
+              Einstellungen
+            </Link>
           </div>
         </div>
-      )}
+      </div>
 
-      {editingCourseId && course && (
-        <CourseForm
-          initial={{
-            title: course.title,
-            description: course.description,
-            status: course.status === "published" ? "published" : "draft",
-          }}
-          onSubmit={(data) => updateCourseMeta(course.id, data)}
-          onCancel={() => setEditingCourseId(null)}
-        />
-      )}
-
-      {course?.canEdit && (
-        <>
-          <div className="row" style={{ justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              className="btn btn--primary btn--sm"
-              onClick={() => {
-                setShowForm(!showForm);
-                setError(null);
-                setSuccess(null);
-              }}
-            >
-              {showForm ? "Abbrechen" : "Neue Frage"}
-            </button>
-          </div>
-
-          {showForm && (
-            <AddQuestionForm
-              onSubmit={async (data) => {
-                await addQuestion(data);
-              }}
-              onCancel={() => setShowForm(false)}
-            />
-          )}
-
-          {courseQuestions.length === 0 ? (
-            <p className="muted">Keine Fragen in diesem Kurs.</p>
-          ) : (
-            groupByChapter(courseQuestions).map((ch) => (
-              <div key={ch.chapter}>
-                <div
-                  className="row row--between"
-                  style={{ flexWrap: "wrap", marginTop: 24, marginBottom: 8 }}
-                >
-                  <strong>
-                    Kapitel {ch.chapter} · {ch.chapterTitle}
-                  </strong>
-                  <span className="badge badge--muted">{ch.items.length} Fragen</span>
-                </div>
-                <div className="stack">
-                  {ch.items.map((q) => (
-                    <QuestionRow
-                      key={q.id}
-                      question={q}
-                      onDelete={() => deleteQuestion(q)}
-                      onEdit={(data) => editQuestion(q.id, data)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </>
-      )}
-
-      {canCreate && !showCourseForm && (
+      <div className="row" style={{ justifyContent: "flex-end" }}>
         <button
           type="button"
-          className="btn btn--secondary btn--sm"
-          onClick={() => setShowCourseForm(true)}
+          className="btn btn--primary btn--sm"
+          onClick={() => {
+            setShowForm(!showForm);
+            setError(null);
+            setSuccess(null);
+          }}
         >
-          Neuen Kurs anlegen
+          {showForm ? "Abbrechen" : "Neue Frage"}
         </button>
-      )}
-      {canCreate && showCourseForm && (
-        <CourseForm
-          onSubmit={createCourse}
-          onCancel={() => setShowCourseForm(false)}
+      </div>
+
+      {showForm && (
+        <AddQuestionForm
+          onSubmit={async (data) => {
+            await addQuestion(data);
+          }}
+          onCancel={() => setShowForm(false)}
         />
+      )}
+
+      {questions.length === 0 ? (
+        <p className="muted">Keine Fragen in diesem Kurs – lege die erste Frage an.</p>
+      ) : (
+        groupByChapter(questions).map((ch) => (
+          <div key={ch.chapter}>
+            <div
+              className="row row--between"
+              style={{ flexWrap: "wrap", marginTop: 24, marginBottom: 8 }}
+            >
+              <strong>
+                Kapitel {ch.chapter} · {ch.chapterTitle}
+              </strong>
+              <span className="badge badge--muted">{ch.items.length} Fragen</span>
+            </div>
+            <div className="stack">
+              {ch.items.map((q) => (
+                <QuestionRow
+                  key={q.id}
+                  question={q}
+                  onDelete={() => deleteQuestion(q)}
+                  onEdit={(data) => editQuestion(q.id, data)}
+                />
+              ))}
+            </div>
+          </div>
+        ))
       )}
     </div>
   );
@@ -449,73 +239,6 @@ function Notice({ error, success }: { error: string | null; success: string | nu
       )}
       {success && <div className="badge badge--success">{success}</div>}
     </>
-  );
-}
-
-function CourseForm({
-  initial,
-  onSubmit,
-  onCancel,
-}: {
-  initial?: { title: string; description: string; status: "draft" | "published" };
-  onSubmit: (data: { title: string; description: string; status: "draft" | "published" }) => Promise<boolean>;
-  onCancel: () => void;
-}) {
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [status, setStatus] = useState<"draft" | "published">(initial?.status ?? "draft");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    await onSubmit({ title, description, status });
-    setSubmitting(false);
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="card stack" style={{ padding: 20 }}>
-      <h3 style={{ margin: 0 }}>{initial ? "Kurs bearbeiten" : "Neuen Kurs anlegen"}</h3>
-      <div className="field">
-        <label>Titel</label>
-        <input
-          className="input"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="z. B. Algorithmen und Datenstrukturen"
-          required
-        />
-      </div>
-      <div className="field">
-        <label>Beschreibung</label>
-        <textarea
-          className="textarea"
-          rows={2}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Worum geht es in diesem Kurs?"
-        />
-      </div>
-      <div className="field">
-        <label>Status</label>
-        <select
-          className="input"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as "draft" | "published")}
-        >
-          <option value="draft">Entwurf (nur für dich sichtbar)</option>
-          <option value="published">Veröffentlicht (für alle Lernenden sichtbar)</option>
-        </select>
-      </div>
-      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-        <button type="submit" className="btn btn--primary btn--sm" disabled={submitting || !title.trim()}>
-          {submitting ? "Speichert …" : initial ? "Speichern" : "Kurs anlegen"}
-        </button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel}>
-          Abbrechen
-        </button>
-      </div>
-    </form>
   );
 }
 

@@ -52,7 +52,7 @@ wurden, und nutzt **Spaced Repetition (SM-2)** mit freier Erinnerung
   Intervalldauer, Wiederholungs- und Fehlzählung.
 - **Rollenbasiertes Admin** (`/admin`): Fragen als JSON hochladen, Nutzer
   verwalten (Rollen, Passwort-Reset, Name/E-Mail, Löschen) mit Self-Protection.
-- **Editor-Rolle & Kurs-Authoring** (`/admin/kurse`): Editoren legen eigene
+- **Editor-Rolle & Kurs-Authoring** (`/editor`): Editoren legen eigene
   Kurse (Entwurf/Veröffentlicht) samt Kapiteln an und bearbeiten sie;
   Besitzprüfung serverseitig (`canEditCourse`), Admins dürfen alles.
 - **Code-Aufgaben via Judge0** (optional, `docker compose --profile code`):
@@ -79,7 +79,7 @@ docker compose up --build -d
 
 Beim ersten Start führt der Container automatisch `prisma migrate deploy`
 aus. Die App startet **ohne vorbelegte Kurse** – Inhalte werden von
-Editoren/Admins über die Oberfläche (`/admin/kurse`) erstellt. Der
+Editoren/Admins über die Oberfläche (`/editor`) erstellt. Der
 mitgelieferte Fragenkatalog (2 Kurse, 131 Fragen) ist optionales
 Demo-/Beispielmaterial:
 
@@ -91,7 +91,7 @@ docker compose exec web npx tsx prisma/seed.ts
 ```
 
 **Erste Einrichtung einer frischen Instanz:** Konto registrieren, dann
-einmalig zum Admin machen und den ersten Kurs unter `/admin/kurse`
+einmalig zum Admin machen und den ersten Kurs unter `/editor`
 anlegen:
 
 ```bash
@@ -180,7 +180,8 @@ src/
     api/courses/        Kurs-CRUD für Editoren/Admins (Besitzprüfung)
     kurs/[courseId]/    kursbezogen: lernen / pruefung / fortschritt /
                         statistik / katalog (+ [id]-Detailansicht)
-    admin/              Fragen-Upload + Nutzerverwaltung + Kurs-Authoring
+    admin/              Fragen-Upload + Nutzerverwaltung
+    editor/             Kurs-Authoring (Dashboard, Curriculum, Einstellungen)
     einstellungen/      MCQ-Toggle, Passwort ändern
     login|registrieren/ Auth-Seiten
   lib/

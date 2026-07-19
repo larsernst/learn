@@ -135,7 +135,7 @@ export default async function HomePage() {
                 Lege deinen ersten Kurs an und fülle ihn mit Fragen – er
                 erscheint hier, sobald er veröffentlicht ist.
               </p>
-              <Link href="/admin/kurse" className="btn btn--primary">
+              <Link href="/editor" className="btn btn--primary">
                 Ersten Kurs anlegen
               </Link>
             </>

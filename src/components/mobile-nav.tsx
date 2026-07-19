@@ -50,9 +50,9 @@ export function MobileNav({ user }: MobileNavProps) {
                     Admin
                   </Link>
                 )}
-                {!user.isAdmin && user.isEditor && (
-                  <Link href="/admin/kurse" className="mobile-nav-link" onClick={() => setOpen(false)}>
-                    Meine Kurse
+                {user.isEditor && (
+                  <Link href="/editor" className="mobile-nav-link" onClick={() => setOpen(false)}>
+                    Editor
                   </Link>
                 )}
                 <Link href="/einstellungen" className="mobile-nav-link" onClick={() => setOpen(false)}>
