@@ -25,7 +25,7 @@ jobs:
 
       - run: npm run typecheck
 
-      - run: npm run test:unit
+      - run: npm run test:coverage
 
       - run: npm run build
         env:
@@ -72,6 +72,12 @@ jobs:
       - run: npx prisma migrate deploy
 
       - run: npm run db:seed
+
+      # Integrations-Tests (eigene DB e2e_integration; legt sie selbst an,
+      # migrated und räumt per TRUNCATE auf – unabhängig vom E2E-Seed).
+      - run: npm run test:integration
+        env:
+          INTEGRATION_DATABASE_URL: "postgresql://e2e:e2e@localhost:5432/e2e_integration?schema=public"
 
       - run: npm run build
 

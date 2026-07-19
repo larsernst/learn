@@ -6,8 +6,10 @@ Vor jedem Commit sind auszuführen:
 
 ```bash
 npm run typecheck      # tsc --noEmit
-npm run test:unit      # Vitest
-# E2E nur gegen laufende App+DB:
+npm run test:coverage  # Vitest inkl. Schwellen (src/lib: 75/88/70/75)
+# Integrations-Tests (PostgreSQL nötig, z. B. docker compose up -d db):
+npm run test:integration
+# E2E nur gegen laufende App+DB (App mit DISABLE_RATE_LIMIT=true starten):
 BASE_URL=http://<your-host>:<port> npm run test:e2e
 ```
 

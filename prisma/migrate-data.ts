@@ -26,7 +26,7 @@ const DEFAULT_COURSE = {
   description:
     "Vor der Umstrukturierung angelegte Fragen ohne Kurszuordnung – standardmäßig dem Kurs Betriebssysteme zugeordnet.",
   order: 1,
-  published: true,
+  status: "published",
 };
 
 const isDryRun = process.argv.includes("--dry-run");

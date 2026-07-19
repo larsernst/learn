@@ -123,6 +123,15 @@ docker compose exec web npm run db:make-admin -- --email user@example.com
   Der `pgdata`-Volume bleibt bei `docker compose down` erhalten, nur
   `docker compose down -v` löscht die Daten.
 
+**Abhängigkeiten:** `npm audit` meldet verbleibende Hinweise, deren
+vollständige Behebung Major-Upgrades erfordert (Next.js 16, Vitest 4).
+Die kritischen/fundamentalen Einträge betreffen ausschließlich
+Entwicklungs-Werkzeuge (Vitest-API-Server, Playwright-Browser-Download)
+und sind im Produktivbetrieb nicht wirksam; die Next.js-Einträge sind
+DoS-Klasse (u. a. Image-Optimizer – diese App nutzt keine eigenen
+`remotePatterns`). Ein geplantes Major-Upgrade ist der richtige Rahmen,
+um diese Restpunkte zu schließen.
+
 ## Lokale Entwicklung (ohne Docker)
 
 Voraussetzungen: Node ≥ 20, eine laufende PostgreSQL-Instanz.
@@ -144,6 +153,12 @@ braucht der eigene Account die Editor- oder Admin-Rolle:
 ```bash
 # Unit-Tests (keine Datenbank nötig)
 npm run test:unit
+
+# Unit-Tests mit Coverage-Schwellen (läuft so in der CI)
+npm run test:coverage
+
+# Integrations-Tests (PostgreSQL nötig, z. B. via docker compose up -d db)
+npm run test:integration
 
 # E2E-Tests (App + DB müssen laufen, z. B. via docker compose)
 BASE_URL=<deine-URL> npm run test:e2e

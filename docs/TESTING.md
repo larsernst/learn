@@ -40,13 +40,39 @@ Ausführen (keine Datenbank erforderlich):
 npm install
 npm run test:unit
 # oder mit Abdeckung (benötigt @vitest/coverage-v8):
-npx vitest run --coverage
+npm run test:coverage
 ```
+
+Coverage-Schwellen (`vitest.config.ts`): 75 % Lines / 88 % Branches /
+70 % Functions auf `src/lib` – knapp unter dem Ist-Stand, damit die
+Abdeckung nicht unbemerkt absinkt. In der CI läuft `npm run test:coverage`.
+
+## Integrations-Tests (Vitest + PostgreSQL)
+
+`tests/integration/` prüft Seed- und Migrations-Verhalten gegen eine echte
+PostgreSQL-Datenbank:
+
+| Datei | Getestetes Verhalten |
+|---|---|
+| `tests/integration/migrate-data.test.ts` | Frische DB ohne vorbelegten Kurs, Orphan-Zuweisung an den Standardkurs, Chapter-Backfill ohne Early-Return |
+| `tests/integration/seed.test.ts` | Seed lädt 2 Kurse/11 Kapitel/131 Fragen, Idempotenz, Schema-Konformität aller Payloads, MCQ-Flags |
+
+Die Tests nutzen eine eigene Datenbank (`INTEGRATION_DATABASE_URL`, sonst
+`DATABASE_URL` + Suffix `_integration`), legen sie bei Bedarf an, migrieren
+sie und räumen per `TRUNCATE` auf. Ohne erreichbare Datenbank überspringen
+sie sich selbst.
+
+```bash
+docker compose up -d db
+npm run test:integration
+```
+
+In der CI laufen sie im `e2e`-Job (dort existiert ein Postgres-Service).
 
 ## End-to-End-Tests (Playwright)
 
 Die E2E-Tests laufen gegen die laufende App + Datenbank und decken die
-Hauptflüsse ab (10 Spezifikationen, 31 Tests):
+Hauptflüsse ab (11 Spezifikationen, 33 Tests):
 
 | Datei | Getesteter Fluss |
 |---|---|
@@ -58,6 +84,7 @@ Hauptflüsse ab (10 Spezifikationen, 31 Tests):
 | `tests/e2e/mobile.spec.ts` | Hamburger-Nav, kein horizontaler Scroll-Überlauf |
 | `tests/e2e/admin-rejection.spec.ts` | Nicht-Admin bekommt keinen Admin-API-Zugriff (401/403), /admin-Redirect |
 | `tests/e2e/admin.setup.ts` + `admin.spec.ts` | Admin anlegen (Setup-Projekt mit Storage-State), dann: Nutzerliste, Suche, Self-Protection (Rolle entziehen/löschen), fremden Nutzer bearbeiten |
+| `tests/e2e/code-task.spec.ts` | Code-Submit bei deaktiviertem Judge0: 503 mit Fehlermeldung (samt 401 ohne Login) |
 
 Hinweis zum MCQ-Fluss in E2E-Tests: der Submit-Button des `McqRenderer`
 heißt erst **nach** Auswahl einer Option „Bestätigen & nächste" bzw.
