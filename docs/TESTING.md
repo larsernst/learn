@@ -5,14 +5,14 @@ Die App hat zwei Test-Schichten: **Unit-Tests** (Vitest, rein logisch) und
 
 ## Unit-Tests (Vitest)
 
-Gedeckter Bereich (13 Testdateien, 126 Tests, rein logisch, ohne Datenbank):
+Gedeckter Bereich (21 Testdateien, 198 Tests, rein logisch, ohne Datenbank):
 
 | Datei | Tests | Getestetes Verhalten |
 |---|---|---|
-| `tests/unit/sm2.test.ts` | 18 | SM-2-Fortschreibung, Intervalldauer, Ease-Faktor-Boden, „again"-Reset, Fälligkeit |
-| `tests/unit/serialize.test.ts` | 11 | `stripMcq` / `serializeQuestion`: `correct`-Flag wird entfernt (kein Answer-Leak), Auswahlmodus `single`/`multi`, MCQ-Deaktivierung |
-| `tests/unit/review-grade.test.ts` | 7 | `resolveReviewGrade`: MCQ richtig/falsch, Multi-Select, Recall-Grade, fehlende Optionen |
-| `tests/unit/validation.test.ts` | 27 | Alle API-Zod-Schemata (`login`, `register`, `passwordChange`, `reviewSubmit`, `examSubmit`, `adminQuestions`, `adminResetPassword`, `adminUserPatch`) |
+| `tests/unit/sm2.test.ts` | 18 | SM-2-Fortschreibung, Intervalldauer, Ease-Faktor-Boden, „again"-Reset, Fälligkeit, MCQ-Grade-Mapping |
+| `tests/unit/serialize.test.ts` | 9 | `serializeQuestion`: `correct`-Flag wird entfernt (kein Answer-Leak), Auswahlmodus `single`/`multi`, MCQ-Deaktivierung, Optionen-Mischen |
+| `tests/unit/review-grade.test.ts` | 8 | `resolveReviewGrade`: MCQ richtig/falsch, Multi-Select, Recall-Grade, fehlende Optionen |
+| `tests/unit/validation.test.ts` | 28 | Alle API-Zod-Schemata (`login`, `register`, `passwordChange`, `reviewSubmit`, `examSubmit`, `adminQuestions`, `adminResetPassword`, `adminUserPatch`) |
 | `tests/unit/exam.test.ts` | 8 | `shuffle`, `selectExamQuestions`, `gradeExamAttempt` |
 | `tests/unit/stats.test.ts` | 12 | `computeStreak`, `buildHeatmap`, `buildLapsesLeaderboard` |
 | `tests/unit/session.test.ts` | 8 | Jose-JWT Round-Trip und Token-Manipulation |
@@ -20,8 +20,16 @@ Gedeckter Bereich (13 Testdateien, 126 Tests, rein logisch, ohne Datenbank):
 | `tests/unit/rate-limit.test.ts` | 7 | Fixed-Window-Limit, Retry-After, `getClientIp` |
 | `tests/unit/origin.test.ts` | 7 | `checkSameOrigin` (sec-fetch-site, Origin/Host, ALLOWED_ORIGINS) |
 | `tests/unit/env.test.ts` | 4 | `validateJwtSecret`: kurze/fehlende/Platzhalter-Secrets |
-| `tests/unit/auth.test.ts` | 3 | `isAdmin`-Rollenprüfung |
+| `tests/unit/auth.test.ts` | 7 | `isAdmin`- und `isEditor`-Rollenprüfung (Admin ist implizit Editor) |
 | `tests/unit/make-admin.test.ts` | 11 | CLI-Argumente und `runMakeAdmin` (Promote, --force, --list) |
+| `tests/unit/course-access.test.ts` | 13 | `canViewCourse` (published/draft, Besitzer, Admin) und `canEditCourse` (Admin, Editor-Besitz) |
+| `tests/unit/tasks/recall.test.ts` | 6 | Recall-Bundle: grade, serialize, emptyAttempt |
+| `tests/unit/tasks/mcq.test.ts` | 13 | MCQ-Bundle: grade (single/multi), serialize (correct-Stripping, Mischen), emptyAttempt |
+| `tests/unit/tasks/dragdrop.test.ts` | 8 | Drag&Drop-Bundle: grade (Zuordnung), serialize, emptyAttempt |
+| `tests/unit/tasks/cloze.test.ts` | 10 | Cloze-Bundle: grade (Lücken, Groß-/Kleinschreibung), serialize, emptyAttempt |
+| `tests/unit/tasks/order.test.ts` | 7 | Order-Bundle: grade (Reihenfolge), serialize, emptyAttempt |
+| `tests/unit/tasks/code.test.ts` | 5 | Code-Bundle: serialize (Public-Payload ohne Musterlösung) |
+| `tests/unit/judge0/grade.test.ts` | 5 | `gradeCodeWithJudge0`: Status-Mapping, Polling, Fehlerfälle (gemockter Judge0-Client) |
 
 Die Zod-Schemata liegen in `src/lib/validation.ts` (zentral und damit
 isoliert testbar), die SM-2-Grade-Auflösung in `src/lib/review-grade.ts`.
@@ -38,17 +46,23 @@ npx vitest run --coverage
 ## End-to-End-Tests (Playwright)
 
 Die E2E-Tests laufen gegen die laufende App + Datenbank und decken die
-Hauptflüsse ab:
+Hauptflüsse ab (10 Spezifikationen, 31 Tests):
 
 | Datei | Getesteter Fluss |
 |---|---|
-| `tests/e2e/smoke.spec.ts` | Startseite → Registrierung → Lernen → Fortschritt → Katalog |
+| `tests/e2e/smoke.spec.ts` | Startseite → Registrierung → Lernen → Fortschritt → Katalog; Login-Formular |
 | `tests/e2e/learn-flow.spec.ts` | Login, falsches Passwort, Duplicate-Email-409, geschützte Routen, Logout |
 | `tests/e2e/mcq-katalog.spec.ts` | MCQ-API richtig/falsch, MCQ-Karte, Katalog, MCQ-Toggle in Einstellungen |
-| `tests/e2e/exam.spec.ts` | 10-Fragen-Prüfung, Ergebnis, Ansicht |
+| `tests/e2e/exam.spec.ts` | 10-Fragen-Prüfung komplett durchlaufen (MCQ + Recall), Ergebnis, SM-2-Übernahme; Login-Redirect; Katalog-Vorschau (Cram) |
 | `tests/e2e/statistik.spec.ts` | Streak/Heatmap-Aktivität, „schwieriger Stapel", Login-Redirect |
 | `tests/e2e/mobile.spec.ts` | Hamburger-Nav, kein horizontaler Scroll-Überlauf |
-| `tests/e2e/admin.spec.ts` | Nicht-Admin wird blockiert (401/403), /admin-Redirect |
+| `tests/e2e/admin-rejection.spec.ts` | Nicht-Admin bekommt keinen Admin-API-Zugriff (401/403), /admin-Redirect |
+| `tests/e2e/admin.setup.ts` + `admin.spec.ts` | Admin anlegen (Setup-Projekt mit Storage-State), dann: Nutzerliste, Suche, Self-Protection (Rolle entziehen/löschen), fremden Nutzer bearbeiten |
+
+Hinweis zum MCQ-Fluss in E2E-Tests: der Submit-Button des `McqRenderer`
+heißt erst **nach** Auswahl einer Option „Bestätigen & nächste" bzw.
+„Auswerten" (vorher „Bitte Optionen wählen"). Tests müssen daher zuerst
+eine Option per `.mcq-option input` anhaken und dann den Button klicken.
 
 Voraussetzung: App und Datenbank laufen. Einfach via Docker:
 

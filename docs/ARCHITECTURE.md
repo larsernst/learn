@@ -53,6 +53,24 @@ und `requireAdminPage` (Redirect) schützen die Admin-Routen. Self-
 Protection: ein Admin kann sich nicht selbst die Admin-Rolle entziehen
 oder sich selbst löschen.
 
+### Rollen & Editor
+
+Neben `admin` gibt es die Rolle `editor` (`src/lib/roles.ts`). Editoren
+dürfen eigene Kurse anlegen und bearbeiten (Kurs-Authoring unter
+`/admin/kurse`); Admins sind implizit auch Editoren. Die Guards
+`requireEditorApi` / `requireEditorPage` schützen die Authoring-Routen,
+die fachliche Entscheidung liegt in `src/lib/course-access.ts`:
+
+- `canViewCourse`: veröffentlichte Kurse (`status = "published"`) sieht
+  jeder; Entwürfe (`"draft"`) nur Admins und der Besitzer.
+- `canEditCourse`: Admins immer; Editoren nur eigene Kurse
+  (`ownerId === user.sub`).
+
+Kurs-CRUD läuft über `/api/courses` (Liste/Anlage) und
+`/api/courses/[id]` (Detail/Patch/Löschen), jeweils mit
+Besitzprüfung. Kurse tragen `ownerId` (Seed-Kurse: `NULL` = offiziell)
+und `status` (`draft` | `published`).
+
 ## Spaced Repetition (SM-2)
 
 Implementiert als reine Funktionen in `src/lib/sm2.ts`. Der Algorithmus
@@ -83,27 +101,36 @@ Pro (User, Frage) existiert genau ein `Review`-Datensatz mit
 ## Datenmodell (Prisma)
 
 - `User`: `id`, `email` (unique), `name`, `passwordHash`, `mcqEnabled`,
-  `simpleGrading`, Zeitstempel. 1—N `Review`, `ReviewEvent`, `UserRole`.
-- `UserRole`: `userId` + `role` (z. B. `"admin"`), Unique-Constraint auf
-  `(userId, role)`. Wird mit dem User kaskadiert gelöscht. Ermöglicht
-  mehrere Rollen pro Nutzer.
+  `simpleGrading`, `newQuestionsFirst`, Zeitstempel. 1—N `Review`,
+  `ReviewEvent`, `UserRole`, `ownedCourses`.
+- `UserRole`: `userId` + `role` (`"admin"` | `"editor"`),
+  Unique-Constraint auf `(userId, role)`. Wird mit dem User kaskadiert
+  gelöscht. Ermöglicht mehrere Rollen pro Nutzer.
 - `AppSetting`: globale Key/Value-Konfiguration (`key` = PK, `value`,
   `updatedAt`). Aktuell belegt: `matureThresholdDays`. Pflege via
   `/admin/einstellungen`; Zugriff über `src/lib/settings.ts`.
 - `Course`: `id` (String-PK), `slug` (unique), `title`, `description`,
-  `order`, `published`. Neue Kurse werden in
-  `prisma/seed-data/courses.ts` angelegt.
+  `order`, `ownerId` (nullable FK auf `User`, SET NULL), `status`
+  (`"draft"` | `"published"`, Default `"published"`). 1—N `Question`,
+  1—N `Chapter`. Löschen eines Kurses löscht Fragen und Kapitel per
+  Cascade mit.
+- `Chapter`: `id`, `courseId` (FK, Cascade), `slug`, `title`,
+  `description`, `order`. Unique auf `(courseId, slug)`. Die flachen
+  Felder `Question.chapter`/`chapterTitle` bleiben aus
+  Kompatibilitätsgründen erhalten; `chapterId` verweist zusätzlich auf
+  den `Chapter`-Datensatz.
 - `Question`: `id` = Fragenkatalog-Slug (stabil), `courseId` (nullable,
-  FK auf `Course`, SET NULL beim Löschen), `chapter`, `chapterTitle`,
-  `question`, `answer`, `sourceRef`, `mcqOptions` (JSON), `confidence`
-  (`"high" | "low"`). Wird per `prisma/seed.ts` idempotent geseedt
-  (`upsert`).
+  FK auf `Course`, CASCADE), `chapter`/`chapterTitle` (flach, Legacy),
+  `chapterId` (nullable FK auf `Chapter`, SET NULL), `question`,
+  `answer`, `sourceRef`, `confidence` (`"high" | "low"`),
+  **`taskType` + `payload`** (siehe Task-Typen unten). Wird per
+  `prisma/seed.ts` idempotent geseedt (`upsert`).
 - `Review`: SM-2-Zustand pro User/Question (`easeFactor`,
   `intervalDays`, `repetitions`, `lapses`, `dueAt`, `lastReviewedAt`),
   Unique-Constraint auf `(userId, questionId)`, Index auf
   `(userId, dueAt)` für schnelle „fällig"-Abfragen.
 - `ReviewEvent`: unveränderliches Audit-Log jeder einzelnen Bewertung
-  (`grade`, `mcqCorrect`, `at`). Index auf `(userId, at)` und
+  (`grade`, `correct`, `at`). Index auf `(userId, at)` und
   `(userId, questionId)`. Speist die Statistik-Seite (Streak, Heatmap,
   Trefferquote, schwierigste Fragen).
 
@@ -128,6 +155,56 @@ Bevor eine Frage an den Client geht, filtert `src/lib/serialize.ts`
   nie die korrekte Antwort, bevor sie bewertet wurde. Der Auswahlmodus
   (`single` bei genau einer korrekten Option, sonst `multi`) wird
   serverseitig abgeleitet.
+
+## Task-Typen
+
+Fragen tragen seit Migration 0010 einen Diskriminator `taskType` und
+einen typspezifischen JSON-`payload`. Sechs Typen sind implementiert:
+
+| taskType | Inhalt | Bewertung |
+|---|---|---|
+| `recall` | Freie Erinnerung (Standard) | Selbsteinschätzung |
+| `mcq` | Multiple-Choice (`{ options: [{ id, text, correct }] }`) | automatisch |
+| `dragdrop` | Zuordnung Begriffe → Ziele | automatisch |
+| `cloze` | Lückentext | automatisch |
+| `order` | Reihenfolge sortieren | automatisch |
+| `code` | Code-Aufgabe | Judge0 (siehe unten) |
+
+Jeder Typ ist ein Bundle unter `src/lib/tasks/<type>/` mit
+`payloadSchema`/`attemptSchema` (Zod), `grade` (rein), `serialize`
+(Public-Payload ohne Lösungen) und `emptyAttempt`. Alle Bundles sind in
+`src/lib/tasks/registry.ts` registriert – Handler und UIs konsultieren
+nur die Registry, es gibt keine typspezifischen Switches außerhalb.
+`normalizeQuestionTask` leitet für Alt-Datensätze ohne `taskType` den
+Typ aus dem rohen DB-Zustand ab (Übergangsphase). Die React-Renderer
+liegen unter `src/components/questions/` (`McqRenderer`,
+`RecallRenderer`, `AdvancedRenderers` für dragdrop/cloze/order,
+`CodeRenderer`).
+
+Deaktiviert ein Nutzer MCQ (`mcqEnabled = false`), degenerieren
+MCQ-Fragen serverseitig zu `recall` (`serializeTask` in der Registry).
+
+## Code-Aufgaben (Judge0)
+
+Code-Aufgaben werden optional über einen
+[Judge0](https://judge0.com)-Server bewertet (`src/lib/judge0/`:
+`client`, `config`, `grade`). Das Feature ist per
+`JUDGE0_ENABLED=true` plus `JUDGE0_URL`/`JUDGE0_TOKEN` aktivierbar und
+läuft über das docker-compose-Profil `code` (eigene PostgreSQL- und
+Redis-Instanz für Judge0). Ist es deaktiviert (Default), lehnt
+`/api/review/code-submit` Code-Einreichungen serverseitig ab und die UI
+bietet den Editor nicht an. Der Client schickt Source-Code +
+Language-ID an Judge0, pollt das Submission-Token und mappt den
+Judge0-Status auf `correct`/`incorrect`.
+
+## Markdown-Pipeline
+
+Fragen- und Antworttexte sind Markdown und werden über
+`src/components/markdown.tsx` gerendert: `react-markdown` mit
+`remark-gfm` (Tabellen, Task-Listen), `rehype-katex` (Formeln),
+`rehype-highlight` (Code-Syntax) und `rehype-sanitize` (XSS-Schutz,
+läuft vor den übrigen Rehype-Plugins). Inline-Code wird separat
+gestylt.
 
 ## Routing
 

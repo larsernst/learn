@@ -12,12 +12,7 @@ async function login(page: import("@playwright/test").Page, email: string) {
 }
 
 test.describe("Pruefungssimulation", () => {
-  // TODO(phase-0): Test temporär deaktiviert – der PruefungClient rendert
-  // nach Phase 0 (Renderer-Extraktion + taskType-Diskriminator) keine Buttons
-  // im Browser. Die API funktioniert via curl korrekt. Debugging benötigt
-  // Playwright mit --headed in einer Linux-Umgebung (installiert auf Windows
-  // nicht). Reaktivieren, sobald Root-Cause gefunden.
-  test.skip("10-Fragen-Pruefung durchlaufen und Ergebnis sehen", async ({ page, request }) => {
+  test("10-Fragen-Pruefung durchlaufen und Ergebnis sehen", async ({ page, request }) => {
     const email = unique("exam");
     await request.post("/api/auth/register", {
       data: { name: "Exam", email, password: "testpass1234" },
@@ -34,16 +29,17 @@ test.describe("Pruefungssimulation", () => {
       const resultHeading = page.getByRole("heading", { name: "Einzelne Fragen" });
       if (await resultHeading.isVisible().catch(() => false)) break;
 
-      const confirm = page.getByRole("button", { name: "Bestätigen & nächste" });
-      const reveal = page.getByRole("button", { name: "Musterantwort zeigen" });
-
-      if (await confirm.isVisible().catch(() => false)) {
-        // MCQ-Frage: wähle die erste Option (checkbox bei Multi, radio bei Single).
-        await page.locator(".mcq-option input").first().check();
-        await confirm.click();
+      // MCQ-Frage? Der Submit-Button heisst erst nach Auswahl einer Option
+      // "Bestätigen & nächste" – daher zuerst die Optionen prüfen.
+      const mcqOptions = page.locator(".mcq-option input");
+      if ((await mcqOptions.count()) > 0) {
+        await mcqOptions.first().check();
+        await page.getByRole("button", { name: "Bestätigen & nächste" }).click();
         await page.waitForTimeout(150);
         continue;
       }
+
+      const reveal = page.getByRole("button", { name: "Musterantwort zeigen" });
       if (await reveal.isVisible().catch(() => false)) {
         await reveal.click();
         await page.getByRole("button", { name: "Richtig" }).click();

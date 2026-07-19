@@ -31,8 +31,15 @@ wurden, und nutzt **Spaced Repetition (SM-2)** mit freier Erinnerung
   (31 Fragen, 5 Kapitel), jeweils über `/kurs/[courseId]/*` erreichbar.
 - Freie Erinnerung: Frage lesen → selbst antworten → Musterantwort aufdecken →
   selbst bewerten (`Again / Hard / Good / Easy`).
+- **Sechs Aufgabentypen** (`taskType` + `payload`, Registry in
+  `src/lib/tasks/`): Freie Erinnerung (`recall`), Multiple-Choice (`mcq`),
+  Drag&Drop-Zuordnung (`dragdrop`), Lückentext (`cloze`), Sortieren
+  (`order`) und Code-Aufgaben (`code`). Alle automatisch bewerteten Typen
+  mappen auf `Good` (richtig) / `Again` (falsch).
 - Multiple-Choice: „Nennen Sie …"-Fragen werden als Mehrfachauswahl
   (auto-ausgewertet) angezeigt – richtig → `Good`, falsch → `Again`.
+- Fragen und Antworten sind **Markdown** (GFM, KaTeX-Formeln,
+  Syntax-Highlighting, sanitiert via `rehype-sanitize`).
 - SM-2 Spaced-Repetition-Algorithmus plant die nächste Fälligkeit je Karte;
   falsch bewertete Karten erscheinen am selben Tag erneut.
 - Prüfungsmodus (`/kurs/[courseId]/pruefung`): simuliert eine Klausur mit
@@ -45,6 +52,12 @@ wurden, und nutzt **Spaced Repetition (SM-2)** mit freier Erinnerung
   Intervalldauer, Wiederholungs- und Fehlzählung.
 - **Rollenbasiertes Admin** (`/admin`): Fragen als JSON hochladen, Nutzer
   verwalten (Rollen, Passwort-Reset, Name/E-Mail, Löschen) mit Self-Protection.
+- **Editor-Rolle & Kurs-Authoring** (`/admin/kurse`): Editoren legen eigene
+  Kurse (Entwurf/Veröffentlicht) samt Kapiteln an und bearbeiten sie;
+  Besitzprüfung serverseitig (`canEditCourse`), Admins dürfen alles.
+- **Code-Aufgaben via Judge0** (optional, `docker compose --profile code`):
+  Auto-Bewertung von Code-Einreichungen; deaktiviert werden Code-Aufgaben
+  serverseitig abgelehnt und in der UI nicht angeboten.
 - Atlassian-inspiriertes, reduziertes Design (Tokens aus `DESIGN.md`).
 - Komplett dockerisiert via `docker-compose.yml` (PostgreSQL + Next.js-App).
 - Unit-Tests (Vitest) für SM-2, MCQ-Auswertung, Serialize, Validierung,
@@ -126,32 +139,45 @@ src/
     api/exam/           questions / submit (Prüfungsmodus)
     api/progress/       Fortschritts-Aggregate
     api/settings/       MCQ-Toggle
-    api/admin/          questions / users (rollengeschützt)
+    api/admin/          questions / users / settings (rollengeschützt)
+    api/courses/        Kurs-CRUD für Editoren/Admins (Besitzprüfung)
     kurs/[courseId]/    kursbezogen: lernen / pruefung / fortschritt /
                         statistik / katalog (+ [id]-Detailansicht)
-    admin/              Fragen-Upload + Nutzerverwaltung
+    admin/              Fragen-Upload + Nutzerverwaltung + Kurs-Authoring
     einstellungen/      MCQ-Toggle, Passwort ändern
     login|registrieren/ Auth-Seiten
   lib/
+    tasks/              Aufgabentypen-Registry + Bundles (recall, mcq,
+                        dragdrop, cloze, order, code): payload/attempt-
+                        Schemata, grade, serialize (alles rein, getestet)
+    judge0/             Judge0-Client + Auto-Bewertung für Code-Aufgaben
     sm2.ts              SM-2-Algorithmus (pure Funktionen, getestet)
     review-grade.ts     Bewertungsauflösung (Recall vs. MCQ)
     serialize.ts        Antwort-Sicherheit (stript correct-Flags)
     validation.ts       Zod-Schemata für alle API-Routen
     session.ts          Jose-JWT + httpOnly-Cookie
     password.ts         bcryptjs Hashing/Verify
-    auth.ts             Rollen-Check (DB-basiert, requireAdmin*)
+    auth.ts             Rollen-Check (DB-basiert, requireAdmin*/requireEditor*)
+    course-access.ts    Kurs-Sichtbarkeit/-Bearbeitbarkeit (draft/published,
+                        Besitzer, Admin)
+    roles.ts            Rollen-Konstanten (admin/editor), isAdmin/isEditor
     prisma.ts           Prisma-Client (Singleton)
     design-tokens.ts    Tokens aus DESIGN.md
+  components/
+    markdown.tsx        Markdown-Renderer (GFM, KaTeX, Highlight, Sanitize)
+    questions/          Task-Renderer (Mcq, Recall, DragDrop/Cloze/Order,
+                        Code)
 prisma/
-  schema.prisma         User / UserRole / Course / Question /
-                        Review / ReviewEvent
+  schema.prisma         User / UserRole / AppSetting / Course / Chapter /
+                        Question / Review / ReviewEvent
   seed.ts               Schreibt den Fragenkatalog idempotent in die DB
   seed-data/
-    courses.ts          Kurs-Metadaten (id, slug, Reihenfolge, published)
+    courses.ts          Kurs-Metadaten (id, slug, Reihenfolge, Kapitel)
     fragenkatalog.ts    131 Fragen + Antworten (Quelle: Vorlesung)
 tests/
   unit/                 Vitest: sm2, serialize, review-grade, validation,
-                        exam, stats, session, password, rate-limit, …
+                        exam, stats, session, password, rate-limit, auth,
+                        course-access, tasks/*, judge0, …
   e2e/                  Playwright: Lernfluss, Prüfung, Statistik, MCQ,
                         Admin, Mobile, Smoke
 docker-compose.yml      Postgres + Web
