@@ -16,6 +16,42 @@ services:
       timeout: 5s
       retries: 10
 
+  # Judge0: Auto-Bewertung von Code-Aufgaben (Phase 4). Opt-in über das
+  # 'code'-Profil: `docker compose --profile code up`. Die App läuft auch
+  # ohne (Code-Aufgaben werden dann abgelehnt, JUDGE0_ENABLED=false).
+  # Judge0 benötigt seine eigene PostgreSQL- und Redis-Instanz; die offizielle
+  # Setup-Anleitung: https://github.com/judge0/judge0/blob/master/EXTRA_INSTALLATION.md
+  # Für lokale Entwicklung kann auch judge0-extra-api verwendet werden.
+  judge0-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    profiles: ["code"]
+  judge0-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    profiles: ["code"]
+    environment:
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0
+      POSTGRES_DB: judge0
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data
+  judge0-server:
+    image: judge0/server:1.13.1
+    restart: unless-stopped
+    profiles: ["code"]
+    depends_on:
+      - judge0-redis
+      - judge0-db
+    environment:
+      REDIS_URL: "redis://judge0-redis:6379"
+      POSTGRES_HOST: judge0-db
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0
+      POSTGRES_DB: judge0
+    volumes:
+      - judge0-data:/vendor
+
   web:
     build:
       context: .
@@ -32,8 +68,14 @@ services:
       NEXT_PUBLIC_APP_NAME: "Lern-App"
       NODE_ENV: production
       PORT: "${WEB_PORT:-3000}"
+      JUDGE0_ENABLED: "${JUDGE0_ENABLED:-false}"
+      NEXT_PUBLIC_JUDGE0_ENABLED: "${JUDGE0_ENABLED:-false}"
+      JUDGE0_URL: "http://judge0-server:2358"
+      JUDGE0_TOKEN: "${JUDGE0_TOKEN:-}"
     ports:
       - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
 
 volumes:
   pgdata:
+  judge0-data:
+  judge0-db-data:

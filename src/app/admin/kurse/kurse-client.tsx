@@ -110,7 +110,7 @@ export default function KurseClient({
     answer: string;
     sourceRef: string;
     confidence: "high" | "low" | "";
-    taskType: "recall" | "mcq" | "dragdrop" | "cloze" | "order";
+    taskType: "recall" | "mcq" | "dragdrop" | "cloze" | "order" | "code";
     // taskPayload ist typabhängig; hier als unknown, da das Bundle validiert.
     taskPayload: unknown;
     // legacy: nur noch für MCQ (kompatibilitätshalber)
@@ -627,7 +627,7 @@ function QuestionRow({
   );
 }
 
-type EditorTaskType = "recall" | "mcq" | "dragdrop" | "cloze" | "order";
+type EditorTaskType = "recall" | "mcq" | "dragdrop" | "cloze" | "order" | "code";
 
 function AddQuestionForm({
   onSubmit,
@@ -677,6 +677,15 @@ function AddQuestionForm({
     { id: "item-1", text: "" },
     { id: "item-2", text: "" },
   ]);
+  // code
+  const [codeLanguages, setCodeLanguages] = useState<
+    { languageId: number; label: string; starterCode: string }[]
+  >([{ languageId: 71, label: "Python 3", starterCode: "" }]);
+  const [codeTestCases, setCodeTestCases] = useState<
+    { id: string; input: string; expectedOutput: string; hidden: boolean }[]
+  >([{ id: "t1", input: "", expectedOutput: "", hidden: false }]);
+  const [codeTimeLimitMs, setCodeTimeLimitMs] = useState(3000);
+  const [codeMemoryLimitKb, setCodeMemoryLimitKb] = useState(262144);
   const [submitting, setSubmitting] = useState(false);
 
   function addMcqOption() {
@@ -714,6 +723,13 @@ function AddQuestionForm({
       taskPayload = {
         items: orderItems,
         correctOrder: orderItems.map((i) => i.id),
+      };
+    } else if (taskType === "code") {
+      taskPayload = {
+        languages: codeLanguages,
+        testCases: codeTestCases,
+        timeLimitMs: codeTimeLimitMs,
+        memoryLimitKb: codeMemoryLimitKb,
       };
     }
     await onSubmit({
@@ -812,6 +828,7 @@ function AddQuestionForm({
           <option value="dragdrop">Zuordnen / Drag & Drop (auto)</option>
           <option value="cloze">Lückentext (auto)</option>
           <option value="order">Sortieren / Reihenfolge (auto)</option>
+          <option value="code">Code / Programmieraufgabe (auto, Judge0)</option>
         </select>
       </div>
 
@@ -867,6 +884,19 @@ function AddQuestionForm({
 
       {taskType === "order" && (
         <OrderEditor items={orderItems} onItemsChange={setOrderItems} />
+      )}
+
+      {taskType === "code" && (
+        <CodeEditor
+          languages={codeLanguages}
+          testCases={codeTestCases}
+          timeLimitMs={codeTimeLimitMs}
+          memoryLimitKb={codeMemoryLimitKb}
+          onLanguagesChange={setCodeLanguages}
+          onTestCasesChange={setCodeTestCases}
+          onTimeLimitChange={setCodeTimeLimitMs}
+          onMemoryLimitChange={setCodeMemoryLimitKb}
+        />
       )}
 
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -1193,4 +1223,229 @@ function slugify(s: string): string {
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function CodeEditor({
+  languages,
+  testCases,
+  timeLimitMs,
+  memoryLimitKb,
+  onLanguagesChange,
+  onTestCasesChange,
+  onTimeLimitChange,
+  onMemoryLimitChange,
+}: {
+  languages: { languageId: number; label: string; starterCode: string }[];
+  testCases: { id: string; input: string; expectedOutput: string; hidden: boolean }[];
+  timeLimitMs: number;
+  memoryLimitKb: number;
+  onLanguagesChange: (
+    l: { languageId: number; label: string; starterCode: string }[]
+  ) => void;
+  onTestCasesChange: (
+    t: { id: string; input: string; expectedOutput: string; hidden: boolean }[]
+  ) => void;
+  onTimeLimitChange: (n: number) => void;
+  onMemoryLimitChange: (n: number) => void;
+}) {
+  return (
+    <div className="stack">
+      <span className="muted" style={{ fontSize: 13 }}>
+        Code-Aufgaben werden über Judge0 automatisch bewertet. Sie benötigen
+        JUDGE0_ENABLED=true auf dem Server. Sprache-IDs aus der{" "}
+        <a
+          href="https://github.com/judge0/judge0/blob/master/EXTRA_LANGUAGES.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Judge0-Liste
+        </a>{" "}
+        (z. B. 71 = Python 3, 63 = JavaScript, 50 = C).
+      </span>
+
+      <div className="stack">
+        <strong style={{ fontSize: 14 }}>Sprachen</strong>
+        {languages.map((lang, idx) => (
+          <div key={idx} className="row" style={{ gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div className="field" style={{ flex: "0 0 90px" }}>
+              <label>Lang-ID</label>
+              <input
+                className="input"
+                type="number"
+                value={lang.languageId}
+                onChange={(e) =>
+                  onLanguagesChange(
+                    languages.map((x, i) =>
+                      i === idx ? { ...x, languageId: Number(e.target.value) || 0 } : x
+                    )
+                  )
+                }
+              />
+            </div>
+            <div className="field" style={{ flex: "0 0 160px" }}>
+              <label>Label</label>
+              <input
+                className="input"
+                value={lang.label}
+                onChange={(e) =>
+                  onLanguagesChange(
+                    languages.map((x, i) => (i === idx ? { ...x, label: e.target.value } : x))
+                  )
+                }
+                placeholder="Python 3"
+              />
+            </div>
+            <div className="field" style={{ flex: 1, minWidth: 200 }}>
+              <label>Starter-Code</label>
+              <textarea
+                className="textarea"
+                rows={2}
+                value={lang.starterCode}
+                onChange={(e) =>
+                  onLanguagesChange(
+                    languages.map((x, i) =>
+                      i === idx ? { ...x, starterCode: e.target.value } : x
+                    )
+                  )
+                }
+                placeholder="# Dein Code …"
+                style={{ fontFamily: "monospace", fontSize: 12 }}
+              />
+            </div>
+            {languages.length > 1 && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => onLanguagesChange(languages.filter((_, i) => i !== idx))}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={() =>
+            onLanguagesChange([
+              ...languages,
+              { languageId: 63, label: "", starterCode: "" },
+            ])
+          }
+        >
+          Sprache hinzufügen
+        </button>
+      </div>
+
+      <div className="stack">
+        <strong style={{ fontSize: 14 }}>Testfälle</strong>
+        {testCases.map((tc, idx) => (
+          <div key={idx} className="card" style={{ padding: 12 }}>
+            <div className="row" style={{ gap: 8, alignItems: "center", marginBottom: 8 }}>
+              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+                Test {idx + 1}
+              </span>
+              <label className="row" style={{ gap: 4, fontSize: 13, alignItems: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={tc.hidden}
+                  onChange={(e) =>
+                    onTestCasesChange(
+                      testCases.map((x, i) => (i === idx ? { ...x, hidden: e.target.checked } : x))
+                    )
+                  }
+                />
+                versteckt
+              </label>
+              <span className="muted" style={{ fontSize: 11 }}>
+                {tc.hidden
+                  ? "(Lerner sieht nur Pass/Fail)"
+                  : "(Lerner sieht Ein- und Ausgabe)"}
+              </span>
+              {testCases.length > 1 && (
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => onTestCasesChange(testCases.filter((_, i) => i !== idx))}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <div className="field" style={{ flex: 1, minWidth: 150 }}>
+                <label>stdin</label>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  value={tc.input}
+                  onChange={(e) =>
+                    onTestCasesChange(
+                      testCases.map((x, i) => (i === idx ? { ...x, input: e.target.value } : x))
+                    )
+                  }
+                  placeholder="(leer)"
+                  style={{ fontFamily: "monospace", fontSize: 12 }}
+                />
+              </div>
+              <div className="field" style={{ flex: 1, minWidth: 150 }}>
+                <label>Erwartete Ausgabe</label>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  value={tc.expectedOutput}
+                  onChange={(e) =>
+                    onTestCasesChange(
+                      testCases.map((x, i) =>
+                        i === idx ? { ...x, expectedOutput: e.target.value } : x
+                      )
+                    )
+                  }
+                  placeholder="42"
+                  style={{ fontFamily: "monospace", fontSize: 12 }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn--secondary btn--sm"
+          onClick={() =>
+            onTestCasesChange([
+              ...testCases,
+              { id: `t${testCases.length + 1}`, input: "", expectedOutput: "", hidden: true },
+            ])
+          }
+        >
+          Testfall hinzufügen
+        </button>
+      </div>
+
+      <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+        <div className="field" style={{ flex: "0 0 160px" }}>
+          <label>Zeitlimit (ms)</label>
+          <input
+            className="input"
+            type="number"
+            min={100}
+            max={15000}
+            value={timeLimitMs}
+            onChange={(e) => onTimeLimitChange(Number(e.target.value) || 3000)}
+          />
+        </div>
+        <div className="field" style={{ flex: "0 0 200px" }}>
+          <label>Speicherlimit (KB)</label>
+          <input
+            className="input"
+            type="number"
+            min={8192}
+            max={524288}
+            value={memoryLimitKb}
+            onChange={(e) => onMemoryLimitChange(Number(e.target.value) || 262144)}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }

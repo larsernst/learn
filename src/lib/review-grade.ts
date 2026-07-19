@@ -15,6 +15,8 @@ export interface ParsedAttempt {
   answers?: Record<string, string>;
   // order
   orderedIds?: string[];
+  // code (Sync-Fallback: korrekt-Flag von /api/review/code-submit)
+  correct?: boolean;
   [key: string]: unknown;
 }
 

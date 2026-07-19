@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { clozeAttemptSchema } from "@/lib/tasks/cloze/attempt";
 import { clozePayloadSchema } from "@/lib/tasks/cloze/payload";
+import { codeAttemptSchema } from "@/lib/tasks/code/attempt";
+import { codePayloadSchema } from "@/lib/tasks/code/payload";
 import { dragdropAttemptSchema } from "@/lib/tasks/dragdrop/attempt";
 import { dragdropPayloadSchema } from "@/lib/tasks/dragdrop/payload";
 import { mcqAttemptSchema } from "@/lib/tasks/mcq/attempt";
@@ -61,6 +63,12 @@ export const reviewSubmitSchema = z.discriminatedUnion("taskType", [
     taskType: z.literal("order"),
     isNew: z.boolean().optional(),
   }),
+  // code: async über /api/review/code-submit; hier nur der Sync-Fallback.
+  codeAttemptSchema.extend({
+    questionId: z.string().min(1),
+    taskType: z.literal("code"),
+    isNew: z.boolean().optional(),
+  }),
 ]);
 
 // Exam-Answer: diskriminiert nach taskType. Recall wird im Exam selbst
@@ -91,6 +99,11 @@ export const examAnswerSchema = z.discriminatedUnion("taskType", [
     taskType: z.literal("order"),
     orderedIds: z.array(z.string().min(1)),
   }),
+  z.object({
+    questionId: z.string().min(1),
+    taskType: z.literal("code"),
+    correct: z.boolean(),
+  }),
 ]);
 
 export const examSubmitSchema = z.object({
@@ -113,7 +126,7 @@ export const questionSchema = z
     answer: z.string().min(1),
     sourceRef: z.string().min(1),
     confidence: z.enum(["high", "low"]).optional(),
-    taskType: z.enum(["recall", "mcq", "dragdrop", "cloze", "order"]).optional(),
+    taskType: z.enum(["recall", "mcq", "dragdrop", "cloze", "order", "code"]).optional(),
     payload: z.unknown().optional(),
     mcqOptions: z.array(mcqOptionSchema).optional(),
   })
@@ -126,6 +139,7 @@ export const questionSchema = z
       v.taskType === "dragdrop" ||
       v.taskType === "cloze" ||
       v.taskType === "order" ||
+      v.taskType === "code" ||
       v.mcqOptions !== undefined ||
       v.taskType === "recall" ||
       v.taskType === undefined,

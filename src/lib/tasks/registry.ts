@@ -5,6 +5,7 @@
 // gibt es typspezifische Switches.
 
 import { clozeTask } from "./cloze";
+import { codeTask } from "./code";
 import { dragdropTask } from "./dragdrop";
 import { mcqTask } from "./mcq";
 import { orderTask } from "./order";
@@ -22,6 +23,7 @@ export const TASK_REGISTRY: Record<TaskType, AnyTaskDefinition> = {
   dragdrop: dragdropTask,
   cloze: clozeTask,
   order: orderTask,
+  code: codeTask,
 };
 
 export const ALL_TASK_TYPES: TaskType[] = Object.keys(TASK_REGISTRY) as TaskType[];

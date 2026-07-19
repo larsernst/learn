@@ -12,6 +12,7 @@ import {
   ClozeRenderer,
   OrderRenderer,
 } from "@/components/questions/AdvancedRenderers";
+import { CodeRenderer } from "@/components/questions/CodeRenderer";
 
 type Feedback =
   | { kind: "recall"; text: string }
@@ -45,6 +46,24 @@ export default function StudyClient({
   const [assignment, setAssignment] = useState<Record<string, string>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  // code
+  const [codeSource, setCodeSource] = useState("");
+  const [codeLanguageId, setCodeLanguageId] = useState(0);
+  const [codeResult, setCodeResult] = useState<{
+    correct: boolean;
+    detail?: {
+      perTest?: Array<{
+        id: string;
+        hidden: boolean;
+        passed: boolean;
+        status: string;
+        stdout?: string | null;
+        stderr?: string | null;
+        compileOutput?: string | null;
+      }>;
+      compileError?: string;
+    } | null;
+  } | null>(null);
 
   async function loadNext(opts?: { reviewLearned?: boolean }) {
     const rl = opts?.reviewLearned ?? reviewLearned;
@@ -56,6 +75,9 @@ export default function StudyClient({
     setAssignment({});
     setAnswers({});
     setOrderedIds([]);
+    setCodeSource("");
+    setCodeLanguageId(0);
+    setCodeResult(null);
     setFeedback(null);
     setError(null);
     setSelectedGrade(null);
@@ -223,6 +245,53 @@ export default function StudyClient({
     setRevealed(true);
   }
 
+  async function submitCode() {
+    if (!data?.review) return;
+    setSubmitting(true);
+    const res = await fetch("/api/review/code-submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: data.review.question.id,
+        languageId: codeLanguageId,
+        sourceCode: codeSource,
+        isNew: data.isNew,
+      }),
+    });
+    setSubmitting(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Code-Bewertung fehlgeschlagen.");
+      return;
+    }
+    const result = (await res.json()) as {
+      correct: boolean;
+      detail?: {
+        perTest?: Array<{
+          id: string;
+          hidden: boolean;
+          passed: boolean;
+          status: string;
+          stdout?: string | null;
+          stderr?: string | null;
+          compileOutput?: string | null;
+        }>;
+        compileError?: string;
+      } | null;
+      intervalDays: number;
+    };
+    setCodeResult({ correct: result.correct, detail: result.detail });
+    setFeedback({
+      kind: "mcq",
+      correct: result.correct,
+      correctIds: null,
+      text: result.correct
+        ? `Richtig! Nächste Wiederholung ${intervalLabel(result.intervalDays)}.`
+        : "Falsch – wird heute erneut angezeigt.",
+    });
+    setRevealed(true);
+  }
+
   if (loading) {
     return <p className="muted">Lade nächste Frage …</p>;
   }
@@ -338,6 +407,18 @@ export default function StudyClient({
           onOrderChange={setOrderedIds}
           revealed={revealed}
           onSubmit={() => submitAutoGraded("order", { orderedIds })}
+        />
+      ) : q.taskType === "code" && q.taskPayload ? (
+        <CodeRenderer
+          payload={q.taskPayload as never}
+          sourceCode={codeSource}
+          onSourceCodeChange={setCodeSource}
+          onLanguageChange={setCodeLanguageId}
+          onSubmit={submitCode}
+          submitting={submitting}
+          revealed={revealed}
+          result={codeResult}
+          judge0Enabled={process.env.NEXT_PUBLIC_JUDGE0_ENABLED === "true"}
         />
       ) : (
         <RecallRenderer

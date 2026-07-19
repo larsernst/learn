@@ -17,13 +17,15 @@ export function selectExamQuestions<T>(all: readonly T[], count: number): T[] {
 }
 
 // Exam-Versuch: recall wird selbst bewertet (correct), alle anderen Typen
-// serverseitig über den Task-Grader.
+// serverseitig über den Task-Grader. Code wird im Exam selbst bewertet
+// (correct: boolean, da async Judge0 im Batch nicht skalierbar).
 export type ExamAttempt =
   | { questionId: string; taskType: "recall"; correct: boolean }
   | { questionId: string; taskType: "mcq"; selectedOptionIds: string[] }
   | { questionId: string; taskType: "dragdrop"; assignment: Record<string, string> }
   | { questionId: string; taskType: "cloze"; answers: Record<string, string> }
-  | { questionId: string; taskType: "order"; orderedIds: string[] };
+  | { questionId: string; taskType: "order"; orderedIds: string[] }
+  | { questionId: string; taskType: "code"; correct: boolean };
 
 export interface ExamGradeRow {
   questionId: string;
@@ -53,6 +55,10 @@ export function gradeExamAttempt(
     let correct = false;
 
     if (a.taskType === "recall") {
+      correct = a.correct === true;
+    } else if (a.taskType === "code") {
+      // Code: trust the pre-computed correct flag (async grading would the
+      // exam flow block; clients send correct=false or pre-evaluated result).
       correct = a.correct === true;
     } else if (AUTO_GRADED_TYPES.includes(a.taskType) && q) {
       const normalized = normalizeQuestionTask(q.taskType, q.payload, q.mcqOptions);
