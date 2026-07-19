@@ -1,6 +1,12 @@
 import { z } from "zod";
+import { clozeAttemptSchema } from "@/lib/tasks/cloze/attempt";
+import { clozePayloadSchema } from "@/lib/tasks/cloze/payload";
+import { dragdropAttemptSchema } from "@/lib/tasks/dragdrop/attempt";
+import { dragdropPayloadSchema } from "@/lib/tasks/dragdrop/payload";
 import { mcqAttemptSchema } from "@/lib/tasks/mcq/attempt";
 import { mcqPayloadSchema } from "@/lib/tasks/mcq/payload";
+import { orderAttemptSchema } from "@/lib/tasks/order/attempt";
+import { orderPayloadSchema } from "@/lib/tasks/order/payload";
 import { recallAttemptSchema } from "@/lib/tasks/recall/attempt";
 
 export const loginSchema = z.object({
@@ -27,6 +33,8 @@ export const mcqOptionSchema = z.object({
 
 // Review-Submit: diskriminiert nach taskType. Attempt-Schemas kommen aus
 // den Task-Bundles (Single Source of Truth für die Lerner-Eingabe).
+// Recall wird selbstbewertet (grade); alle anderen Typen werden serverseitig
+// über den Task-Grader ausgewertet.
 export const reviewSubmitSchema = z.discriminatedUnion("taskType", [
   recallAttemptSchema.extend({
     questionId: z.string().min(1),
@@ -38,10 +46,25 @@ export const reviewSubmitSchema = z.discriminatedUnion("taskType", [
     taskType: z.literal("mcq"),
     isNew: z.boolean().optional(),
   }),
+  dragdropAttemptSchema.extend({
+    questionId: z.string().min(1),
+    taskType: z.literal("dragdrop"),
+    isNew: z.boolean().optional(),
+  }),
+  clozeAttemptSchema.extend({
+    questionId: z.string().min(1),
+    taskType: z.literal("cloze"),
+    isNew: z.boolean().optional(),
+  }),
+  orderAttemptSchema.extend({
+    questionId: z.string().min(1),
+    taskType: z.literal("order"),
+    isNew: z.boolean().optional(),
+  }),
 ]);
 
 // Exam-Answer: diskriminiert nach taskType. Recall wird im Exam selbst
-// bewertet (correct: boolean), MCQ serverseitig ausgewertet.
+// bewertet (correct: boolean), alle anderen serverseitig ausgewertet.
 export const examAnswerSchema = z.discriminatedUnion("taskType", [
   z.object({
     questionId: z.string().min(1),
@@ -52,6 +75,21 @@ export const examAnswerSchema = z.discriminatedUnion("taskType", [
     questionId: z.string().min(1),
     taskType: z.literal("mcq"),
     selectedOptionIds: z.array(z.string().min(1)),
+  }),
+  z.object({
+    questionId: z.string().min(1),
+    taskType: z.literal("dragdrop"),
+    assignment: z.record(z.string().min(1), z.string()),
+  }),
+  z.object({
+    questionId: z.string().min(1),
+    taskType: z.literal("cloze"),
+    answers: z.record(z.string().min(1), z.string()),
+  }),
+  z.object({
+    questionId: z.string().min(1),
+    taskType: z.literal("order"),
+    orderedIds: z.array(z.string().min(1)),
   }),
 ]);
 
@@ -75,7 +113,7 @@ export const questionSchema = z
     answer: z.string().min(1),
     sourceRef: z.string().min(1),
     confidence: z.enum(["high", "low"]).optional(),
-    taskType: z.enum(["recall", "mcq"]).optional(),
+    taskType: z.enum(["recall", "mcq", "dragdrop", "cloze", "order"]).optional(),
     payload: z.unknown().optional(),
     mcqOptions: z.array(mcqOptionSchema).optional(),
   })
@@ -85,6 +123,9 @@ export const questionSchema = z
   .refine(
     (v) =>
       v.taskType === "mcq" ||
+      v.taskType === "dragdrop" ||
+      v.taskType === "cloze" ||
+      v.taskType === "order" ||
       v.mcqOptions !== undefined ||
       v.taskType === "recall" ||
       v.taskType === undefined,

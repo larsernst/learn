@@ -4,15 +4,24 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { QuestionPublic } from "@/lib/types";
 import { McqRenderer } from "@/components/questions/McqRenderer";
+import type { McqPublic } from "@/lib/tasks/mcq/payload";
 import { RecallRenderer } from "@/components/questions/RecallRenderer";
+import {
+  DragDropRenderer,
+  ClozeRenderer,
+  OrderRenderer,
+} from "@/components/questions/AdvancedRenderers";
 
 type Phase = "setup" | "running" | "result";
 
 interface AnswerRecord {
   questionId: string;
-  taskType: "recall" | "mcq";
+  taskType: "recall" | "mcq" | "dragdrop" | "cloze" | "order";
   correct?: boolean;
   selectedOptionIds?: string[];
+  assignment?: Record<string, string>;
+  answers?: Record<string, string>;
+  orderedIds?: string[];
 }
 
 interface GradeResult {
@@ -36,6 +45,9 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
   const [revealed, setRevealed] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
+  const [assignment, setAssignment] = useState<Record<string, string>>({});
+  const [clozeAnswers, setClozeAnswers] = useState<Record<string, string>>({});
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,13 +68,16 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     setRevealed(false);
     setSelected([]);
     setDraft("");
+    setAssignment({});
+    setClozeAnswers({});
+    setOrderedIds([]);
     setResult(null);
     setPhase("running");
   }
 
   const current = questions[index];
   const currentMcqPayload =
-    current && current.taskType === "mcq" ? current.taskPayload : null;
+    current && current.taskType === "mcq" ? (current.taskPayload as McqPublic | null) : null;
   const isMcq = !!currentMcqPayload && currentMcqPayload !== null;
 
   function recordAndNext(answer: AnswerRecord) {
@@ -71,6 +86,9 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     setRevealed(false);
     setSelected([]);
     setDraft("");
+    setAssignment({});
+    setClozeAnswers({});
+    setOrderedIds([]);
     if (index + 1 < questions.length) {
       setIndex(index + 1);
     } else {
@@ -109,11 +127,41 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     });
   }
 
+  function submitDragDrop() {
+    if (!current) return;
+    recordAndNext({
+      questionId: current.id,
+      taskType: "dragdrop",
+      assignment,
+    });
+  }
+
+  function submitCloze() {
+    if (!current) return;
+    recordAndNext({
+      questionId: current.id,
+      taskType: "cloze",
+      answers: clozeAnswers,
+    });
+  }
+
+  function submitOrder() {
+    if (!current) return;
+    recordAndNext({
+      questionId: current.id,
+      taskType: "order",
+      orderedIds,
+    });
+  }
+
   useEffect(() => {
     if (phase !== "running") return;
     setRevealed(false);
     setSelected([]);
     setDraft("");
+    setAssignment({});
+    setClozeAnswers({});
+    setOrderedIds([]);
   }, [index, phase]);
 
   if (phase === "setup") {
@@ -220,7 +268,15 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
             Frage {index + 1} / {questions.length}
           </span>
           <span className="badge badge--muted">
-            {isMcq ? "Multiple-Choice" : "Freie Erinnerung"}
+            {current.taskType === "mcq"
+              ? "Multiple-Choice"
+              : current.taskType === "dragdrop"
+              ? "Zuordnen"
+              : current.taskType === "cloze"
+              ? "Lückentext"
+              : current.taskType === "order"
+              ? "Sortieren"
+              : "Freie Erinnerung"}
           </span>
         </div>
         <div className="progress">
@@ -246,6 +302,30 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
             onSubmit={submitMcq}
             revealed={false}
             submitLabel="Bestätigen & nächste"
+          />
+        ) : current.taskType === "dragdrop" && current.taskPayload ? (
+          <DragDropRenderer
+            payload={current.taskPayload as never}
+            assignment={assignment}
+            onAssignmentChange={setAssignment}
+            revealed={false}
+            onSubmit={submitDragDrop}
+          />
+        ) : current.taskType === "cloze" && current.taskPayload ? (
+          <ClozeRenderer
+            payload={current.taskPayload as never}
+            answers={clozeAnswers}
+            onAnswersChange={setClozeAnswers}
+            revealed={false}
+            onSubmit={submitCloze}
+          />
+        ) : current.taskType === "order" && current.taskPayload ? (
+          <OrderRenderer
+            payload={current.taskPayload as never}
+            orderedIds={orderedIds}
+            onOrderChange={setOrderedIds}
+            revealed={false}
+            onSubmit={submitOrder}
           />
         ) : (
           <>

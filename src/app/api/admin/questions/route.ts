@@ -11,19 +11,24 @@ import type { TaskType } from "@/lib/tasks/types";
 // { taskType, payload, mcqOptionsLegacy } um. mcqOptionsLegacy wird für den
 // Dual-Write beibehalten, bis die Cleanup-Migration die Spalte entfernt.
 function toTaskFields(q: {
-  taskType?: "recall" | "mcq";
+  taskType?: "recall" | "mcq" | "dragdrop" | "cloze" | "order";
   payload?: unknown;
   mcqOptions?: { id: string; text: string; correct: boolean }[];
 }): { taskType: string; payload: unknown; mcqOptions: unknown } {
-  // taskType + payload (neu)
+  // recall: kein Payload.
   if (q.taskType === "recall") {
     return { taskType: "recall", payload: null, mcqOptions: null };
   }
+  // mcq: payload = { options }; legacy mcqOptions wird dual-write mitgeführt.
   if (q.taskType === "mcq") {
     const options = (q.payload as { options?: unknown[] } | undefined)?.options ?? [];
     return { taskType: "mcq", payload: { options }, mcqOptions: options };
   }
-  // legacy: mcqOptions gesetzt
+  // dragdrop/cloze/order: neuer Typ mit autor-seitigem payload; kein legacy.
+  if (q.taskType === "dragdrop" || q.taskType === "cloze" || q.taskType === "order") {
+    return { taskType: q.taskType, payload: q.payload ?? null, mcqOptions: null };
+  }
+  // legacy: mcqOptions gesetzt (ohne taskType)
   if (q.mcqOptions !== undefined) {
     const normalized = normalizeQuestionTask("mcq", { options: q.mcqOptions }, q.mcqOptions);
     return {

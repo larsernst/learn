@@ -7,7 +7,7 @@
 
 import type { z } from "zod";
 
-export type TaskType = "recall" | "mcq";
+export type TaskType = "recall" | "mcq" | "dragdrop" | "cloze" | "order";
 
 export type TaskResult = {
   correct: boolean;

@@ -1,9 +1,17 @@
 import type { TaskType } from "@/lib/tasks/types";
 import type { McqPublic } from "@/lib/tasks/mcq/payload";
+import type { DragDropPublic } from "@/lib/tasks/dragdrop/payload";
+import type { ClozePublic } from "@/lib/tasks/cloze/payload";
+import type { OrderPublic } from "@/lib/tasks/order/payload";
 
 // Public-Payload je Task-Typ (was der Client sieht, ohne Geheimnisse).
-// null für recall (kein Payload), McqPublic für mcq.
-export type TaskPublicPayload = null | McqPublic;
+// null für recall (kein Payload), McqPublic für mcq usw.
+export type TaskPublicPayload =
+  | null
+  | McqPublic
+  | DragDropPublic
+  | ClozePublic
+  | OrderPublic;
 
 export interface QuestionPublic {
   id: string;

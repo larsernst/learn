@@ -1,4 +1,5 @@
 import { gradeAttempt, normalizeQuestionTask } from "@/lib/tasks/registry";
+import type { TaskType } from "@/lib/tasks/types";
 
 export function shuffle<T>(arr: readonly T[]): T[] {
   const a = arr.slice();
@@ -15,13 +16,14 @@ export function selectExamQuestions<T>(all: readonly T[], count: number): T[] {
   return shuffled.slice(0, Math.floor(count));
 }
 
+// Exam-Versuch: recall wird selbst bewertet (correct), alle anderen Typen
+// serverseitig über den Task-Grader.
 export type ExamAttempt =
   | { questionId: string; taskType: "recall"; correct: boolean }
-  | {
-      questionId: string;
-      taskType: "mcq";
-      selectedOptionIds: string[];
-    };
+  | { questionId: string; taskType: "mcq"; selectedOptionIds: string[] }
+  | { questionId: string; taskType: "dragdrop"; assignment: Record<string, string> }
+  | { questionId: string; taskType: "cloze"; answers: Record<string, string> }
+  | { questionId: string; taskType: "order"; orderedIds: string[] };
 
 export interface ExamGradeRow {
   questionId: string;
@@ -40,6 +42,8 @@ interface ExamQuestionRef {
   mcqOptions?: unknown;
 }
 
+const AUTO_GRADED_TYPES: TaskType[] = ["mcq", "dragdrop", "cloze", "order"];
+
 export function gradeExamAttempt(
   attempts: ExamAttempt[],
   questionsById: Map<string, ExamQuestionRef>
@@ -50,12 +54,10 @@ export function gradeExamAttempt(
 
     if (a.taskType === "recall") {
       correct = a.correct === true;
-    } else if (a.taskType === "mcq" && q) {
+    } else if (AUTO_GRADED_TYPES.includes(a.taskType) && q) {
       const normalized = normalizeQuestionTask(q.taskType, q.payload, q.mcqOptions);
-      if (normalized.type === "mcq") {
-        const result = gradeAttempt(normalized.type, normalized.payload, {
-          selectedOptionIds: a.selectedOptionIds,
-        });
+      if (normalized.type === a.taskType) {
+        const result = gradeAttempt(normalized.type, normalized.payload, a);
         correct = result.correct;
       }
     }

@@ -5,7 +5,13 @@ import Link from "next/link";
 import { intervalLabel, type ReviewGrade } from "@/lib/sm2";
 import type { QuestionPublic, ReviewNextResponse } from "@/lib/types";
 import { McqRenderer } from "@/components/questions/McqRenderer";
+import type { McqPublic } from "@/lib/tasks/mcq/payload";
 import { RecallRenderer } from "@/components/questions/RecallRenderer";
+import {
+  DragDropRenderer,
+  ClozeRenderer,
+  OrderRenderer,
+} from "@/components/questions/AdvancedRenderers";
 
 type Feedback =
   | { kind: "recall"; text: string }
@@ -35,6 +41,10 @@ export default function StudyClient({
   const [error, setError] = useState<string | null>(null);
   const [reviewLearned, setReviewLearned] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState<ReviewGrade | null>(null);
+  // Attempt-Zustände für die neuen Task-Typen
+  const [assignment, setAssignment] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
 
   async function loadNext(opts?: { reviewLearned?: boolean }) {
     const rl = opts?.reviewLearned ?? reviewLearned;
@@ -43,6 +53,9 @@ export default function StudyClient({
     setRevealed(false);
     setDraft("");
     setSelected([]);
+    setAssignment({});
+    setAnswers({});
+    setOrderedIds([]);
     setFeedback(null);
     setError(null);
     setSelectedGrade(null);
@@ -74,7 +87,7 @@ export default function StudyClient({
   useEffect(() => {
     if (loading || !data || !data.review) return;
     const q = data.review.question;
-    const mcqPayload = q.taskType === "mcq" ? q.taskPayload : null;
+    const mcqPayload = q.taskType === "mcq" ? (q.taskPayload as McqPublic | null) : null;
     const isMcq = mcqPayload !== null && mcqPayload !== undefined;
     function handle(e: KeyboardEvent) {
       if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) return;
@@ -170,6 +183,46 @@ export default function StudyClient({
     setRevealed(true);
   }
 
+  async function submitAutoGraded(
+    taskType: "dragdrop" | "cloze" | "order",
+    attempt:
+      | { assignment: Record<string, string> }
+      | { answers: Record<string, string> }
+      | { orderedIds: string[] }
+  ) {
+    if (!data?.review) return;
+    setSubmitting(true);
+    const res = await fetch("/api/review/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: data.review.question.id,
+        taskType,
+        ...attempt,
+        isNew: data.isNew,
+      }),
+    });
+    if (!res.ok) {
+      setSubmitting(false);
+      setError("Auswertung konnte nicht gespeichert werden.");
+      return;
+    }
+    const result = (await res.json()) as {
+      correct: boolean | null;
+      intervalDays: number;
+    };
+    const correct = result.correct === true;
+    setFeedback({
+      kind: "mcq",
+      correct,
+      correctIds: null,
+      text: correct
+        ? `Richtig! Nächste Wiederholung ${intervalLabel(result.intervalDays)}.`
+        : "Falsch – wird heute erneut angezeigt.",
+    });
+    setRevealed(true);
+  }
+
   if (loading) {
     return <p className="muted">Lade nächste Frage …</p>;
   }
@@ -217,7 +270,7 @@ export default function StudyClient({
   }
 
   const q = data.review.question;
-  const mcqPayload = q.taskType === "mcq" ? q.taskPayload : null;
+  const mcqPayload = q.taskType === "mcq" ? (q.taskPayload as McqPublic | null) : null;
   const isMcq = mcqPayload !== null && mcqPayload !== undefined;
   const correctIds = feedback?.kind === "mcq" ? feedback.correctIds : null;
 
@@ -261,6 +314,30 @@ export default function StudyClient({
           }
           onSubmit={submitMcq}
           revealed={revealed}
+        />
+      ) : q.taskType === "dragdrop" && q.taskPayload ? (
+        <DragDropRenderer
+          payload={q.taskPayload as never}
+          assignment={assignment}
+          onAssignmentChange={setAssignment}
+          revealed={revealed}
+          onSubmit={() => submitAutoGraded("dragdrop", { assignment })}
+        />
+      ) : q.taskType === "cloze" && q.taskPayload ? (
+        <ClozeRenderer
+          payload={q.taskPayload as never}
+          answers={answers}
+          onAnswersChange={setAnswers}
+          revealed={revealed}
+          onSubmit={() => submitAutoGraded("cloze", { answers })}
+        />
+      ) : q.taskType === "order" && q.taskPayload ? (
+        <OrderRenderer
+          payload={q.taskPayload as never}
+          orderedIds={orderedIds}
+          onOrderChange={setOrderedIds}
+          revealed={revealed}
+          onSubmit={() => submitAutoGraded("order", { orderedIds })}
         />
       ) : (
         <RecallRenderer

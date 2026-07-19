@@ -110,8 +110,11 @@ export default function KurseClient({
     answer: string;
     sourceRef: string;
     confidence: "high" | "low" | "";
-    isMcq: boolean;
-    mcqOptions: McqOptionData[];
+    taskType: "recall" | "mcq" | "dragdrop" | "cloze" | "order";
+    // taskPayload ist typabhängig; hier als unknown, da das Bundle validiert.
+    taskPayload: unknown;
+    // legacy: nur noch für MCQ (kompatibilitätshalber)
+    mcqOptions?: McqOptionData[];
   }) {
     setError(null);
     setSuccess(null);
@@ -127,7 +130,8 @@ export default function KurseClient({
           answer: data.answer,
           sourceRef: data.sourceRef,
           confidence: data.confidence || undefined,
-          mcqOptions: data.isMcq ? data.mcqOptions : undefined,
+          taskType: data.taskType,
+          payload: data.taskPayload,
         },
       ],
     };
@@ -149,7 +153,8 @@ export default function KurseClient({
       answer: data.answer,
       sourceRef: data.sourceRef,
       confidence: data.confidence || null,
-      mcqOptions: data.isMcq ? data.mcqOptions : null,
+      mcqOptions:
+        data.taskType === "mcq" && Array.isArray(data.mcqOptions) ? data.mcqOptions : null,
     };
     setQuestions((prev) => ({
       ...prev,
@@ -622,6 +627,8 @@ function QuestionRow({
   );
 }
 
+type EditorTaskType = "recall" | "mcq" | "dragdrop" | "cloze" | "order";
+
 function AddQuestionForm({
   onSubmit,
   onCancel,
@@ -633,8 +640,9 @@ function AddQuestionForm({
     answer: string;
     sourceRef: string;
     confidence: "high" | "low" | "";
-    isMcq: boolean;
-    mcqOptions: McqOptionData[];
+    taskType: EditorTaskType;
+    taskPayload: unknown;
+    mcqOptions?: McqOptionData[];
   }) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -644,23 +652,70 @@ function AddQuestionForm({
   const [answer, setAnswer] = useState("");
   const [sourceRef, setSourceRef] = useState("");
   const [confidence, setConfidence] = useState<"high" | "low" | "">("");
-  const [isMcq, setIsMcq] = useState(false);
+  const [taskType, setTaskType] = useState<EditorTaskType>("recall");
   const [mcqOptions, setMcqOptions] = useState<McqOptionData[]>([
     { id: "opt-1", text: "", correct: false },
     { id: "opt-2", text: "", correct: false },
   ]);
+  // dragdrop
+  const [ddZones, setDdZones] = useState<{ id: string; label: string }[]>([
+    { id: "zone-1", label: "" },
+  ]);
+  const [ddItems, setDdItems] = useState<{ id: string; text: string }[]>([
+    { id: "item-1", text: "" },
+  ]);
+  const [ddCorrect, setDdCorrect] = useState<Record<string, string>>({});
+  // cloze
+  const [clozeSegments, setClozeSegments] = useState<
+    Array<
+      | { kind: "text"; text: string }
+      | { kind: "blank"; blankId: string; accepted: string; normalize: "exact" | "ignore-case" | "trim" | "regex" }
+    >
+  >([{ kind: "text", text: "" }]);
+  // order
+  const [orderItems, setOrderItems] = useState<{ id: string; text: string }[]>([
+    { id: "item-1", text: "" },
+    { id: "item-2", text: "" },
+  ]);
   const [submitting, setSubmitting] = useState(false);
 
-  function addOption() {
+  function addMcqOption() {
     setMcqOptions((prev) => [...prev, { id: `opt-${prev.length + 1}`, text: "", correct: false }]);
   }
-  function removeOption(idx: number) {
+  function removeMcqOption(idx: number) {
     setMcqOptions((prev) => prev.filter((_, i) => i !== idx));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    let taskPayload: unknown = null;
+    let mcqOptionsForServer: McqOptionData[] | undefined;
+    if (taskType === "mcq") {
+      const normalized = mcqOptions.map((o, i) => ({ ...o, id: `opt-${i + 1}` }));
+      taskPayload = { options: normalized };
+      mcqOptionsForServer = normalized;
+    } else if (taskType === "dragdrop") {
+      taskPayload = { zones: ddZones, items: ddItems, correct: ddCorrect };
+    } else if (taskType === "cloze") {
+      taskPayload = {
+        segments: clozeSegments.map((s) =>
+          s.kind === "blank"
+            ? {
+                kind: "blank" as const,
+                blankId: s.blankId,
+                accepted: s.accepted.split("\n").map((a) => a.trim()).filter(Boolean),
+                normalize: s.normalize,
+              }
+            : { kind: "text" as const, text: s.text }
+        ),
+      };
+    } else if (taskType === "order") {
+      taskPayload = {
+        items: orderItems,
+        correctOrder: orderItems.map((i) => i.id),
+      };
+    }
     await onSubmit({
       chapter: Number(chapter) || 1,
       chapterTitle,
@@ -668,8 +723,9 @@ function AddQuestionForm({
       answer,
       sourceRef,
       confidence,
-      isMcq,
-      mcqOptions: mcqOptions.map((o, i) => ({ ...o, id: `opt-${i + 1}` })),
+      taskType,
+      taskPayload,
+      mcqOptions: mcqOptionsForServer,
     });
     setSubmitting(false);
   }
@@ -744,11 +800,22 @@ function AddQuestionForm({
           </select>
         </div>
       </div>
-      <label className="row" style={{ gap: 8, alignItems: "center", fontSize: 14 }}>
-        <input type="checkbox" checked={isMcq} onChange={(e) => setIsMcq(e.target.checked)} />
-        Multiple-Choice-Frage
-      </label>
-      {isMcq && (
+      <div className="field">
+        <label>Aufgabentyp</label>
+        <select
+          className="input"
+          value={taskType}
+          onChange={(e) => setTaskType(e.target.value as EditorTaskType)}
+        >
+          <option value="recall">Freie Erinnerung (Selbstbewertung)</option>
+          <option value="mcq">Multiple-Choice (auto)</option>
+          <option value="dragdrop">Zuordnen / Drag & Drop (auto)</option>
+          <option value="cloze">Lückentext (auto)</option>
+          <option value="order">Sortieren / Reihenfolge (auto)</option>
+        </select>
+      </div>
+
+      {taskType === "mcq" && (
         <div className="stack">
           <span className="muted" style={{ fontSize: 13 }}>Antwort-Optionen</span>
           {mcqOptions.map((opt, idx) => (
@@ -771,17 +838,37 @@ function AddQuestionForm({
                 richtig
               </label>
               {mcqOptions.length > 2 && (
-                <button type="button" className="btn btn--ghost btn--sm" onClick={() => removeOption(idx)}>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => removeMcqOption(idx)}>
                   ✕
                 </button>
               )}
             </div>
           ))}
-          <button type="button" className="btn btn--secondary btn--sm" onClick={addOption}>
+          <button type="button" className="btn btn--secondary btn--sm" onClick={addMcqOption}>
             Option hinzufügen
           </button>
         </div>
       )}
+
+      {taskType === "dragdrop" && (
+        <DragDropEditor
+          zones={ddZones}
+          items={ddItems}
+          correct={ddCorrect}
+          onZonesChange={setDdZones}
+          onItemsChange={setDdItems}
+          onCorrectChange={setDdCorrect}
+        />
+      )}
+
+      {taskType === "cloze" && (
+        <ClozeEditor segments={clozeSegments} onSegmentsChange={setClozeSegments} />
+      )}
+
+      {taskType === "order" && (
+        <OrderEditor items={orderItems} onItemsChange={setOrderItems} />
+      )}
+
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <button type="submit" className="btn btn--primary btn--sm" disabled={submitting}>
           {submitting ? "Speichert …" : "Frage speichern"}
@@ -791,6 +878,312 @@ function AddQuestionForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function DragDropEditor({
+  zones,
+  items,
+  correct,
+  onZonesChange,
+  onItemsChange,
+  onCorrectChange,
+}: {
+  zones: { id: string; label: string }[];
+  items: { id: string; text: string }[];
+  correct: Record<string, string>;
+  onZonesChange: (z: { id: string; label: string }[]) => void;
+  onItemsChange: (i: { id: string; text: string }[]) => void;
+  onCorrectChange: (c: Record<string, string>) => void;
+}) {
+  function addZone() {
+    onZonesChange([...zones, { id: `zone-${zones.length + 1}`, label: "" }]);
+  }
+  function addItem() {
+    onItemsChange([...items, { id: `item-${items.length + 1}`, text: "" }]);
+  }
+  return (
+    <div className="stack">
+      <span className="muted" style={{ fontSize: 13 }}>
+        Zonen und Elemente anlegen; pro Element die korrekte Zone wählen.
+      </span>
+      <div className="stack">
+        <strong style={{ fontSize: 14 }}>Zonen</strong>
+        {zones.map((z, idx) => (
+          <div key={idx} className="row" style={{ gap: 8, alignItems: "flex-end" }}>
+            <div className="field" style={{ flex: "0 0 100px" }}>
+              <label>ID</label>
+              <input
+                className="input"
+                value={z.id}
+                onChange={(e) =>
+                  onZonesChange(zones.map((x, i) => (i === idx ? { ...x, id: e.target.value } : x)))
+                }
+              />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Bezeichnung</label>
+              <input
+                className="input"
+                value={z.label}
+                onChange={(e) =>
+                  onZonesChange(zones.map((x, i) => (i === idx ? { ...x, label: e.target.value } : x)))
+                }
+              />
+            </div>
+            {zones.length > 1 && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => onZonesChange(zones.filter((_, i) => i !== idx))}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" className="btn btn--secondary btn--sm" onClick={addZone}>
+          Zone hinzufügen
+        </button>
+      </div>
+      <div className="stack">
+        <strong style={{ fontSize: 14 }}>Elemente</strong>
+        {items.map((item, idx) => (
+          <div key={idx} className="row" style={{ gap: 8, alignItems: "flex-end" }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Element {idx + 1}</label>
+              <input
+                className="input"
+                value={item.text}
+                onChange={(e) =>
+                  onItemsChange(items.map((x, i) => (i === idx ? { ...x, text: e.target.value } : x)))
+                }
+              />
+            </div>
+            <div className="field" style={{ flex: "0 0 180px" }}>
+              <label>Korrekte Zone</label>
+              <select
+                className="input"
+                value={correct[item.id] ?? ""}
+                onChange={(e) => onCorrectChange({ ...correct, [item.id]: e.target.value })}
+              >
+                <option value="">—</option>
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.label || z.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {items.length > 1 && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => {
+                  onItemsChange(items.filter((_, i) => i !== idx));
+                  const next = { ...correct };
+                  delete next[item.id];
+                  onCorrectChange(next);
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        ))}
+        <button type="button" className="btn btn--secondary btn--sm" onClick={addItem}>
+          Element hinzufügen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ClozeEditor({
+  segments,
+  onSegmentsChange,
+}: {
+  segments: Array<
+    | { kind: "text"; text: string }
+    | {
+        kind: "blank";
+        blankId: string;
+        accepted: string;
+        normalize: "exact" | "ignore-case" | "trim" | "regex";
+      }
+  >;
+  onSegmentsChange: (
+    s: Array<
+      | { kind: "text"; text: string }
+      | {
+          kind: "blank";
+          blankId: string;
+          accepted: string;
+          normalize: "exact" | "ignore-case" | "trim" | "regex";
+        }
+    >
+  ) => void;
+}) {
+  function addText() {
+    onSegmentsChange([...segments, { kind: "text", text: "" }]);
+  }
+  function addBlank() {
+    onSegmentsChange([
+      ...segments,
+      { kind: "blank", blankId: `blank-${segments.length + 1}`, accepted: "", normalize: "ignore-case" },
+    ]);
+  }
+  return (
+    <div className="stack">
+      <span className="muted" style={{ fontSize: 13 }}>
+        Baue den Text aus Text- und Lücken-Segmenten zusammen. Pro Lücke:
+        akzeptierte Antworten (eine pro Zeile) und eine Normalisierung.
+      </span>
+      {segments.map((seg, idx) => (
+        <div key={idx} className="card" style={{ padding: 12 }}>
+          <div className="row" style={{ gap: 8, alignItems: "center", marginBottom: 8 }}>
+            <span className="badge badge--muted" style={{ fontSize: 11 }}>
+              {seg.kind === "text" ? "Text" : "Lücke"}
+            </span>
+            {segments.length > 1 && (
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => onSegmentsChange(segments.filter((_, i) => i !== idx))}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {seg.kind === "text" ? (
+            <textarea
+              className="textarea"
+              rows={2}
+              value={seg.text}
+              placeholder="Text …"
+              onChange={(e) =>
+                onSegmentsChange(
+                  segments.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
+                )
+              }
+            />
+          ) : (
+            <div className="stack">
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <div className="field" style={{ flex: "0 0 140px" }}>
+                  <label>Lücken-ID</label>
+                  <input
+                    className="input"
+                    value={seg.blankId}
+                    onChange={(e) =>
+                      onSegmentsChange(
+                        segments.map((s, i) =>
+                          i === idx ? { ...s, blankId: e.target.value } : s
+                        )
+                      )
+                    }
+                  />
+                </div>
+                <div className="field" style={{ flex: "0 0 160px" }}>
+                  <label>Normalisierung</label>
+                  <select
+                    className="input"
+                    value={seg.normalize}
+                    onChange={(e) =>
+                      onSegmentsChange(
+                        segments.map((s, i) =>
+                          i === idx
+                            ? { ...s, normalize: e.target.value as typeof seg.normalize }
+                            : s
+                        )
+                      )
+                    }
+                  >
+                    <option value="ignore-case">Groß-/Kleinschreibung ignorieren</option>
+                    <option value="trim">Whitespace normalisieren</option>
+                    <option value="exact">Exakt</option>
+                    <option value="regex">Regex</option>
+                  </select>
+                </div>
+              </div>
+              <div className="field">
+                <label>Akzeptierte Antworten (eine pro Zeile)</label>
+                <textarea
+                  className="textarea"
+                  rows={2}
+                  value={seg.accepted}
+                  onChange={(e) =>
+                    onSegmentsChange(
+                      segments.map((s, i) =>
+                        i === idx ? { ...s, accepted: e.target.value } : s
+                      )
+                    )
+                  }
+                  placeholder={"Antwort A\nAntwort B"}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      <div className="row" style={{ gap: 8 }}>
+        <button type="button" className="btn btn--secondary btn--sm" onClick={addText}>
+          Text-Segment
+        </button>
+        <button type="button" className="btn btn--secondary btn--sm" onClick={addBlank}>
+          Lücke hinzufügen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OrderEditor({
+  items,
+  onItemsChange,
+}: {
+  items: { id: string; text: string }[];
+  onItemsChange: (i: { id: string; text: string }[]) => void;
+}) {
+  return (
+    <div className="stack">
+      <span className="muted" style={{ fontSize: 13 }}>
+        Elemente in der korrekten Reihenfolge anlegen (oben = zuerst).
+      </span>
+      {items.map((item, idx) => (
+        <div key={idx} className="row" style={{ gap: 8, alignItems: "flex-end" }}>
+          <div className="field" style={{ flex: "0 0 40px" }}>
+            <label>Nr.</label>
+            <input className="input" value={idx + 1} disabled />
+          </div>
+          <div className="field" style={{ flex: 1 }}>
+            <label>Element</label>
+            <input
+              className="input"
+              value={item.text}
+              onChange={(e) =>
+                onItemsChange(items.map((x, i) => (i === idx ? { ...x, text: e.target.value } : x)))
+              }
+            />
+          </div>
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => onItemsChange(items.filter((_, i) => i !== idx))}
+            disabled={items.length <= 2}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="btn btn--secondary btn--sm"
+        onClick={() => onItemsChange([...items, { id: `item-${items.length + 1}`, text: "" }])}
+      >
+        Element hinzufügen
+      </button>
+    </div>
   );
 }
 

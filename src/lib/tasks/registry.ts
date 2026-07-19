@@ -4,7 +4,10 @@
 // src/lib/tasks/<type>/ angelegt und hier angemeldet – nirgendwo sonst
 // gibt es typspezifische Switches.
 
+import { clozeTask } from "./cloze";
+import { dragdropTask } from "./dragdrop";
 import { mcqTask } from "./mcq";
+import { orderTask } from "./order";
 import { recallTask } from "./recall";
 import type {
   AnyTaskDefinition,
@@ -16,6 +19,9 @@ import type {
 export const TASK_REGISTRY: Record<TaskType, AnyTaskDefinition> = {
   recall: recallTask,
   mcq: mcqTask,
+  dragdrop: dragdropTask,
+  cloze: clozeTask,
+  order: orderTask,
 };
 
 export const ALL_TASK_TYPES: TaskType[] = Object.keys(TASK_REGISTRY) as TaskType[];
