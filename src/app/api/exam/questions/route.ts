@@ -39,7 +39,6 @@ export async function GET(request: Request) {
           sourceRef: q.sourceRef,
           taskType: q.taskType,
           payload: q.payload,
-          mcqOptions: q.mcqOptions,
         } as SerializableQuestion,
         mcqEnabled
       )

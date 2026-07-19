@@ -122,7 +122,6 @@ export async function POST(request: Request) {
       questionId,
       grade,
       correct: gradeResult.correct,
-      mcqCorrect: gradeResult.correct,
     },
   });
 

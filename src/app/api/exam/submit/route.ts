@@ -28,7 +28,6 @@ export async function POST(request: Request) {
       {
         taskType: q.taskType,
         payload: q.payload,
-        mcqOptions: q.mcqOptions,
       },
     ])
   );
@@ -85,14 +84,12 @@ export async function POST(request: Request) {
           lastReviewedAt: next.lastReviewedAt,
         },
       });
-      // Dual-Write: korrektes Flag in beide Spalten (correct neu, mcqCorrect legacy).
       await prisma.reviewEvent.create({
         data: {
           userId: user.sub,
           questionId: row.questionId,
           grade,
           correct: row.correct,
-          mcqCorrect: row.correct,
         },
       });
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Markdown } from "@/components/markdown";
 
 type McqOptionData = { id: string; text: string; correct: boolean };
 
@@ -12,7 +13,7 @@ type QuestionData = {
   answer: string;
   sourceRef: string;
   confidence: string | null;
-  mcqOptions: McqOptionData[] | null;
+  taskType: string | null;
 };
 
 type CourseData = {
@@ -153,8 +154,7 @@ export default function KurseClient({
       answer: data.answer,
       sourceRef: data.sourceRef,
       confidence: data.confidence || null,
-      mcqOptions:
-        data.taskType === "mcq" && Array.isArray(data.mcqOptions) ? data.mcqOptions : null,
+      taskType: data.taskType,
     };
     setQuestions((prev) => ({
       ...prev,
@@ -528,7 +528,7 @@ function QuestionRow({
   onDelete: () => void;
   onEdit: (data: { question: string; answer: string }) => Promise<boolean>;
 }) {
-  const isMcq = q.mcqOptions !== null && q.mcqOptions !== undefined && q.mcqOptions.length > 0;
+  const isMcq = q.taskType === "mcq";
   const [editing, setEditing] = useState(false);
   const [editQuestion, setEditQuestion] = useState(q.question);
   const [editAnswer, setEditAnswer] = useState(q.answer);
@@ -596,13 +596,13 @@ function QuestionRow({
     <div className="card" style={{ padding: 16 }}>
       <div className="row row--between" style={{ flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
         <div className="stack" style={{ gap: 0, flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>{q.question}</div>
+          <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}><Markdown source={q.question} /></div>
           <div className="divider" style={{ margin: "8px 0" }} />
           <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
             <span className="eyebrow" style={{ fontSize: 11, display: "block", marginBottom: 4 }}>
               Antwort
             </span>
-            {q.answer.slice(0, 150)}{q.answer.length > 150 ? "…" : ""}
+            <Markdown source={q.answer.slice(0, 150) + (q.answer.length > 150 ? "…" : "")} />
           </div>
           <div className="row" style={{ gap: 6, flexWrap: "wrap", marginTop: 8 }}>
             <span className="badge badge--muted" style={{ fontSize: 11 }}>

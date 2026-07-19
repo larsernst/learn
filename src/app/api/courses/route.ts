@@ -73,7 +73,6 @@ export async function POST(request: Request) {
       order: (maxOrder._max.order ?? 0) + 1,
       ownerId: guard.user.sub,
       status,
-      published: status === "published",
     },
     select: {
       id: true,

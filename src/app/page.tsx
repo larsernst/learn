@@ -7,7 +7,7 @@ export default async function HomePage() {
   const now = new Date();
 
   const courses = await prisma.course.findMany({
-    where: { published: true },
+    where: { status: "published" },
     orderBy: { order: "asc" },
   });
 

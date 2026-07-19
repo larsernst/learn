@@ -11,6 +11,7 @@ import {
   ClozeRenderer,
   OrderRenderer,
 } from "@/components/questions/AdvancedRenderers";
+import { Markdown } from "@/components/markdown";
 
 type Phase = "setup" | "running" | "result";
 
@@ -284,7 +285,7 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
         </div>
 
         <div className="card">
-          <p className="review-question">{current.question}</p>
+          <Markdown source={current.question} className="review-question" />
         </div>
 
         {isMcq && currentMcqPayload ? (
@@ -343,7 +344,7 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
                 <p className="eyebrow" style={{ marginBottom: 8 }}>
                   Musterantwort
                 </p>
-                <div className="review-answer">{current.answer}</div>
+                <Markdown source={current.answer} className="review-answer" />
               </div>
             )}
           </>

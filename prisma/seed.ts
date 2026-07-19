@@ -17,7 +17,6 @@ async function main() {
         title: c.title,
         description: c.description,
         order: c.order,
-        published: c.published,
         status: c.published ? "published" : "draft",
       },
       update: {
@@ -25,7 +24,6 @@ async function main() {
         title: c.title,
         description: c.description,
         order: c.order,
-        published: c.published,
         status: c.published ? "published" : "draft",
       },
     });
@@ -62,8 +60,6 @@ async function main() {
     const courseId = q.courseId ?? DEFAULT_COURSE_ID;
     // Neues taskType/payload-Modell (Migration 0010). Wenn der Katalog-Eintrag
     // taskType explizit setzt, gewinnt das; sonst Legacy-Ableitung aus mcqOptions.
-    // mcqOptions bleibt als Legacy-Spalte befüllt (Dual-Write), bis die
-    // Cleanup-Migration fällt.
     const hasMcq = Array.isArray(q.mcqOptions) && q.mcqOptions.length > 0;
     const taskType = q.taskType ?? (hasMcq ? "mcq" : "recall");
     const payload =
@@ -82,7 +78,6 @@ async function main() {
         question: q.question,
         answer: q.answer,
         sourceRef: q.sourceRef,
-        mcqOptions: q.mcqOptions ?? null,
         confidence: q.confidence ?? null,
         taskType,
         payload,
@@ -94,7 +89,6 @@ async function main() {
         question: q.question,
         answer: q.answer,
         sourceRef: q.sourceRef,
-        mcqOptions: q.mcqOptions ?? null,
         confidence: q.confidence ?? null,
         taskType,
         payload,

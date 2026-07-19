@@ -20,7 +20,7 @@ export default async function StatistikPage({
   const [events, reviews, questions] = await Promise.all([
     prisma.reviewEvent.findMany({
       where: { userId: user.sub, question: { courseId: course.id } },
-      select: { at: true, grade: true, mcqCorrect: true },
+      select: { at: true, grade: true, correct: true },
       orderBy: { at: "asc" },
     }),
     prisma.review.findMany({
@@ -37,8 +37,8 @@ export default async function StatistikPage({
   const heatmap = buildHeatmap(events, 84, now);
   const totalReviews = events.length;
   const againCount = events.filter((e) => e.grade === "again").length;
-  const mcqCorrectCount = events.filter((e) => e.mcqCorrect === true).length;
-  const mcqTotal = events.filter((e) => e.mcqCorrect !== null).length;
+  const mcqCorrectCount = events.filter((e) => e.correct === true).length;
+  const mcqTotal = events.filter((e) => e.correct !== null).length;
   const avgEase = reviews.length === 0 ? 0 : reviews.reduce((s, r) => s + r.easeFactor, 0) / reviews.length;
 
   const questionsMap = new Map(questions.map((q) => [q.id, q]));

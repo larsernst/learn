@@ -27,7 +27,7 @@ export default async function AdminKursePage() {
           answer: true,
           sourceRef: true,
           confidence: true,
-          mcqOptions: true,
+          taskType: true,
         },
       },
     },
@@ -59,9 +59,7 @@ export default async function AdminKursePage() {
             answer: q.answer,
             sourceRef: q.sourceRef,
             confidence: q.confidence,
-            mcqOptions: q.mcqOptions as
-              | { id: string; text: string; correct: boolean }[]
-              | null,
+            taskType: q.taskType as string | null,
           })),
         }))}
         canCreate={true}

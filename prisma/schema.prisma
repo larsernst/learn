@@ -47,7 +47,6 @@ model Course {
   title       String
   description String
   order       Int        @default(0)
-  published   Boolean    @default(true)
   ownerId     String?
   owner       User?      @relation("CourseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   status      String     @default("published")
@@ -84,7 +83,6 @@ model Question {
   question     String
   answer       String
   sourceRef    String
-  mcqOptions   Json?
   confidence   String?
   taskType     String?
   payload      Json?
@@ -117,7 +115,6 @@ model ReviewEvent {
   userId     String
   questionId String
   grade      String
-  mcqCorrect Boolean?
   correct    Boolean?
   at         DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)

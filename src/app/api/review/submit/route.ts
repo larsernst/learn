@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   const { resolvedGrade, correct, correctOptionIds } = resolveReviewGrade(
-    { taskType: question.taskType, payload: question.payload, mcqOptions: question.mcqOptions },
+    { taskType: question.taskType, payload: question.payload },
     body
   );
 
@@ -77,15 +77,12 @@ export async function POST(request: Request) {
     },
   });
 
-  // Dual-Write: korrektes Flag sowohl in die neue `correct`-Spalte als auch
-  // (vorerst) in die legacy `mcqCorrect`-Spalte, bis Cleanup-Migration fällt.
   await prisma.reviewEvent.create({
     data: {
       userId: user.sub,
       questionId,
       grade: resolvedGrade,
       correct,
-      mcqCorrect: correct,
     },
   });
 

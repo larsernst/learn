@@ -9,7 +9,6 @@ export interface ResolvedCourse {
   title: string;
   description: string;
   order: number;
-  published: boolean;
   status: string;
   ownerId: string | null;
 }
@@ -30,7 +29,7 @@ export async function resolveCourse(
   const course = await prisma.course.findFirst({
     where: {
       OR: [{ id: param }, { slug: param }],
-      ...(viewer ? {} : { published: true }),
+      ...(viewer ? {} : { status: "published" }),
     },
   });
   if (!course) notFound();

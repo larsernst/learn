@@ -13,6 +13,7 @@ import {
   OrderRenderer,
 } from "@/components/questions/AdvancedRenderers";
 import { CodeRenderer } from "@/components/questions/CodeRenderer";
+import { Markdown } from "@/components/markdown";
 
 type Feedback =
   | { kind: "recall"; text: string }
@@ -363,7 +364,7 @@ export default function StudyClient({
       )}
 
       <div className="card">
-        <p className="review-question">{q.question}</p>
+        <Markdown source={q.question} className="review-question" />
       </div>
 
       {isMcq && mcqPayload ? (
@@ -438,7 +439,7 @@ export default function StudyClient({
           <p className="eyebrow" style={{ marginBottom: 8 }}>
             Musterantwort
           </p>
-          <div className="review-answer">{q.answer}</div>
+          <Markdown source={q.answer} className="review-answer" />
         </div>
       )}
 

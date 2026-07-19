@@ -14,24 +14,24 @@ function toTaskFields(q: {
   taskType?: "recall" | "mcq" | "dragdrop" | "cloze" | "order" | "code";
   payload?: unknown;
   mcqOptions?: { id: string; text: string; correct: boolean }[];
-}): { taskType: string; payload: unknown; mcqOptions: unknown } {
+}): { taskType: string; payload: unknown } {
   // recall: kein Payload.
   if (q.taskType === "recall") {
-    return { taskType: "recall", payload: null, mcqOptions: null };
+    return { taskType: "recall", payload: null };
   }
-  // mcq: payload = { options }; legacy mcqOptions wird dual-write mitgeführt.
+  // mcq: payload = { options }.
   if (q.taskType === "mcq") {
     const options = (q.payload as { options?: unknown[] } | undefined)?.options ?? [];
-    return { taskType: "mcq", payload: { options }, mcqOptions: options };
+    return { taskType: "mcq", payload: { options } };
   }
-  // dragdrop/cloze/order/code: neuer Typ mit autor-seitigem payload; kein legacy.
+  // dragdrop/cloze/order/code: neuer Typ mit autor-seitigem payload.
   if (
     q.taskType === "dragdrop" ||
     q.taskType === "cloze" ||
     q.taskType === "order" ||
     q.taskType === "code"
   ) {
-    return { taskType: q.taskType, payload: q.payload ?? null, mcqOptions: null };
+    return { taskType: q.taskType, payload: q.payload ?? null };
   }
   // legacy: mcqOptions gesetzt (ohne taskType)
   if (q.mcqOptions !== undefined) {
@@ -39,11 +39,10 @@ function toTaskFields(q: {
     return {
       taskType: normalized.type,
       payload: normalized.payload,
-      mcqOptions: q.mcqOptions,
     };
   }
   // default: recall
-  return { taskType: "recall", payload: null, mcqOptions: null };
+  return { taskType: "recall", payload: null };
 }
 
 export async function POST(request: Request) {
@@ -74,7 +73,6 @@ export async function POST(request: Request) {
         question: q.question,
         answer: q.answer,
         sourceRef: q.sourceRef,
-        mcqOptions: taskFields.mcqOptions ?? Prisma.JsonNull,
         confidence: q.confidence ?? null,
         taskType: taskFields.taskType,
         payload: payloadValue,
@@ -86,7 +84,6 @@ export async function POST(request: Request) {
         question: q.question,
         answer: q.answer,
         sourceRef: q.sourceRef,
-        mcqOptions: taskFields.mcqOptions ?? Prisma.JsonNull,
         confidence: q.confidence ?? null,
         taskType: taskFields.taskType,
         payload: payloadValue,
@@ -113,7 +110,6 @@ export async function GET() {
       question: true,
       answer: true,
       sourceRef: true,
-      mcqOptions: true,
       confidence: true,
       taskType: true,
       payload: true,

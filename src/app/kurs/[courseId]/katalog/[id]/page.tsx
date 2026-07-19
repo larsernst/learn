@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveCourse } from "../../resolve-course";
+import { Markdown } from "@/components/markdown";
 
 export default async function CramPage({
   params,
@@ -28,12 +29,12 @@ export default async function CramPage({
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <p className="review-question">{q.question}</p>
+        <Markdown source={q.question} className="review-question" />
       </div>
 
       <div style={{ marginTop: 16 }}>
         <p className="eyebrow" style={{ marginBottom: 8 }}>Musterantwort</p>
-        <div className="review-answer">{q.answer}</div>
+        <Markdown source={q.answer} className="review-answer" />
       </div>
 
       <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>

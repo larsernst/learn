@@ -56,7 +56,7 @@ export default async function KatalogPage({
       chapter: true,
       chapterTitle: true,
       question: true,
-      mcqOptions: true,
+      taskType: true,
       confidence: true,
     },
   });
@@ -154,7 +154,7 @@ export default async function KatalogPage({
                   now,
                   matureThreshold
                 );
-                const isMcq = Array.isArray(q.mcqOptions) && q.mcqOptions !== null;
+                const isMcq = q.taskType === "mcq";
                 return (
                   <li key={q.id} className="katalog-item">
                     <Link href={`/kurs/${course.id}/katalog/${q.id}`} className="katalog-item__main">
