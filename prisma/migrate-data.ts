@@ -1,6 +1,7 @@
 // Einmaldaten-Migration: weist allen bestehenden Fragen ohne Kurs den
-// Standardkurs ("betriebssysteme") zu und stellt sicher, dass der Kurs
-// existiert. Idempotent – mehrfach ausführbar.
+// Standardkurs ("betriebssysteme") zu. Der Standardkurs wird nur angelegt,
+// wenn es solche Bestandsfragen gibt – frische Installationen bekommen
+// keinen vorbelegten Kurs. Idempotent – mehrfach ausführbar.
 //
 // Aufruf:
 //   npm run db:migrate-data              # schreibt
@@ -56,61 +57,65 @@ async function main() {
     return;
   }
 
-  // 2. Standardkurs sicherstellen (anlegen falls fehlt).
-  const existingCourse = await prisma.course.findUnique({
-    where: { id: DEFAULT_COURSE_ID },
-    select: { id: true, title: true },
-  });
-  if (existingCourse) {
-    console.log(
-      `Kurs „${existingCourse.title}“ (${existingCourse.id}) bereits vorhanden – keine Neuanlage.`
-    );
-  } else {
-    console.log(`Lege Standardkurs „${DEFAULT_COURSE.title}“ an …`);
-    if (!isDryRun) {
-      await prisma.course.create({ data: DEFAULT_COURSE });
-    }
-  }
-
-  // 3. Fragen ohne Kurs (courseId IS NULL) zählen und zuweisen.
+  // 2. Fragen ohne Kurs (courseId IS NULL) zählen. Der Standardkurs wird
+  //    nur noch angelegt, wenn es tatsächlich Bestandsfragen ohne Kurs
+  //    gibt – auf frischen Datenbanken entsteht so kein vorbelegter Kurs.
   const orphanCount = await prisma.question.count({ where: { courseId: null } });
 
   if (orphanCount === 0) {
-    console.log("Keine Fragen ohne Kurs vorhanden – nichts zu tun.");
-    return;
-  }
-
-  console.log(
-    `${orphanCount} Frage(n) ohne Kurs gefunden -> Zuweisung zu „${DEFAULT_COURSE_ID}“.`
-  );
-
-  if (!isDryRun) {
-    const result = await prisma.question.updateMany({
-      where: { courseId: null },
-      data: { courseId: DEFAULT_COURSE_ID },
-    });
-    console.log(`${result.count} Frage(n) aktualisiert.`);
+    console.log(
+      "Keine Fragen ohne Kurs vorhanden – Standardkurs wird nicht angelegt."
+    );
   } else {
-    console.log("(Dry-Run – keine Aktualisierung durchgeführt.)");
+    // Standardkurs sicherstellen (anlegen falls fehlt).
+    const existingCourse = await prisma.course.findUnique({
+      where: { id: DEFAULT_COURSE_ID },
+      select: { id: true, title: true },
+    });
+    if (existingCourse) {
+      console.log(
+        `Kurs „${existingCourse.title}“ (${existingCourse.id}) bereits vorhanden – keine Neuanlage.`
+      );
+    } else {
+      console.log(`Lege Standardkurs „${DEFAULT_COURSE.title}“ an …`);
+      if (!isDryRun) {
+        await prisma.course.create({ data: DEFAULT_COURSE });
+      }
+    }
+
+    console.log(
+      `${orphanCount} Frage(n) ohne Kurs gefunden -> Zuweisung zu „${DEFAULT_COURSE_ID}“.`
+    );
+
+    if (!isDryRun) {
+      const result = await prisma.question.updateMany({
+        where: { courseId: null },
+        data: { courseId: DEFAULT_COURSE_ID },
+      });
+      console.log(`${result.count} Frage(n) aktualisiert.`);
+    } else {
+      console.log("(Dry-Run – keine Aktualisierung durchgeführt.)");
+    }
+
+    // Bestätigung: Verteilung der Fragen pro Kurs.
+    const distribution = await prisma.question.groupBy({
+      by: ["courseId"],
+      _count: { _all: true },
+    });
+    console.log("Aktuelle Verteilung der Fragen pro Kurs:");
+    for (const row of distribution) {
+      console.log(`  ${row.courseId ?? "(null)"}: ${row._count._all}`);
+    }
   }
 
-  // 4. Bestätigung: Verteilung der Fragen pro Kurs.
-  const distribution = await prisma.question.groupBy({
-    by: ["courseId"],
-    _count: { _all: true },
-  });
-  console.log("Aktuelle Verteilung der Fragen pro Kurs:");
-  for (const row of distribution) {
-    console.log(`  ${row.courseId ?? "(null)"}: ${row._count._all}`);
-  }
+  // Hinweis: Der frühere Task-Typ-Backfill (Migration 0010, las die
+  // Legacy-Spalte mcqOptions bzw. ReviewEvent.mcqCorrect) wurde entfernt –
+  // beide Spalten sind seit Migration 0012 gelöscht, der aktuelle Prisma-
+  // Client kann sie daher gar nicht mehr abfragen. Fragen ohne taskType
+  // werden von den Lesepfaden über normalizeQuestionTask (Registry)
+  // als recall/mcq interpretiert.
 
-  // 5. Task-Typ-Backfill (Migration 0010): Fragen ohne taskType erhalten
-  //    taskType='mcq' + payload={options:...}, wenn mcqOptions vorhanden,
-  //    sonst taskType='recall' + payload=NULL. Idempotent: nur Zeilen mit
-  //    taskType IS NULL werden berührt.
-  await backfillTaskTypes();
-
-  // 6. Chapter-Backfill (Migration 0011): pro einmaligem (courseId, chapter,
+  // Chapter-Backfill (Migration 0011): pro einmaligem (courseId, chapter,
   //    chapterTitle) wird ein Chapter-Datensatz erzeugt und Question.chapterId
   //    darauf gesetzt. Idempotent: bestehende Chapter werden am Slug erkannt.
   await backfillChapters();
@@ -211,81 +216,6 @@ async function backfillChapters() {
     `Chapter-Backfill: ${chapterKeys.size} eindeutige Kapitel, ${questionsLinked} Frage(n) verknüpft.` +
       (isDryRun ? " (Dry-Run)" : "")
   );
-}
-
-async function backfillTaskTypes() {
-  let questionsWithoutTaskType: { id: string; mcqOptions: unknown }[];
-  try {
-    questionsWithoutTaskType = await prisma.question.findMany({
-      where: { taskType: null },
-      select: { id: true, mcqOptions: true },
-    });
-  } catch (e) {
-    console.warn(
-      "Hinweis: Spalte taskType nicht vorhanden – Migration 0010 ausgelassen?\n" +
-        "  npx prisma migrate deploy",
-      e
-    );
-    return;
-  }
-
-  if (questionsWithoutTaskType.length === 0) {
-    console.log("Task-Typ-Backfill: alle Fragen bereits mit taskType versehen – nichts zu tun.");
-  } else {
-    let mcqCount = 0;
-    let recallCount = 0;
-    for (const q of questionsWithoutTaskType) {
-      const hasMcq = Array.isArray(q.mcqOptions) && q.mcqOptions.length > 0;
-      if (hasMcq) {
-        if (!isDryRun) {
-          await prisma.question.update({
-            where: { id: q.id },
-            data: { taskType: "mcq", payload: { options: q.mcqOptions } },
-          });
-        }
-        mcqCount++;
-      } else {
-        if (!isDryRun) {
-          await prisma.question.update({
-            where: { id: q.id },
-            data: { taskType: "recall", payload: null },
-          });
-        }
-        recallCount++;
-      }
-    }
-    console.log(
-      `Task-Typ-Backfill: ${mcqCount} MCQ-Frage(n), ${recallCount} Recall-Frage(n) aktualisiert.` +
-        (isDryRun ? " (Dry-Run)" : "")
-    );
-  }
-
-  // ReviewEvent.correct auffüllen: wo correct IS NULL, aber mcqCorrect gesetzt.
-  try {
-    const eventsWithoutCorrect = await prisma.reviewEvent.count({
-      where: { correct: null, NOT: { mcqCorrect: null } },
-    });
-    if (eventsWithoutCorrect > 0) {
-      if (!isDryRun) {
-        const r = await prisma.reviewEvent.updateMany({
-          where: { correct: null, NOT: { mcqCorrect: null } },
-          data: { correct: prisma.reviewEvent.fields.mcqCorrect },
-        });
-        console.log(`ReviewEvent.correct: ${r.count} Event(s) aus mcqCorrect übernommen.`);
-      } else {
-        console.log(
-          `ReviewEvent.correct: ${eventsWithoutCorrect} Event(s) würden aus mcqCorrect übernommen werden. (Dry-Run)`
-        );
-      }
-    } else {
-      console.log("ReviewEvent.correct: bereits vollständig – nichts zu tun.");
-    }
-  } catch (e) {
-    console.warn(
-      "Hinweis: Spalte correct/mcqCorrect auf ReviewEvent nicht vorhanden – Migration 0010 ausgelassen?",
-      e
-    );
-  }
 }
 
 main()

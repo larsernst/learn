@@ -212,8 +212,11 @@ Inhalte liegen kursbezogen unter `/kurs/[courseId]/*` mit den Tabs
 Übersicht, Lernen, Prüfung, Fortschritt, Statistik und Katalog. Der
 Parameter `[courseId]` akzeptiert sowohl die Course-`id` als auch den
 `slug` (`resolve-course.ts`); nicht veröffentlichte Kurse liefern 404.
-Alte Top-Level-Routen (`/lernen`, `/pruefung`, …) leiten per
-`next.config.js` auf den BS-Kurs weiter.
+Alte Top-Level-Routen (`/lernen`, `/pruefung`, …) sind dynamische
+Redirect-Seiten (`src/app/<route>/page.tsx`), die auf den ersten
+veröffentlichten Kurs weiterleiten (`src/lib/default-course.ts`) –
+`/katalog/[id]` auf den Kurs der jeweiligen Frage. Ohne Kurse führen
+alle auf die Übersicht `/`.
 
 ## Design
 

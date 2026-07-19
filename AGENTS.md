@@ -64,8 +64,14 @@ Prisma-Binary-Targets: `native` + `linux-musl` (für Docker-Alpine-Images).
 - Neue Fragen/Antworten ausschließlich in `fragenkatalog.ts`pflegen,
   danach `npm run db:seed`. Neue Kurse zusätzlich in `courses.ts` anlegen.
 - Kurs-Routing: Inhalte liegen unter `/kurs/[courseId]/*` (lernen, pruefung,
-  fortschritt, statistik, katalog). Alte Top-Level-Routen leiten per
-  `next.config.js` redirect auf den BS-Kurs weiter.
+  fortschritt, statistik, katalog). Alte Top-Level-Routen (`/lernen`,
+  `/pruefung`, …) sind dynamische Redirect-Seiten (`src/app/<route>/page.tsx`),
+  die auf den ersten veröffentlichten Kurs weiterleiten (Fallback: `/`).
+- Keine vorbelegten Kurse: der Container seedet den Demo-Fragenkatalog nur
+  bei `SEED_DEMO_CONTENT=true` (siehe `docker-entrypoint.sh`); lokal lädt
+  `npm run db:seed` die Demo-Inhalte explizit. `prisma/migrate-data.ts`
+  legt den Standardkurs nur noch an, wenn Bestandsfragen ohne Kurs
+  existieren.
 - Frage-IDs (`Question.id`) sind stabil und dürfen nie geändert werden – daran
   hängt der komplette Nutzerfortschritt (`Review`/`ReviewEvent`).
 - Keine Secrets committen; `.env` ist ignoriert.

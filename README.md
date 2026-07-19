@@ -78,7 +78,25 @@ docker compose up --build -d
 ```
 
 Beim ersten Start führt der Container automatisch `prisma migrate deploy`
-und den Seed aus, sodass die 131 Fragen beider Kurse in der Datenbank liegen.
+aus. Die App startet **ohne vorbelegte Kurse** – Inhalte werden von
+Editoren/Admins über die Oberfläche (`/admin/kurse`) erstellt. Der
+mitgelieferte Fragenkatalog (2 Kurse, 131 Fragen) ist optionales
+Demo-/Beispielmaterial:
+
+```bash
+# Optional: Demo-Kurse beim Container-Start seeden
+SEED_DEMO_CONTENT=true docker compose up --build -d
+# oder nachträglich in den laufenden Container:
+docker compose exec web npx tsx prisma/seed.ts
+```
+
+**Erste Einrichtung einer frischen Instanz:** Konto registrieren, dann
+einmalig zum Admin machen und den ersten Kurs unter `/admin/kurse`
+anlegen:
+
+```bash
+docker compose exec web npm run db:make-admin -- --email user@example.com
+```
 
 > **Wichtig:** Beim Start prüft die App, dass `JWT_SECRET` gesetzt und kein
 > Platzhalter mehr ist – sonst beendet sich der Web-Container sofort mit einer
@@ -113,9 +131,13 @@ Voraussetzungen: Node ≥ 20, eine laufende PostgreSQL-Instanz.
 npm install
 cp .env.example .env            # DATABASE_URL + JWT_SECRET anpassen
 npx prisma migrate dev          # Schema anlegen + Client erzeugen
-npm run db:seed                 # 131 Fragen beider Kurse laden
+npm run db:seed                 # optional: Demo-Kurse (131 Fragen) laden
 npm run dev
 ```
+
+Ohne `db:seed` startet die App ohne Kurse. Zum Erstellen eigener Kurse
+braucht der eigene Account die Editor- oder Admin-Rolle:
+`npm run db:make-admin -- --email user@example.com`.
 
 ## Tests
 

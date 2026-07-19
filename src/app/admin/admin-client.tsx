@@ -76,28 +76,27 @@ export default function AdminClient() {
               '{\n' +
               '  "questions": [\n' +
               '    {\n' +
-              '      "id": "1-aufgaben-bs",\n' +
-              '      "courseId": "betriebssysteme",\n' +
+              '      "id": "beispiel-frage-1",\n' +
+              '      "courseId": "mein-kurs",\n' +
               '      "chapter": 1,\n' +
               '      "chapterTitle": "Einführung",\n' +
-              '      "question": "Welche Aufgaben hat ein Betriebssystem?",\n' +
-              '      "answer": "Ein Betriebssystem abstrahiert das System, stellt Dienste bereit und verwaltet Ressourcen.",\n' +
-              '      "sourceRef": "Kapitel1.pdf S. 3",\n' +
+              '      "question": "Beispielfrage mit Mehrfachauswahl?",\n' +
+              '      "answer": "Die Musterantwort steht hier als Markdown.",\n' +
+              '      "sourceRef": "skript.pdf S. 3",\n' +
               '      "confidence": "high",\n' +
               '      "mcqOptions": [\n' +
-              '        { "id": "1-aufgaben-bs-opt-1", "text": "Ressourcen verwalten", "correct": true },\n' +
-              '        { "id": "1-aufgaben-bs-opt-2", "text": "Dienste bereitstellen", "correct": true },\n' +
-              '        { "id": "1-aufgaben-bs-opt-3", "text": "Webseiten rendern", "correct": false }\n' +
+              '        { "id": "beispiel-frage-1-opt-1", "text": "Richtige Option", "correct": true },\n' +
+              '        { "id": "beispiel-frage-1-opt-2", "text": "Falsche Option", "correct": false }\n' +
               '      ]\n' +
               '    },\n' +
               '    {\n' +
-              '      "id": "1-protokolle",\n' +
-              '      "courseId": "betriebssysteme",\n' +
+              '      "id": "beispiel-frage-2",\n' +
+              '      "courseId": "mein-kurs",\n' +
               '      "chapter": 1,\n' +
               '      "chapterTitle": "Einführung",\n' +
-              '      "question": "Was sind Protokolle im BS-Kontext?",\n' +
-              '      "answer": "Nutzungsvorschriften, nach denen Dienste verwendet werden.",\n' +
-              '      "sourceRef": "Kapitel1.pdf S. 5"\n' +
+              '      "question": "Beispielfrage für die freie Erinnerung?",\n' +
+              '      "answer": "Kurze Musterantwort.",\n' +
+              '      "sourceRef": "skript.pdf S. 5"\n' +
               '    }\n' +
               '  ]\n' +
               '}'

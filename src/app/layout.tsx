@@ -92,7 +92,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             Nur für Lernzwecke. Keine offizielle Veröffentlichung der Hochschule.
             <br />
             <a
-              href="https://github.com/larsernst/dhge-betriebssysteme"
+              href="https://github.com/larsernst/learn"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--ds-link)" }}

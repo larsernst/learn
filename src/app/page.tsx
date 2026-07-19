@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUserWithRoles } from "@/lib/auth";
+import { isEditor } from "@/lib/roles";
 import { prisma } from "@/lib/prisma";
 
 export default async function HomePage() {
-  const user = await getCurrentUser();
+  const user = await getCurrentUserWithRoles();
   const now = new Date();
 
   const courses = await prisma.course.findMany({
@@ -20,7 +21,8 @@ export default async function HomePage() {
         <p className="muted" style={{ maxWidth: 720, fontSize: "clamp(16px, 2.5vw, 20px)" }}>
           Wiederhole Prüfungsfragen aus verschiedenen Kursen mit Spaced Repetition
           (SM-2), verfolge deinen Fortschritt pro Kurs und Kapitel und merke dir,
-          was du noch nicht konntest. Aktuell {totalQuestions} Fragen.
+          was du noch nicht konntest.
+          {totalQuestions > 0 ? ` Aktuell ${totalQuestions} Fragen.` : ""}
         </p>
 
         <div className="row" style={{ marginTop: 32, flexWrap: "wrap" }}>
@@ -124,6 +126,26 @@ export default async function HomePage() {
       )}
 
       <h2 style={{ marginTop: 40 }}>Deine Kurse</h2>
+      {coursesWithStats.length === 0 && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Noch keine Kurse verfügbar</h3>
+          {isEditor(user) ? (
+            <>
+              <p className="muted">
+                Lege deinen ersten Kurs an und fülle ihn mit Fragen – er
+                erscheint hier, sobald er veröffentlicht ist.
+              </p>
+              <Link href="/admin/kurse" className="btn btn--primary">
+                Ersten Kurs anlegen
+              </Link>
+            </>
+          ) : (
+            <p className="muted">
+              Sobald ein Kurs veröffentlicht ist, erscheint er hier.
+            </p>
+          )}
+        </div>
+      )}
       <div className="stack">
         {coursesWithStats.map(({ course, total, learned, dueToday, pct, chapters }) => (
           <div className="card" key={course.id} style={{ padding: 0 }}>
