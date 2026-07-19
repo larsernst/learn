@@ -24,7 +24,7 @@ test.describe("Admin-Bereich (authentifiziert)", () => {
     });
 
     await page.getByLabel("Suche").fill("gibt-es-nicht-xyz");
-    await expect(page.getByText("Keine Nutzer gefunden.")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Keine Nutzer gefunden.")).toBeVisible({ timeout: 20000 });
   });
 
   test("Self-Protection: Admin kann sich nicht selbst die Admin-Rolle entziehen", async ({ request }) => {

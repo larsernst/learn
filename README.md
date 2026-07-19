@@ -52,9 +52,14 @@ wurden, und nutzt **Spaced Repetition (SM-2)** mit freier Erinnerung
   Intervalldauer, Wiederholungs- und Fehlzählung.
 - **Rollenbasiertes Admin** (`/admin`): Fragen als JSON hochladen, Nutzer
   verwalten (Rollen, Passwort-Reset, Name/E-Mail, Löschen) mit Self-Protection.
-- **Editor-Rolle & Kurs-Authoring** (`/editor`): Editoren legen eigene
-  Kurse (Entwurf/Veröffentlicht) samt Kapiteln an und bearbeiten sie;
-  Besitzprüfung serverseitig (`canEditCourse`), Admins dürfen alles.
+- **Editor-Rolle & Kurs-Authoring** (`/editor`): Dashboard mit
+  Qualitäts-Hinweisen, Curriculum-Builder (Kapitel CRUD + Drag&Drop,
+  Fragen sortieren/verschieben/duplizieren, Bulk-Aktionen, Suche),
+  geführte Fragen-Editoren für alle 6 Aufgabentypen mit Markdown-
+  Werkzeugen und Lernenden-Vorschau, Kurs-Einstellungen (Slug,
+  Kursbild, Duplizieren, JSON Export/Import). Besitzprüfung
+  serverseitig (`canEditCourse`), Admins dürfen alles. Details:
+  [`docs/EDITOR.md`](docs/EDITOR.md).
 - **Code-Aufgaben via Judge0** (optional, `docker compose --profile code`):
   Auto-Bewertung von Code-Einreichungen; deaktiviert werden Code-Aufgaben
   serverseitig abgelehnt und in der UI nicht angeboten.

@@ -5,7 +5,7 @@ Die App hat zwei Test-Schichten: **Unit-Tests** (Vitest, rein logisch) und
 
 ## Unit-Tests (Vitest)
 
-Gedeckter Bereich (25 Testdateien, 237 Tests, rein logisch, ohne Datenbank):
+Gedeckter Bereich (26 Testdateien, 242 Tests, rein logisch, ohne Datenbank):
 
 | Datei | Tests | Getestetes Verhalten |
 |---|---|---|
@@ -34,6 +34,7 @@ Gedeckter Bereich (25 Testdateien, 237 Tests, rein logisch, ohne Datenbank):
 | `tests/unit/editor/payload.test.ts` | 21 | Payload-Bau/Parser für die Editor-Formulare (mcq/dragdrop/order/code), Form-Validierung |
 | `tests/unit/image.test.ts` | 7 | Kursbild-Validierung (MIME, Größe) und Magic-Bytes-Sniffing |
 | `tests/unit/course-transfer.test.ts` | 5 | `parseCourseImport`: Export-/Listen-Format, mcqOptions-Legacy, Fehler pro Eintrag, Dubletten |
+| `tests/unit/editor/quality.test.ts` | 5 | `analyzeCourseQuality`: Typ-Zählung, MCQ-/DragDrop-/Cloze-/Order-/Code-Unvollständigkeiten |
 
 Die Zod-Schemata liegen in `src/lib/validation.ts` (zentral und damit
 isoliert testbar), die SM-2-Grade-Auflösung in `src/lib/review-grade.ts`.
@@ -76,7 +77,7 @@ In der CI laufen sie im `e2e`-Job (dort existiert ein Postgres-Service).
 ## End-to-End-Tests (Playwright)
 
 Die E2E-Tests laufen gegen die laufende App + Datenbank und decken die
-Hauptflüsse ab (15 Spezifikationen, 50 Tests):
+Hauptflüsse ab (16 Spezifikationen, 54 Tests):
 
 | Datei | Getesteter Fluss |
 |---|---|
@@ -94,6 +95,7 @@ Hauptflüsse ab (15 Spezifikationen, 50 Tests):
 | `tests/e2e/curriculum.spec.ts` | Kapitel anlegen/umbenennen/sortieren/löschen, Fragen verschieben/sortieren, Reload-Persistenz |
 | `tests/e2e/question-editor.spec.ts` | Geführte Editoren pro Typ: MCQ (Badges, Vorschau-Grading), Cloze (Wort→Lücke, Vorschau), DragDrop/Order (Katalog+Lern-Tab), Code (Presets, Judge0-Hinweis) |
 | `tests/e2e/course-workflow.spec.ts` | Einstellungen (Slug-Kollision), Duplizieren, Export-Download, Import (Dry-Run+Fehlerreport+Anwenden), Kursbild (Upload/Anzeige/Entfernen) |
+| `tests/e2e/curriculum-extras.spec.ts` | Bulk-Aktionen (verschieben/löschen), Suche/Typ-Filter, Qualitäts-Hinweise auf dem Dashboard |
 
 Hinweis zum MCQ-Fluss in E2E-Tests: der Submit-Button des `McqRenderer`
 heißt erst **nach** Auswahl einer Option „Bestätigen & nächste" bzw.

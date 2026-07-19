@@ -70,6 +70,9 @@ export default function CurriculumClient({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [dragChapterId, setDragChapterId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
 
   const sortedChapters = [...chapters].sort((a, b) => a.order - b.order);
   const unassignedCount = questions.filter((q) => q.chapterId === null).length;
@@ -79,8 +82,69 @@ export default function CurriculumClient({
       .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
 
   const activeId = activeChapter === UNASSIGNED ? null : activeChapter;
-  const activeQuestions = chapterQuestions(activeId);
+  const activeQuestions = chapterQuestions(activeId).filter((q) => {
+    if (typeFilter && (q.taskType ?? "recall") !== typeFilter) return false;
+    if (search.trim() && !q.question.toLowerCase().includes(search.trim().toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
   const activeChapterData = sortedChapters.find((c) => c.id === activeId) ?? null;
+  const selectedInView = activeQuestions.filter((q) => selected.has(q.id));
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkMove(targetChapterId: string | null) {
+    for (const q of selectedInView) {
+      // serial: serverseitige Kapitel-Prüfung pro Frage
+      // eslint-disable-next-line no-await-in-loop
+      const res = await fetch(`/api/admin/questions/${encodeURIComponent(q.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chapterId: targetChapterId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Verschieben fehlgeschlagen.");
+        return;
+      }
+      const target = chapters.find((c) => c.id === targetChapterId);
+      setQuestions((prev) =>
+        prev.map((x) =>
+          x.id === q.id
+            ? { ...x, chapterId: targetChapterId, chapter: target?.order ?? x.chapter, chapterTitle: target?.title ?? x.chapterTitle }
+            : x
+        )
+      );
+    }
+    setSuccess(`${selectedInView.length} Frage(n) verschoben.`);
+    setSelected(new Set());
+  }
+
+  async function bulkDelete() {
+    if (!window.confirm(`${selectedInView.length} Frage(n) wirklich löschen? Alle Nutzerfortschritte dazu gehen verloren.`)) {
+      return;
+    }
+    for (const q of selectedInView) {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await fetch(`/api/admin/questions/${encodeURIComponent(q.id)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Löschen fehlgeschlagen.");
+        return;
+      }
+      setQuestions((prev) => prev.filter((x) => x.id !== q.id));
+    }
+    setSuccess(`${selectedInView.length} Frage(n) gelöscht.`);
+    setSelected(new Set());
+  }
 
   function chapterQuestionCount(id: string) {
     return questions.filter((q) => q.chapterId === id).length;
@@ -552,6 +616,27 @@ export default function CurriculumClient({
                 ? `Kapitel ${activeChapterData.order} · ${activeChapterData.title}`
                 : "Nicht zugeordnete Fragen"}
             </strong>
+            <div className="row" style={{ gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <input
+                className="input"
+                style={{ fontSize: 12, padding: "4px 8px", maxWidth: 180 }}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Suche im Kapitel …"
+              />
+              <select
+                className="input"
+                style={{ fontSize: 12, padding: "4px 8px", maxWidth: 150 }}
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              >
+                <option value="">Alle Typen</option>
+                {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             {activeChapterData && (
               <button
                 type="button"
@@ -565,7 +650,41 @@ export default function CurriculumClient({
                 {showForm ? "Abbrechen" : "Neue Frage"}
               </button>
             )}
+            </div>
           </div>
+
+          {selectedInView.length > 0 && (
+            <div className="card" style={{ padding: 10, background: "rgba(24,104,219,0.05)" }}>
+              <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <strong style={{ fontSize: 13 }}>{selectedInView.length} ausgewählt</strong>
+                <select
+                  className="input"
+                  style={{ fontSize: 12, padding: "4px 8px", maxWidth: 200 }}
+                  value=""
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v !== "") void bulkMove(v === "__none__" ? null : v);
+                  }}
+                >
+                  <option value="">Verschieben nach …</option>
+                  <option value="__none__">Nicht zugeordnet</option>
+                  {sortedChapters
+                    .filter((c) => c.id !== activeId)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.order}. {c.title}
+                      </option>
+                    ))}
+                </select>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => void bulkDelete()}>
+                  Löschen
+                </button>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSelected(new Set())}>
+                  Auswahl aufheben
+                </button>
+              </div>
+            </div>
+          )}
 
           {showForm && activeChapterData && (
             <QuestionEditor
@@ -601,6 +720,8 @@ export default function CurriculumClient({
               chapters={sortedChapters}
               courseId={course.id}
               judge0Enabled={judge0Enabled}
+              selected={selected.has(q.id)}
+              onToggleSelect={() => toggleSelect(q.id)}
               isFirst={idx === 0}
               isLast={idx === activeQuestions.length - 1}
               onDelete={() => deleteQuestion(q)}
@@ -634,6 +755,8 @@ function QuestionRow({
   chapters,
   courseId,
   judge0Enabled,
+  selected,
+  onToggleSelect,
   isFirst,
   isLast,
   onDelete,
@@ -646,6 +769,8 @@ function QuestionRow({
   chapters: ChapterData[];
   courseId: string;
   judge0Enabled: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
   isFirst: boolean;
   isLast: boolean;
   onDelete: () => void;
@@ -685,6 +810,13 @@ function QuestionRow({
   return (
     <div className="card" style={{ padding: 16 }}>
       <div className="row row--between" style={{ flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          title="Für Bulk-Aktion auswählen"
+          style={{ width: 16, height: 16, marginTop: 4 }}
+        />
         <div className="stack" style={{ gap: 0, flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}><Markdown source={q.question} /></div>
           <div className="divider" style={{ margin: "8px 0" }} />

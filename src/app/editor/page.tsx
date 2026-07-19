@@ -1,5 +1,6 @@
 import { requireEditorPage, isAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { analyzeCourseQuality } from "@/lib/editor/quality";
 import EditorDashboardClient from "./editor-dashboard-client";
 
 export default async function EditorPage() {
@@ -19,6 +20,9 @@ export default async function EditorPage() {
       updatedAt: true,
       imageMime: true,
       _count: { select: { questions: true, chapters: true } },
+      questions: {
+        select: { id: true, taskType: true, payload: true, chapterId: true },
+      },
     },
   });
 
@@ -41,6 +45,7 @@ export default async function EditorPage() {
           chapterCount: c._count.chapters,
           updatedAt: c.updatedAt.toISOString(),
           hasImage: c.imageMime !== null,
+          quality: analyzeCourseQuality(c.questions),
         }))}
       />
     </div>
