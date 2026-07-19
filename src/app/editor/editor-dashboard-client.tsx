@@ -4,6 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CourseImage } from "@/components/course-image";
+import type { CourseQuality } from "@/lib/editor/quality";
+
+const TYPE_SHORT: Record<string, string> = {
+  recall: "Frei",
+  mcq: "MCQ",
+  dragdrop: "Zuordnen",
+  cloze: "Lücke",
+  order: "Reihenfolge",
+  code: "Code",
+};
 
 type CourseCard = {
   id: string;
@@ -15,6 +25,7 @@ type CourseCard = {
   chapterCount: number;
   updatedAt: string;
   hasImage: boolean;
+  quality: CourseQuality;
 };
 
 export default function EditorDashboardClient({ courses }: { courses: CourseCard[] }) {
@@ -98,6 +109,25 @@ export default function EditorDashboardClient({ courses }: { courses: CourseCard
               <span className="badge badge--muted" style={{ fontSize: 11 }}>
                 {c.questionCount} Fragen
               </span>
+              {Object.entries(c.quality.byType).map(([type, n]) => (
+                <span key={type} className="badge badge--muted" style={{ fontSize: 10 }}>
+                  {TYPE_SHORT[type] ?? type}: {n}
+                </span>
+              ))}
+              {c.quality.unassigned > 0 && (
+                <span className="badge badge--warn" style={{ fontSize: 10 }} title="Fragen ohne Kapitel-Zuordnung">
+                  {c.quality.unassigned} nicht zugeordnet
+                </span>
+              )}
+              {c.quality.warnings.length > 0 && (
+                <span
+                  className="badge badge--warn"
+                  style={{ fontSize: 10 }}
+                  title={c.quality.warnings.map((w) => w.message).join("\n")}
+                >
+                  ⚠ {c.quality.warnings.length} Hinweis(e)
+                </span>
+              )}
             </div>
             <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
               <Link href={`/editor/kurs/${c.id}`} className="btn btn--primary btn--sm">

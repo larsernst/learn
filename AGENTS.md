@@ -57,6 +57,8 @@ Prisma-Binary-Targets: `native` + `linux-musl` (für Docker-Alpine-Images).
 
 ## Wichtige Dokumentation
 
+- `docs/EDITOR.md` – Bedienkonzept des Editor-Bereichs (`/editor`).
+
 - `docs/ARCHITECTURE.md` – Architekturüberblick, Auth, SM-2, Datenmodell.
 - `docs/TESTING.md` – Teststrategie und -abdeckung.
 - `docs/LERNEN.md` – Fachliche Beschreibung des Lernalgorithmus.

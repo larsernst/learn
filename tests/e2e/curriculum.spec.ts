@@ -1,4 +1,27 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+// Kapitel-Zeilen in der Sidebar zuverlässig aktivieren: Query + Click
+// atomar im Browser (React kann die Knoten nicht zwischendurch ersetzen).
+async function clickChapter(page: Page, label: string) {
+  await page.evaluate((l) => {
+    for (const row of document.querySelectorAll("div[draggable='true']")) {
+      if (row.textContent?.includes(l)) {
+        (row as HTMLElement).click();
+        return;
+      }
+    }
+    throw new Error(`Kapitel nicht gefunden: ${l}`);
+  }, label);
+}
+
+// Bulk-Checkbox einer Fragen-Zeile (Index) atomar klicken.
+async function clickBulkCheckbox(page: Page, index: number) {
+  await page.evaluate((i) => {
+    const boxes = document.querySelectorAll("input[title='Für Bulk-Aktion auswählen']");
+    (boxes[i] as HTMLInputElement)?.click();
+  }, index);
+}
+
 
 // Curriculum-Builder-Flüsse (Kapitel + Fragen-Organisation). Läuft im
 // Projekt "editor-chromium" mit Editor-Storage-State.
@@ -39,7 +62,7 @@ test("Kapitel- und Fragen-Organisation im Curriculum", async ({ page }) => {
   await expect(page.getByText("2. Gamma")).toBeVisible();
 
   // In Kapitel Beta (aktiv = 1.) eine Frage anlegen
-  await page.locator("div[draggable='true'] span", { hasText: "1. Beta" }).first().click();
+  await clickChapter(page, "1. Beta");
   await page.getByRole("button", { name: "Neue Frage" }).click();
   await page.getByPlaceholder("z. B. Welche Aufgaben hat ein Betriebssystem?").fill("Frage Eins?");
   await page
@@ -72,7 +95,7 @@ test("Kapitel- und Fragen-Organisation im Curriculum", async ({ page }) => {
   await expect(page.getByText("Frage Eins?")).toHaveCount(0);
 
   // In Gamma steht jetzt Frage Eins
-  await page.locator("div[draggable='true'] span", { hasText: "2. Gamma" }).first().click();
+  await clickChapter(page, "2. Gamma");
   await expect(page.getByText("Frage Eins?")).toBeVisible();
 
   // Kapitel Gamma löschen -> Frage landet in "Nicht zugeordnet"
@@ -88,9 +111,16 @@ test("Kapitel- und Fragen-Organisation im Curriculum", async ({ page }) => {
   await page.goto(courseUrl);
   await expect(page.locator("div[draggable='true'] span", { hasText: "1. Beta" }).first()).toBeVisible();
   await expect(page.getByText("2. Gamma")).toHaveCount(0);
-  await page.locator("span.muted", { hasText: "Nicht zugeordnet" }).click();
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll("span.muted")) {
+      if (el.textContent?.includes("Nicht zugeordnet")) {
+        (el as HTMLElement).click();
+        return;
+      }
+    }
+  });
   await expect(page.getByText("Frage Eins?")).toBeVisible();
-  await page.locator("div[draggable='true'] span", { hasText: "1. Beta" }).first().click();
+  await clickChapter(page, "1. Beta");
   const firstCardText = await page.locator(".card", { hasText: /Frage (Eins|Zwei)\?/ }).first().innerText();
   expect(firstCardText).toContain("Frage Zwei?");
 });
