@@ -43,10 +43,10 @@ test("Kapitel- und Fragen-Organisation im Curriculum", async ({ page }) => {
   await page.getByRole("button", { name: "Neue Frage" }).click();
   await page.getByPlaceholder("z. B. Welche Aufgaben hat ein Betriebssystem?").fill("Frage Eins?");
   await page
-    .locator("div.field", { has: page.locator("label", { hasText: /^Antwort$/ }) })
+    .locator("div.field", { has: page.locator("label", { hasText: /^Musterantwort$/ }) })
     .locator("textarea")
     .fill("Antwort Eins.");
-  await page.getByPlaceholder("z. B. Kapitel1.md").fill("cur.md");
+  await page.getByPlaceholder("z. B. skript.md, Folie 12").fill("cur.md");
   await page.getByRole("button", { name: "Frage speichern" }).click();
   await expect(page.getByText("Frage hinzugefügt.")).toBeVisible();
 
@@ -54,10 +54,10 @@ test("Kapitel- und Fragen-Organisation im Curriculum", async ({ page }) => {
   await page.getByRole("button", { name: "Neue Frage" }).click();
   await page.getByPlaceholder("z. B. Welche Aufgaben hat ein Betriebssystem?").fill("Frage Zwei?");
   await page
-    .locator("div.field", { has: page.locator("label", { hasText: /^Antwort$/ }) })
+    .locator("div.field", { has: page.locator("label", { hasText: /^Musterantwort$/ }) })
     .locator("textarea")
     .fill("Antwort Zwei.");
-  await page.getByPlaceholder("z. B. Kapitel1.md").fill("cur.md");
+  await page.getByPlaceholder("z. B. skript.md, Folie 12").fill("cur.md");
   await page.getByRole("button", { name: "Frage speichern" }).click();
   await expect(page.getByText("Frage hinzugefügt.")).toBeVisible();
 

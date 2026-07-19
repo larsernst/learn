@@ -5,7 +5,7 @@ Die App hat zwei Test-Schichten: **Unit-Tests** (Vitest, rein logisch) und
 
 ## Unit-Tests (Vitest)
 
-Gedeckter Bereich (21 Testdateien, 198 Tests, rein logisch, ohne Datenbank):
+Gedeckter Bereich (23 Testdateien, 225 Tests, rein logisch, ohne Datenbank):
 
 | Datei | Tests | Getestetes Verhalten |
 |---|---|---|
@@ -30,6 +30,8 @@ Gedeckter Bereich (21 Testdateien, 198 Tests, rein logisch, ohne Datenbank):
 | `tests/unit/tasks/order.test.ts` | 7 | Order-Bundle: grade (Reihenfolge), serialize, emptyAttempt |
 | `tests/unit/tasks/code.test.ts` | 5 | Code-Bundle: serialize (Public-Payload ohne Musterlösung) |
 | `tests/unit/judge0/grade.test.ts` | 5 | `gradeCodeWithJudge0`: Status-Mapping, Polling, Fehlerfälle (gemockter Judge0-Client) |
+| `tests/unit/editor/cloze-text.test.ts` | 6 | Marker-Text [[n]] ↔ Segmente, Lücke einfügen, Rundreisen |
+| `tests/unit/editor/payload.test.ts` | 21 | Payload-Bau/Parser für die Editor-Formulare (mcq/dragdrop/order/code), Form-Validierung |
 
 Die Zod-Schemata liegen in `src/lib/validation.ts` (zentral und damit
 isoliert testbar), die SM-2-Grade-Auflösung in `src/lib/review-grade.ts`.
@@ -72,7 +74,7 @@ In der CI laufen sie im `e2e`-Job (dort existiert ein Postgres-Service).
 ## End-to-End-Tests (Playwright)
 
 Die E2E-Tests laufen gegen die laufende App + Datenbank und decken die
-Hauptflüsse ab (11 Spezifikationen, 33 Tests):
+Hauptflüsse ab (14 Spezifikationen, 45 Tests):
 
 | Datei | Getesteter Fluss |
 |---|---|
@@ -85,6 +87,10 @@ Hauptflüsse ab (11 Spezifikationen, 33 Tests):
 | `tests/e2e/admin-rejection.spec.ts` | Nicht-Admin bekommt keinen Admin-API-Zugriff (401/403), /admin-Redirect |
 | `tests/e2e/admin.setup.ts` + `admin.spec.ts` | Admin anlegen (Setup-Projekt mit Storage-State), dann: Nutzerliste, Suche, Self-Protection (Rolle entziehen/löschen), fremden Nutzer bearbeiten |
 | `tests/e2e/code-task.spec.ts` | Code-Submit bei deaktiviertem Judge0: 503 mit Fehlermeldung (samt 401 ohne Login) |
+| `tests/e2e/editor.setup.ts` + `editor.spec.ts` | Editor-Rolle (Setup): Dashboard, Kurs anlegen → Curriculum → Frage anlegen → Einstellungen; Seed-Kurse unsichtbar |
+| `tests/e2e/editor-access.spec.ts` | Editor-Zugriffsschutz: anon → /login, Normaluser → /, /admin/kurse → /editor |
+| `tests/e2e/curriculum.spec.ts` | Kapitel anlegen/umbenennen/sortieren/löschen, Fragen verschieben/sortieren, Reload-Persistenz |
+| `tests/e2e/question-editor.spec.ts` | Geführte Editoren pro Typ: MCQ (Badges, Vorschau-Grading), Cloze (Wort→Lücke, Vorschau), DragDrop/Order (Katalog+Lern-Tab), Code (Presets, Judge0-Hinweis) |
 
 Hinweis zum MCQ-Fluss in E2E-Tests: der Submit-Button des `McqRenderer`
 heißt erst **nach** Auswahl einer Option „Bestätigen & nächste" bzw.

@@ -85,6 +85,7 @@ export default async function EditorKursPage({
           payload: q.payload,
           order: q.order,
         }))}
+        judge0Enabled={process.env.JUDGE0_ENABLED === "true"}
       />
     </div>
   );

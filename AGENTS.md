@@ -31,6 +31,10 @@ BASE_URL=http://<your-host>:<port> npm run test:e2e
   `/api/courses/[id]/chapters*`); Fragen hängen per `chapterId` an
   Kapiteln und haben seit Migration 0015 ein `order`-Feld für die
   Reihenfolge innerhalb des Kapitels.
+- Editor-Werkzeuge: `src/components/editor/` (QuestionEditor,
+  MarkdownField, TypePicker, Typ-Editoren, QuestionPreview) +
+  `src/lib/editor/` (payload.ts Form↔Payload, cloze-text.ts Marker-Parser –
+  beide rein, unit-getestet).
 - Design-Tokens: `src/lib/design-tokens.ts` + `src/app/globals.css`
   (Vorgabe: `DESIGN.md`).
 - Prüfungsmodus: `src/lib/exam.ts` (Fragenauswahl, Bewertung).

@@ -32,10 +32,10 @@ test("Kurs anlegen -> Curriculum -> Frage anlegen -> Einstellungen", async ({ pa
   await page.getByRole("button", { name: "Neue Frage" }).click();
   await page.getByPlaceholder("z. B. Welche Aufgaben hat ein Betriebssystem?").fill("Was ist ein Scheduler?");
   await page
-    .locator("div.field", { has: page.locator("label", { hasText: /^Antwort$/ }) })
+    .locator("div.field", { has: page.locator("label", { hasText: /^Musterantwort$/ }) })
     .locator("textarea")
     .fill("Die Komponente, die Prozessen CPU-Zeit zuteilt.");
-  await page.getByPlaceholder("z. B. Kapitel1.md").fill("e2e.md");
+  await page.getByPlaceholder("z. B. skript.md, Folie 12").fill("e2e.md");
   await page.getByRole("button", { name: "Frage speichern" }).click();
 
   await expect(page.getByText("Frage hinzugefügt.")).toBeVisible();
