@@ -55,6 +55,9 @@ export const codePayloadSchema = z.object({
   languages: z.array(codeLanguageSchema).min(1).max(3),
   testCases: z.array(codeTestCaseSchema).min(1).max(CODE_TESTCASES_MAX),
   comparison: codeComparisonSchema,
+  // Musterlösung (nur Editor/Admin sichtbar, wird NIEMALS an Lernende
+  // serialisiert – serialize.ts mappt nur explizite Felder).
+  referenceSolution: z.string().max(CODE_SOURCE_MAX).optional(),
   timeLimitMs: z.number().int().positive().max(15000),
   memoryLimitKb: z.number().int().positive().max(524288),
 });

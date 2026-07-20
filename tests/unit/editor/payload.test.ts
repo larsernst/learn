@@ -171,6 +171,7 @@ describe("editor/payload: code", () => {
   const form = {
     languageId: 71,
     starterCode: "print()",
+    referenceSolution: "",
     testCases: [
       { input: "1", args: "", expectedOutput: "1\n", hidden: false },
       { input: "2", args: "--flag", expectedOutput: "2\n", hidden: true },
@@ -235,6 +236,7 @@ describe("editor/payload: code", () => {
     expect(codeToForm(null)).toEqual({
       languageId: 71,
       starterCode: "",
+      referenceSolution: "",
       testCases: [],
       comparisonMode: "exact",
       floatTolerance: "0.0001",
@@ -246,5 +248,38 @@ describe("editor/payload: code", () => {
   test("buildCodePayload: unbekannte languageId bekommt Fallback-Label", () => {
     const payload = buildCodePayload({ ...form, languageId: 999 });
     expect(payload.languages[0].label).toBe("Language 999");
+  });
+});
+
+describe("editor/payload: code Musterlösung", () => {
+  test("referenceSolution Roundtrip (build → schema → form)", () => {
+    const form = {
+      languageId: 54,
+      starterCode: "// TODO",
+      referenceSolution: "int main() { return 0; }",
+      testCases: [{ input: "", args: "a b", expectedOutput: "42\n", hidden: true }],
+      comparisonMode: "trim" as const,
+      floatTolerance: "0.0001",
+      timeLimitMs: 2000,
+      memoryLimitKb: 262144,
+    };
+    const payload = buildCodePayload(form);
+    expect(payload.referenceSolution).toBe(form.referenceSolution);
+    expect(codePayloadSchema.safeParse(payload).success).toBe(true);
+    expect(codeToForm(payload)).toEqual(form);
+  });
+
+  test("leere Musterlösung wird weggelassen", () => {
+    const payload = buildCodePayload({
+      languageId: 54,
+      starterCode: "",
+      referenceSolution: "   ",
+      testCases: [{ input: "", args: "", expectedOutput: "x", hidden: false }],
+      comparisonMode: "exact",
+      floatTolerance: "0.0001",
+      timeLimitMs: 2000,
+      memoryLimitKb: 262144,
+    });
+    expect(payload).not.toHaveProperty("referenceSolution");
   });
 });

@@ -119,13 +119,32 @@ describe.skipIf(!dbOk)("course-transfer (Integration)", () => {
           sourceRef: "imp.md",
           chapterSlug: "kap-1", // existiert bereits
         },
+        {
+          id: "imp-q-3",
+          question: "Code-Aufgabe?",
+          answer: "Hinweis.",
+          sourceRef: "imp.md",
+          chapterSlug: "kap-1",
+          taskType: "code",
+          payload: {
+            languages: [{ languageId: 54, label: "C++ (G++)", starterCode: "// TODO" }],
+            testCases: [
+              { id: "t1", input: "1/2 + 3/4 =\n", expectedOutput: "Ergebnis: 5/4", hidden: false },
+              { id: "t2", input: "", args: "a b c", expectedOutput: "3\n", hidden: true },
+            ],
+            comparison: { mode: "float", floatTolerance: 0.001 },
+            referenceSolution: "int main() { return 0; }",
+            timeLimitMs: 2000,
+            memoryLimitKb: 262144,
+          },
+        },
       ],
     });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
 
     const first = await applyCourseImport(prisma, "it-src", parsed.items);
-    expect(first.created).toBe(2);
+    expect(first.created).toBe(3);
     expect(first.updated).toBe(0);
     expect(first.chaptersCreated).toBe(1); // "import-kapitel" neu
 
@@ -140,8 +159,22 @@ describe.skipIf(!dbOk)("course-transfer (Integration)", () => {
     // Zweiter Lauf: update statt Duplikat, kein neues Kapitel
     const second = await applyCourseImport(prisma, "it-src", parsed.items);
     expect(second.created).toBe(0);
-    expect(second.updated).toBe(2);
+    expect(second.updated).toBe(3);
     expect(second.chaptersCreated).toBe(0);
-    expect(await prisma.question.count({ where: { courseId: "it-src" } })).toBe(3);
+    expect(await prisma.question.count({ where: { courseId: "it-src" } })).toBe(4);
+
+    // Code-Payload v2 überlebt den Import vollständig (comparison, args,
+    // referenceSolution) und ist normalisiert (expectedOutput mit \n).
+    const q3 = await prisma.question.findUniqueOrThrow({ where: { id: "imp-q-3" } });
+    const p3 = q3.payload as {
+      comparison: { mode: string; floatTolerance?: number };
+      referenceSolution?: string;
+      testCases: { id: string; args?: string; expectedOutput: string }[];
+    };
+    expect(q3.taskType).toBe("code");
+    expect(p3.comparison).toEqual({ mode: "float", floatTolerance: 0.001 });
+    expect(p3.referenceSolution).toBe("int main() { return 0; }");
+    expect(p3.testCases[1].args).toBe("a b c");
+    expect(p3.testCases[0].expectedOutput).toBe("Ergebnis: 5/4\n");
   });
 });

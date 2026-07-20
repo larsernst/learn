@@ -145,7 +145,8 @@ export function parseCourseImport(raw: unknown): ImportParseResult {
       sourceRef: q.sourceRef,
       confidence: q.confidence ?? null,
       taskType,
-      payload: payload ?? null,
+      // Geparste (normalisierte) Form speichern, nicht das Roheingabe-JSON.
+      payload: payloadCheck.data ?? null,
       chapterSlug: q.chapterSlug ?? null,
       chapter: q.chapter ?? 1,
       chapterTitle: q.chapterTitle ?? "Importiert",

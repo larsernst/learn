@@ -36,6 +36,7 @@ export type CodeTestCaseForm = {
 export type CodeFormState = {
   languageId: number;
   starterCode: string;
+  referenceSolution: string;
   testCases: CodeTestCaseForm[];
   comparisonMode: "exact" | "trim" | "float";
   // Formular-Repräsentation (Textfeld); wird beim Bauen geparst.
@@ -173,6 +174,9 @@ export function buildCodePayload(form: CodeFormState): CodePayload {
         ? { floatTolerance: tolerance }
         : {}),
     },
+    ...(form.referenceSolution.trim()
+      ? { referenceSolution: form.referenceSolution }
+      : {}),
     timeLimitMs: form.timeLimitMs,
     memoryLimitKb: form.memoryLimitKb,
   };
@@ -184,6 +188,7 @@ export function codeToForm(payload: unknown): CodeFormState {
   return {
     languageId: lang?.languageId ?? 71,
     starterCode: lang?.starterCode ?? "",
+    referenceSolution: p?.referenceSolution ?? "",
     testCases: (p?.testCases ?? []).map((t) => ({
       input: t.input,
       args: t.args ?? "",

@@ -1,16 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import type { CodeFormState } from "@/lib/editor/payload";
-import { CODE_LANGUAGES, CODE_LIMIT_PRESETS } from "@/lib/editor/payload";
+import { buildCodePayload, CODE_LANGUAGES, CODE_LIMIT_PRESETS } from "@/lib/editor/payload";
+import type { CodeGradeDetail } from "@/lib/judge0/grade";
 
 export function CodeEditor({
   value,
   onChange,
   judge0Enabled,
+  courseId,
 }: {
   value: CodeFormState;
   onChange: (v: CodeFormState) => void;
   judge0Enabled: boolean;
+  courseId: string;
 }) {
   function setTestCase(idx: number, patch: Partial<CodeFormState["testCases"][number]>) {
     onChange({
@@ -22,6 +26,32 @@ export function CodeEditor({
   const activePreset = CODE_LIMIT_PRESETS.findIndex(
     (p) => p.timeLimitMs === value.timeLimitMs && p.memoryLimitKb === value.memoryLimitKb
   );
+
+  // Musterlösungs-Check (Judge0, serverseitig)
+  const [checking, setChecking] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
+  const [checkResult, setCheckResult] = useState<{
+    correct: boolean;
+    detail?: CodeGradeDetail | null;
+  } | null>(null);
+
+  async function runReferenceCheck() {
+    setChecking(true);
+    setCheckError(null);
+    setCheckResult(null);
+    const res = await fetch(`/api/courses/${courseId}/questions/code-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: buildCodePayload(value) }),
+    });
+    setChecking(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setCheckError(body.error ?? `Prüflauf fehlgeschlagen (${res.status}).`);
+      return;
+    }
+    setCheckResult((await res.json()) as { correct: boolean; detail?: CodeGradeDetail | null });
+  }
 
   return (
     <div className="stack">
@@ -121,6 +151,63 @@ export function CodeEditor({
           style={{ fontFamily: "monospace", fontSize: 13 }}
           spellCheck={false}
         />
+      </div>
+
+      <div className="field">
+        <label>Musterlösung (optional – nur für Autoren sichtbar)</label>
+        <textarea
+          className="textarea"
+          rows={8}
+          value={value.referenceSolution}
+          onChange={(e) => onChange({ ...value, referenceSolution: e.target.value })}
+          style={{ fontFamily: "monospace", fontSize: 13 }}
+          spellCheck={false}
+          placeholder="Referenzlösung – wird niemals an Lernende ausgeliefert"
+        />
+        <div className="row" style={{ gap: 10, alignItems: "center", marginTop: 6, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            disabled={!judge0Enabled || checking || !value.referenceSolution.trim()}
+            onClick={runReferenceCheck}
+          >
+            {checking ? "Prüflauf läuft …" : "Musterlösung gegen Tests prüfen"}
+          </button>
+          {!judge0Enabled && (
+            <span className="muted" style={{ fontSize: 12 }}>
+              benötigt aktives Judge0
+            </span>
+          )}
+          {checkResult && (
+            <span
+              className={`badge${checkResult.correct ? " badge--success" : " badge--warn"}`}
+              style={{ fontSize: 12 }}
+            >
+              {checkResult.correct
+                ? "✓ Musterlösung besteht alle Tests"
+                : "✗ Musterlösung scheitert an mindestens einem Test"}
+            </span>
+          )}
+        </div>
+        {checkError && (
+          <p className="badge" style={{ background: "rgba(174,46,36,0.1)", color: "#ae2e24", fontSize: 12 }}>
+            {checkError}
+          </p>
+        )}
+        {checkResult?.detail?.perTest && (
+          <div className="stack" style={{ gap: 4, marginTop: 6 }}>
+            {checkResult.detail.perTest.map((t) => (
+              <div key={t.id} className="row" style={{ gap: 8, fontSize: 12, alignItems: "center" }}>
+                <span className={`badge${t.passed ? " badge--success" : " badge--warn"}`} style={{ fontSize: 11 }}>
+                  {t.passed ? "✓" : "✗"}
+                </span>
+                <span>
+                  {t.hidden ? "Versteckter Test" : `Test ${t.id}`} – {t.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="stack" style={{ gap: 10 }}>

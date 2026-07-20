@@ -168,3 +168,27 @@ describe("judge0 languages allowlist", () => {
     expect(isAllowedLanguageId(0)).toBe(false);
   });
 });
+
+describe("code.serialize: Musterlösung bleibt geheim", () => {
+  it("referenceSolution taucht niemals im serialisierten JSON auf", () => {
+    const withSolution: CodePayload = {
+      ...payload,
+      referenceSolution: "int main() { /* geheime Lösung */ }",
+    };
+    const json = JSON.stringify(serializeCode(withSolution, {}));
+    expect(json).not.toContain("geheime Lösung");
+    expect(json).not.toContain("referenceSolution");
+  });
+
+  it("schema roundtrip erhält referenceSolution (Editor/DB)", () => {
+    const parsed = codePayloadSchema.parse({
+      languages: [{ languageId: 54, label: "C++", starterCode: "" }],
+      testCases: [{ id: "t1", input: "", expectedOutput: "42", hidden: false }],
+      referenceSolution: "int main(){}",
+      timeLimitMs: 2000,
+      memoryLimitKb: 262144,
+    });
+    expect(parsed.referenceSolution).toBe("int main(){}");
+    expect(parsed.comparison.mode).toBe("exact"); // Default für Alt-Payloads
+  });
+});
