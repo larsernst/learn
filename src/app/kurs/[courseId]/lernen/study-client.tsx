@@ -13,6 +13,7 @@ import {
   OrderRenderer,
 } from "@/components/questions/AdvancedRenderers";
 import { CodeRenderer } from "@/components/questions/CodeRenderer";
+import type { CodeGradeDetail } from "@/lib/judge0/grade";
 import { Markdown } from "@/components/markdown";
 
 type Feedback =
@@ -50,20 +51,11 @@ export default function StudyClient({
   // code
   const [codeSource, setCodeSource] = useState("");
   const [codeLanguageId, setCodeLanguageId] = useState(0);
+  const [codeRunning, setCodeRunning] = useState(false);
+  const [codeRunResult, setCodeRunResult] = useState<CodeGradeDetail | null>(null);
   const [codeResult, setCodeResult] = useState<{
     correct: boolean;
-    detail?: {
-      perTest?: Array<{
-        id: string;
-        hidden: boolean;
-        passed: boolean;
-        status: string;
-        stdout?: string | null;
-        stderr?: string | null;
-        compileOutput?: string | null;
-      }>;
-      compileError?: string;
-    } | null;
+    detail?: CodeGradeDetail | null;
   } | null>(null);
 
   async function loadNext(opts?: { reviewLearned?: boolean }) {
@@ -78,6 +70,8 @@ export default function StudyClient({
     setOrderedIds([]);
     setCodeSource("");
     setCodeLanguageId(0);
+    setCodeRunning(false);
+    setCodeRunResult(null);
     setCodeResult(null);
     setFeedback(null);
     setError(null);
@@ -246,15 +240,50 @@ export default function StudyClient({
     setRevealed(true);
   }
 
+  // Effektive Sprache: explizite Wahl, sonst erste angebotene Sprache.
+  function effectiveCodeLanguageId(): number {
+    if (codeLanguageId) return codeLanguageId;
+    const payload = data?.review?.question.taskPayload as
+      | { languages?: { languageId: number }[] }
+      | null
+      | undefined;
+    return payload?.languages?.[0]?.languageId ?? 0;
+  }
+
+  async function runCode() {
+    if (!data?.review) return;
+    setCodeRunning(true);
+    setCodeRunResult(null);
+    setError(null);
+    const res = await fetch("/api/review/code-run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: data.review.question.id,
+        languageId: effectiveCodeLanguageId(),
+        sourceCode: codeSource,
+      }),
+    });
+    setCodeRunning(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Probelauf fehlgeschlagen.");
+      return;
+    }
+    const result = (await res.json()) as { detail?: CodeGradeDetail | null };
+    setCodeRunResult(result.detail ?? null);
+  }
+
   async function submitCode() {
     if (!data?.review) return;
     setSubmitting(true);
+    setError(null);
     const res = await fetch("/api/review/code-submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         questionId: data.review.question.id,
-        languageId: codeLanguageId,
+        languageId: effectiveCodeLanguageId(),
         sourceCode: codeSource,
         isNew: data.isNew,
       }),
@@ -267,18 +296,7 @@ export default function StudyClient({
     }
     const result = (await res.json()) as {
       correct: boolean;
-      detail?: {
-        perTest?: Array<{
-          id: string;
-          hidden: boolean;
-          passed: boolean;
-          status: string;
-          stdout?: string | null;
-          stderr?: string | null;
-          compileOutput?: string | null;
-        }>;
-        compileError?: string;
-      } | null;
+      detail?: CodeGradeDetail | null;
       intervalDays: number;
     };
     setCodeResult({ correct: result.correct, detail: result.detail });
@@ -412,11 +430,19 @@ export default function StudyClient({
       ) : q.taskType === "code" && q.taskPayload ? (
         <CodeRenderer
           payload={q.taskPayload as never}
+          languageId={codeLanguageId}
           sourceCode={codeSource}
-          onSourceCodeChange={setCodeSource}
+          onSourceCodeChange={(v) => {
+            setCodeSource(v);
+            // Neuer Code ⇒ alter Probelauf gehört nicht mehr dazu.
+            if (codeRunResult) setCodeRunResult(null);
+          }}
           onLanguageChange={setCodeLanguageId}
+          onRun={runCode}
           onSubmit={submitCode}
+          running={codeRunning}
           submitting={submitting}
+          runResult={codeRunResult}
           revealed={revealed}
           result={codeResult}
           judge0Enabled={process.env.NEXT_PUBLIC_JUDGE0_ENABLED === "true"}

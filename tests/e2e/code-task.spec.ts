@@ -31,4 +31,29 @@ test.describe("Code-Aufgaben (Judge0 deaktiviert)", () => {
     });
     expect(res.status()).toBe(401);
   });
+
+  test("Code-Run (Probelauf) wird mit 503 abgelehnt", async ({ request }) => {
+    const email = unique("coderun");
+    await request.post("/api/auth/register", {
+      data: { name: "CodeRun", email, password: "testpass1234" },
+    });
+
+    const res = await request.post("/api/review/code-run", {
+      data: {
+        questionId: "egal",
+        languageId: 71,
+        sourceCode: "print('hallo')",
+      },
+    });
+    expect(res.status()).toBe(503);
+    const body = await res.json();
+    expect(body.error).toContain("JUDGE0_ENABLED=false");
+  });
+
+  test("Code-Run ohne Login wird mit 401 abgelehnt", async ({ request }) => {
+    const res = await request.post("/api/review/code-run", {
+      data: { questionId: "egal", languageId: 71, sourceCode: "print(1)" },
+    });
+    expect(res.status()).toBe(401);
+  });
 });
