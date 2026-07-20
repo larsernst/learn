@@ -13,6 +13,7 @@ export function serializeCode(
     .map((t) => ({
       id: t.id,
       input: t.input,
+      args: t.args,
       expectedOutput: t.expectedOutput,
     }));
   const hiddenCount = payload.testCases.filter((t) => t.hidden).length;
@@ -23,6 +24,7 @@ export function serializeCode(
       languages: payload.languages,
       publicTests,
       hiddenTestCount: hiddenCount,
+      comparison: payload.comparison,
       timeLimitMs: payload.timeLimitMs,
       memoryLimitKb: payload.memoryLimitKb,
     },

@@ -63,11 +63,20 @@ export function analyzeCourseQuality(questions: QualityQuestionInput[]): CourseQ
         warnings.push({ questionId: q.id, message: "Sortieren mit weniger als 2 Elementen" });
       }
     } else if (type === "code") {
-      const testCases = (q.payload as { testCases?: { hidden?: boolean }[] } | null)?.testCases ?? [];
+      const payload = q.payload as
+        | { testCases?: { hidden?: boolean }[]; referenceSolution?: string }
+        | null;
+      const testCases = payload?.testCases ?? [];
       if (testCases.length === 0) {
         warnings.push({ questionId: q.id, message: "Code-Aufgabe ohne Testfall" });
       } else if (!testCases.some((t) => !t.hidden)) {
         warnings.push({ questionId: q.id, message: "Code-Aufgabe ohne öffentlichen Testfall" });
+      }
+      if (!payload?.referenceSolution?.trim()) {
+        warnings.push({
+          questionId: q.id,
+          message: "Code-Aufgabe ohne Musterlösung (Qualitäts-Check nicht möglich)",
+        });
       }
     }
   }

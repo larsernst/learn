@@ -6,12 +6,11 @@ import { applySm2, mcqGrade, SM2_DEFAULTS } from "@/lib/sm2";
 import { rateLimit } from "@/lib/rate-limit";
 import { getJudge0Client } from "@/lib/judge0/config";
 import { gradeCodeWithJudge0 } from "@/lib/judge0/grade";
-import type { CodePayload } from "@/lib/tasks/code/payload";
+import { checkCodeQuestionAccess } from "@/lib/judge0/request-guard";
+import { codeAttemptSchema } from "@/lib/tasks/code/attempt";
 
-const codeSubmitSchema = z.object({
+const codeSubmitSchema = codeAttemptSchema.extend({
   questionId: z.string().min(1),
-  languageId: z.number().int().positive(),
-  sourceCode: z.string().min(1),
   isNew: z.boolean().optional(),
 });
 
@@ -23,10 +22,11 @@ export async function POST(request: Request) {
 
   // Rate-Limit pro User: max 5 Code-Submissions pro Minute (Judge0 ist teuer).
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  if (!rateLimit(`code-submit:${user.sub}:${ip}`, 5, 60_000)) {
+  const rl = rateLimit(`code-submit:${user.sub}:${ip}`, 5, 60_000);
+  if (!rl.ok) {
     return NextResponse.json(
       { error: "Zu viele Code-Einreichungen. Bitte in einer Minute erneut versuchen." },
-      { status: 429 }
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
     );
   }
 
@@ -47,18 +47,15 @@ export async function POST(request: Request) {
   }
   const { questionId, languageId, sourceCode, isNew } = parsed.data;
 
-  const question = await prisma.question.findUnique({ where: { id: questionId } });
-  if (!question) {
-    return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
-  }
-  if (question.taskType !== "code" || !question.payload) {
-    return NextResponse.json({ error: "Frage ist keine Code-Aufgabe." }, { status: 400 });
+  const check = await checkCodeQuestionAccess(user, questionId, languageId);
+  if (!check.ok) {
+    return NextResponse.json({ error: check.error }, { status: check.status });
   }
 
   let gradeResult;
   try {
     gradeResult = await gradeCodeWithJudge0(
-      question.payload as CodePayload,
+      check.payload,
       { languageId, sourceCode },
       client
     );

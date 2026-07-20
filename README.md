@@ -61,8 +61,14 @@ wurden, und nutzt **Spaced Repetition (SM-2)** mit freier Erinnerung
   serverseitig (`canEditCourse`), Admins dürfen alles. Details:
   [`docs/EDITOR.md`](docs/EDITOR.md).
 - **Code-Aufgaben via Judge0** (optional, `docker compose --profile code`):
-  Auto-Bewertung von Code-Einreichungen; deaktiviert werden Code-Aufgaben
-  serverseitig abgelehnt und in der UI nicht angeboten.
+  Auto-Bewertung von Code-Einreichungen (C++, Python, Java, JS, C, Bash)
+  mit CodeMirror-Editor, Vergleichsmodi (exakt/Whitespace-/Float-tolerant),
+  argv-Testfällen, öffentlichen + versteckten Tests, Probelauf ohne
+  Wertung (`code-run`), Code-Prüfungsmodus mit server-signierten
+  Verdicts und Autoren-Check (Musterlösung gegen Tests).
+  Judge0-Stack netzwerk-isoliert (`judge0-net`, internal) + Token-Auth.
+  Deaktiviert werden Code-Aufgaben serverseitig abgelehnt und in der UI
+  nicht angeboten. Details: [`docs/CODE_TASKS.md`](docs/CODE_TASKS.md).
 - Atlassian-inspiriertes, reduziertes Design (Tokens aus `DESIGN.md`).
 - Komplett dockerisiert via `docker-compose.yml` (PostgreSQL + Next.js-App).
 - Unit-Tests (Vitest) für SM-2, MCQ-Auswertung, Serialize, Validierung,
@@ -177,8 +183,8 @@ Details: [`docs/TESTING.md`](docs/TESTING.md).
 src/
   app/                  Next.js App-Router (Seiten + API-Routen)
     api/auth/           register / login / logout / me / password
-    api/review/         next / submit (SM-2)
-    api/exam/           questions / submit (Prüfungsmodus)
+    api/review/         next / submit (SM-2) / code-submit / code-run
+    api/exam/           questions / submit / code-grade (Verdicts)
     api/progress/       Fortschritts-Aggregate
     api/settings/       MCQ-Toggle
     api/admin/          questions / users / settings (rollengeschützt)
@@ -193,7 +199,10 @@ src/
     tasks/              Aufgabentypen-Registry + Bundles (recall, mcq,
                         dragdrop, cloze, order, code): payload/attempt-
                         Schemata, grade, serialize (alles rein, getestet)
-    judge0/             Judge0-Client + Auto-Bewertung für Code-Aufgaben
+    judge0/             Judge0-Client (X-Auth-Token, cgroup-v2-Flags),
+                        Ausgabe-Comparator (exact/trim/float), paralleles
+                        Grading, Sprach-Allowlist, Request-Guard
+    exam-verdict.ts     Signierte Code-Verdicts für den Prüfungsmodus
     sm2.ts              SM-2-Algorithmus (pure Funktionen, getestet)
     review-grade.ts     Bewertungsauflösung (Recall vs. MCQ)
     serialize.ts        Antwort-Sicherheit (stript correct-Flags)
@@ -209,7 +218,7 @@ src/
   components/
     markdown.tsx        Markdown-Renderer (GFM, KaTeX, Highlight, Sanitize)
     questions/          Task-Renderer (Mcq, Recall, DragDrop/Cloze/Order,
-                        Code)
+                        Code inkl. CodeMirror-Editor)
 prisma/
   schema.prisma         User / UserRole / AppSetting / Course / Chapter /
                         Question / Review / ReviewEvent
@@ -227,7 +236,7 @@ docker-compose.yml      Postgres + Web
 Dockerfile              Multi-Stage-Build
 DESIGN.md               Design-System-Vorgabe
 docs/                   Doku (ARCHITECTURE, TESTING, LERNEN,
-                        FRAGENKATALOG, CONTENT_REVIEW)
+                        FRAGENKATALOG, CONTENT_REVIEW, CODE_TASKS)
 ```
 
 ## Lizenz & Nutzung

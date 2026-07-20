@@ -28,8 +28,11 @@ Gedeckter Bereich (26 Testdateien, 242 Tests, rein logisch, ohne Datenbank):
 | `tests/unit/tasks/dragdrop.test.ts` | 8 | Drag&Drop-Bundle: grade (Zuordnung), serialize, emptyAttempt |
 | `tests/unit/tasks/cloze.test.ts` | 10 | Cloze-Bundle: grade (Lücken, Groß-/Kleinschreibung), serialize, emptyAttempt |
 | `tests/unit/tasks/order.test.ts` | 7 | Order-Bundle: grade (Reihenfolge), serialize, emptyAttempt |
-| `tests/unit/tasks/code.test.ts` | 5 | Code-Bundle: serialize (Public-Payload ohne Musterlösung) |
-| `tests/unit/judge0/grade.test.ts` | 5 | `gradeCodeWithJudge0`: Status-Mapping, Polling, Fehlerfälle (gemockter Judge0-Client) |
+| `tests/unit/tasks/code.test.ts` | 21 | Code-Bundle: serialize (hidden/Musterlösung-Stripping), Payload-Limits, expectedOutput-Normalisierung, Attempt-Limits, Sprach-Allowlist |
+| `tests/unit/judge0/grade.test.ts` | 9 | `gradeCodeWithJudge0`: eigener Vergleich (kein expected_output), args-Durchreichung, trim/float-Modi, Hidden-Stripping, System-Fehler, `mapWithConcurrency`-Limit |
+| `tests/unit/judge0/compare.test.ts` | 19 | `compareOutput`: exact/trim/float-Semantik, Mismatch-Details (Zeile/Grund), Toleranz-Grenzfälle |
+| `tests/unit/judge0/client.test.ts` | 4 | Judge0-Client: X-Auth-Token-Header, cgroup-v2-Flags, Polling, HTTP-Fehler |
+| `tests/unit/exam-verdict.test.ts` | 8 | Code-Verdicts: Roundtrip, Tampering, Ablauf, fremde Frage, Müll-Strings |
 | `tests/unit/editor/cloze-text.test.ts` | 6 | Marker-Text [[n]] ↔ Segmente, Lücke einfügen, Rundreisen |
 | `tests/unit/editor/payload.test.ts` | 21 | Payload-Bau/Parser für die Editor-Formulare (mcq/dragdrop/order/code), Form-Validierung |
 | `tests/unit/image.test.ts` | 7 | Kursbild-Validierung (MIME, Größe) und Magic-Bytes-Sniffing |
@@ -54,13 +57,19 @@ Abdeckung nicht unbemerkt absinkt. In der CI läuft `npm run test:coverage`.
 
 ## Integrations-Tests (Vitest + PostgreSQL)
 
-`tests/integration/` prüft Seed- und Migrations-Verhalten gegen eine echte
-PostgreSQL-Datenbank:
+`tests/integration/` prüft Seed- und Migrations-Verhalten sowie API-Routen
+gegen eine echte PostgreSQL-Datenbank:
 
 | Datei | Getestetes Verhalten |
 |---|---|
 | `tests/integration/migrate-data.test.ts` | Frische DB ohne vorbelegten Kurs, Orphan-Zuweisung an den Standardkurs, Chapter-Backfill ohne Early-Return |
 | `tests/integration/seed.test.ts` | Seed lädt 2 Kurse/11 Kapitel/131 Fragen, Idempotenz, Schema-Konformität aller Payloads, MCQ-Flags |
+| `tests/integration/chapters.test.ts` | Kapitel-Datenmodell (Unique-Slug, Reorder-Transaktionen, Lösch-Entkopplung, Question.order) |
+| `tests/integration/course-transfer.test.ts` | duplicateCourse, applyCourseImport (Kapitel-Mapping, Idempotenz, Code-Payload-v2-Felder überleben den Import) |
+| `tests/integration/code-submit.test.ts` | `POST /api/review/code-submit`: 401/400/404/502/503, Sprach-Allowlist + Aufgaben-Angebot, Draft-Sichtbarkeit, SM-2/ReviewEvent (Judge0 gemockt) |
+| `tests/integration/code-run.test.ts` | `POST /api/review/code-run`: nur öffentliche Tests, kein SM-2/ReviewEvent, 400 ohne öffentliche Tests |
+| `tests/integration/exam-code.test.ts` | `POST /api/exam/code-grade` stellt verifizierbare Verdicts aus; `/api/exam/submit` wertet nur gültige Verdicts (echtes/gefälschtes/leeres), SM-2-Übernahme |
+| `tests/integration/code-check.test.ts` | `POST /api/courses/[id]/questions/code-check`: 401/403/404/503/400, Musterlösung gegen alle Tests inkl. argv |
 
 Die Tests nutzen eine eigene Datenbank (`INTEGRATION_DATABASE_URL`, sonst
 `DATABASE_URL` + Suffix `_integration`), legen sie bei Bedarf an, migrieren
@@ -89,11 +98,12 @@ Hauptflüsse ab (16 Spezifikationen, 54 Tests):
 | `tests/e2e/mobile.spec.ts` | Hamburger-Nav, kein horizontaler Scroll-Überlauf |
 | `tests/e2e/admin-rejection.spec.ts` | Nicht-Admin bekommt keinen Admin-API-Zugriff (401/403), /admin-Redirect |
 | `tests/e2e/admin.setup.ts` + `admin.spec.ts` | Admin anlegen (Setup-Projekt mit Storage-State), dann: Nutzerliste, Suche, Self-Protection (Rolle entziehen/löschen), fremden Nutzer bearbeiten |
-| `tests/e2e/code-task.spec.ts` | Code-Submit bei deaktiviertem Judge0: 503 mit Fehlermeldung (samt 401 ohne Login) |
+| `tests/e2e/code-task.spec.ts` | Code-Submit/-Run und exam/code-grade bei deaktiviertem Judge0: 503 mit Fehlermeldung (samt 401 ohne Login) |
 | `tests/e2e/editor.setup.ts` + `editor.spec.ts` | Editor-Rolle (Setup): Dashboard, Kurs anlegen → Curriculum → Frage anlegen → Einstellungen; Seed-Kurse unsichtbar |
 | `tests/e2e/editor-access.spec.ts` | Editor-Zugriffsschutz: anon → /login, Normaluser → /, /admin/kurse → /editor |
 | `tests/e2e/curriculum.spec.ts` | Kapitel anlegen/umbenennen/sortieren/löschen, Fragen verschieben/sortieren, Reload-Persistenz |
 | `tests/e2e/question-editor.spec.ts` | Geführte Editoren pro Typ: MCQ (Badges, Vorschau-Grading), Cloze (Wort→Lücke, Vorschau), DragDrop/Order (Katalog+Lern-Tab), Code (Presets, Judge0-Hinweis) |
+| `tests/e2e/code-editor.spec.ts` | Code-Aufgaben komplett im Editor anlegen: C++ mit trim/public+hidden, float+argv+Musterlösung; Speichern → Wiederöffnen persistiert alle Felder |
 | `tests/e2e/course-workflow.spec.ts` | Einstellungen (Slug-Kollision), Duplizieren, Export-Download, Import (Dry-Run+Fehlerreport+Anwenden), Kursbild (Upload/Anzeige/Entfernen) |
 | `tests/e2e/curriculum-extras.spec.ts` | Bulk-Aktionen (verschieben/löschen), Suche/Typ-Filter, Qualitäts-Hinweise auf dem Dashboard |
 

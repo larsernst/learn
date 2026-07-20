@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { gradeExamAttempt, selectExamQuestions, shuffle, type ExamAttempt } from "@/lib/exam";
 
+process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-secret-fuer-exam-verdicts-0123456789";
+
 interface Opt {
   id: string;
   text: string;
@@ -94,5 +96,52 @@ describe("gradeExamAttempt", () => {
     ];
     const res = gradeExamAttempt(attempts, questionsById);
     expect(res.perQuestion[0].correct).toBe(false);
+  });
+});
+
+// ── Code-Verdicts im Prüfungsmodus ────────────────────────────────────
+describe("gradeExamAttempt: code", () => {
+  it("gültiges Verdict zählt als richtig", async () => {
+    const { signCodeVerdict } = await import("@/lib/exam-verdict");
+    const attempts: ExamAttempt[] = [
+      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("code1", true, "src") },
+    ];
+    const res = gradeExamAttempt(attempts, questionsById);
+    expect(res.score).toBe(1);
+  });
+
+  it("gültiges Verdict mit false zählt als falsch", async () => {
+    const { signCodeVerdict } = await import("@/lib/exam-verdict");
+    const attempts: ExamAttempt[] = [
+      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("code1", false, "src") },
+    ];
+    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
+  });
+
+  it("manipuliertes Verdict (Client-Flag) gilt als falsch", async () => {
+    const { signCodeVerdict } = await import("@/lib/exam-verdict");
+    const token = signCodeVerdict("code1", false, "src");
+    const [v, body] = token.split(".");
+    const forgedBody = Buffer.from(
+      JSON.stringify({ qid: "code1", correct: true, sh: "x", exp: 9999999999 })
+    ).toString("base64url");
+    const attempts: ExamAttempt[] = [
+      { questionId: "code1", taskType: "code", verdict: `${v}.${forgedBody}.${token.split(".")[2]}` },
+    ];
+    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
+    void body;
+  });
+
+  it("leeres/fehlendes Verdict gilt als falsch (kein Client-Vertrauen)", () => {
+    const attempts: ExamAttempt[] = [{ questionId: "code1", taskType: "code", verdict: "" }];
+    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
+  });
+
+  it("Verdict einer anderen Frage gilt als falsch", async () => {
+    const { signCodeVerdict } = await import("@/lib/exam-verdict");
+    const attempts: ExamAttempt[] = [
+      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("andere", true, "src") },
+    ];
+    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
   });
 });

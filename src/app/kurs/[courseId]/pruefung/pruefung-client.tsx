@@ -11,18 +11,21 @@ import {
   ClozeRenderer,
   OrderRenderer,
 } from "@/components/questions/AdvancedRenderers";
+import { CodeRenderer } from "@/components/questions/CodeRenderer";
+import type { CodeGradeDetail } from "@/lib/judge0/grade";
 import { Markdown } from "@/components/markdown";
 
 type Phase = "setup" | "running" | "result";
 
 interface AnswerRecord {
   questionId: string;
-  taskType: "recall" | "mcq" | "dragdrop" | "cloze" | "order";
+  taskType: "recall" | "mcq" | "dragdrop" | "cloze" | "order" | "code";
   correct?: boolean;
   selectedOptionIds?: string[];
   assignment?: Record<string, string>;
   answers?: Record<string, string>;
   orderedIds?: string[];
+  verdict?: string;
 }
 
 interface GradeResult {
@@ -52,6 +55,28 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
   const [result, setResult] = useState<GradeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // code (Prüfungsmodus): Quelltext + Probelauf + signiertes Verdict
+  const [codeSource, setCodeSource] = useState("");
+  const [codeLanguageId, setCodeLanguageId] = useState(0);
+  const [codeRunning, setCodeRunning] = useState(false);
+  const [codeRunResult, setCodeRunResult] = useState<CodeGradeDetail | null>(null);
+  const [codeGrading, setCodeGrading] = useState(false);
+  const [codeGraded, setCodeGraded] = useState<{
+    correct: boolean;
+    detail?: CodeGradeDetail | null;
+    verdict: string;
+  } | null>(null);
+
+  const judge0Enabled = process.env.NEXT_PUBLIC_JUDGE0_ENABLED === "true";
+
+  function resetCodeState() {
+    setCodeSource("");
+    setCodeLanguageId(0);
+    setCodeRunning(false);
+    setCodeRunResult(null);
+    setCodeGrading(false);
+    setCodeGraded(null);
+  }
 
   async function start(count: number) {
     setLoading(true);
@@ -72,6 +97,7 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     setAssignment({});
     setClozeAnswers({});
     setOrderedIds([]);
+    resetCodeState();
     setResult(null);
     setPhase("running");
   }
@@ -90,6 +116,7 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     setAssignment({});
     setClozeAnswers({});
     setOrderedIds([]);
+    resetCodeState();
     if (index + 1 < questions.length) {
       setIndex(index + 1);
     } else {
@@ -155,6 +182,71 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     });
   }
 
+  // Effektive Sprache: explizite Wahl, sonst erste angebotene Sprache.
+  function effectiveCodeLanguageId(): number {
+    if (codeLanguageId) return codeLanguageId;
+    const payload = current?.taskPayload as
+      | { languages?: { languageId: number }[] }
+      | null
+      | undefined;
+    return payload?.languages?.[0]?.languageId ?? 0;
+  }
+
+  // Probelauf im Exam: unbewertet, nur öffentliche Tests (Endpoint wie
+  // beim Lernen). Kein Verdict, keine Wertung.
+  async function runExamCode() {
+    if (!current) return;
+    setCodeRunning(true);
+    setCodeRunResult(null);
+    setError(null);
+    const res = await fetch("/api/review/code-run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: current.id,
+        languageId: effectiveCodeLanguageId(),
+        sourceCode: codeSource,
+      }),
+    });
+    setCodeRunning(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Probelauf fehlgeschlagen.");
+      return;
+    }
+    const json = (await res.json()) as { detail?: CodeGradeDetail | null };
+    setCodeRunResult(json.detail ?? null);
+  }
+
+  // Bewertung im Exam: Judge0-Lauf über alle Tests, Antwort enthält das
+  // signierte Verdict, das bei der Prüfungsabgabe mitgeschickt wird.
+  async function gradeExamCode() {
+    if (!current) return;
+    setCodeGrading(true);
+    setError(null);
+    const res = await fetch("/api/exam/code-grade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        questionId: current.id,
+        languageId: effectiveCodeLanguageId(),
+        sourceCode: codeSource,
+      }),
+    });
+    setCodeGrading(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Code-Bewertung fehlgeschlagen.");
+      return;
+    }
+    const json = (await res.json()) as {
+      correct: boolean;
+      detail?: CodeGradeDetail | null;
+      verdict: string;
+    };
+    setCodeGraded({ correct: json.correct, detail: json.detail, verdict: json.verdict });
+  }
+
   useEffect(() => {
     if (phase !== "running") return;
     setRevealed(false);
@@ -163,6 +255,8 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
     setAssignment({});
     setClozeAnswers({});
     setOrderedIds([]);
+    resetCodeState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, phase]);
 
   if (phase === "setup") {
@@ -277,6 +371,8 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
               ? "Lückentext"
               : current.taskType === "order"
               ? "Sortieren"
+              : current.taskType === "code"
+              ? "Code"
               : "Freie Erinnerung"}
           </span>
         </div>
@@ -328,6 +424,54 @@ export default function PruefungClient({ courseId }: { courseId: string }) {
             revealed={false}
             onSubmit={submitOrder}
           />
+        ) : current.taskType === "code" && current.taskPayload ? (
+          <>
+            <CodeRenderer
+              payload={current.taskPayload as never}
+              languageId={codeLanguageId}
+              sourceCode={codeSource}
+              onSourceCodeChange={(v) => {
+                setCodeSource(v);
+                if (codeRunResult) setCodeRunResult(null);
+              }}
+              onLanguageChange={setCodeLanguageId}
+              onRun={runExamCode}
+              onSubmit={gradeExamCode}
+              running={codeRunning}
+              submitting={codeGrading}
+              runResult={codeRunResult}
+              revealed={!!codeGraded}
+              result={codeGraded}
+              judge0Enabled={judge0Enabled}
+              submitLabel="Bewerten"
+            />
+            {codeGraded && (
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() =>
+                  recordAndNext({
+                    questionId: current.id,
+                    taskType: "code",
+                    verdict: codeGraded.verdict,
+                  })
+                }
+              >
+                {index + 1 < questions.length ? "Nächste Frage" : "Prüfung abschließen"}
+              </button>
+            )}
+            {!judge0Enabled && (
+              <button
+                type="button"
+                className="btn btn--secondary"
+                onClick={() =>
+                  recordAndNext({ questionId: current.id, taskType: "code", verdict: "" })
+                }
+              >
+                Überspringen (gilt als falsch)
+              </button>
+            )}
+          </>
         ) : (
           <>
             <RecallRenderer

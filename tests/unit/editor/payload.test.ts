@@ -171,10 +171,13 @@ describe("editor/payload: code", () => {
   const form = {
     languageId: 71,
     starterCode: "print()",
+    referenceSolution: "",
     testCases: [
-      { input: "1", expectedOutput: "1\n", hidden: false },
-      { input: "2", expectedOutput: "2\n", hidden: true },
+      { input: "1", args: "", expectedOutput: "1\n", hidden: false },
+      { input: "2", args: "--flag", expectedOutput: "2\n", hidden: true },
     ],
+    comparisonMode: "exact" as const,
+    floatTolerance: "0.0001",
     timeLimitMs: 2000,
     memoryLimitKb: 262144,
   };
@@ -193,22 +196,50 @@ describe("editor/payload: code", () => {
   test("codeFormError: Testfall-Pflicht und öffentlicher Test", () => {
     expect(codeFormError({ ...form, testCases: [] })).toContain("Testfall");
     expect(
-      codeFormError({ ...form, testCases: [{ input: "", expectedOutput: "x", hidden: true }] })
+      codeFormError({
+        ...form,
+        testCases: [{ input: "", args: "", expectedOutput: "x", hidden: true }],
+      })
     ).toContain("öffentlich");
     expect(codeFormError(form)).toBeNull();
   });
 
   test("codeFormError: Testfall ohne erwartete Ausgabe", () => {
     expect(
-      codeFormError({ ...form, testCases: [{ input: "", expectedOutput: " ", hidden: false }] })
+      codeFormError({
+        ...form,
+        testCases: [{ input: "", args: "", expectedOutput: " ", hidden: false }],
+      })
     ).toContain("erwartete Ausgabe");
+  });
+
+  test("codeFormError: Float-Modus braucht gültige Toleranz", () => {
+    const floatForm = { ...form, comparisonMode: "float" as const };
+    expect(codeFormError({ ...floatForm, floatTolerance: "0.001" })).toBeNull();
+    expect(codeFormError({ ...floatForm, floatTolerance: "abc" })).toContain("Toleranz");
+    expect(codeFormError({ ...floatForm, floatTolerance: "0" })).toContain("Toleranz");
+    expect(codeFormError({ ...floatForm, floatTolerance: "2" })).toContain("Toleranz");
+  });
+
+  test("buildCodePayload: args und comparison werden abgebildet", () => {
+    const payload = buildCodePayload({
+      ...form,
+      comparisonMode: "float",
+      floatTolerance: "0.001",
+    });
+    expect(payload.comparison).toEqual({ mode: "float", floatTolerance: 0.001 });
+    expect(payload.testCases[0]).not.toHaveProperty("args");
+    expect(payload.testCases[1].args).toBe("--flag");
   });
 
   test("codeToForm: null ergibt Standardwerte", () => {
     expect(codeToForm(null)).toEqual({
       languageId: 71,
       starterCode: "",
+      referenceSolution: "",
       testCases: [],
+      comparisonMode: "exact",
+      floatTolerance: "0.0001",
       timeLimitMs: 2000,
       memoryLimitKb: 262144,
     });
@@ -217,5 +248,38 @@ describe("editor/payload: code", () => {
   test("buildCodePayload: unbekannte languageId bekommt Fallback-Label", () => {
     const payload = buildCodePayload({ ...form, languageId: 999 });
     expect(payload.languages[0].label).toBe("Language 999");
+  });
+});
+
+describe("editor/payload: code Musterlösung", () => {
+  test("referenceSolution Roundtrip (build → schema → form)", () => {
+    const form = {
+      languageId: 54,
+      starterCode: "// TODO",
+      referenceSolution: "int main() { return 0; }",
+      testCases: [{ input: "", args: "a b", expectedOutput: "42\n", hidden: true }],
+      comparisonMode: "trim" as const,
+      floatTolerance: "0.0001",
+      timeLimitMs: 2000,
+      memoryLimitKb: 262144,
+    };
+    const payload = buildCodePayload(form);
+    expect(payload.referenceSolution).toBe(form.referenceSolution);
+    expect(codePayloadSchema.safeParse(payload).success).toBe(true);
+    expect(codeToForm(payload)).toEqual(form);
+  });
+
+  test("leere Musterlösung wird weggelassen", () => {
+    const payload = buildCodePayload({
+      languageId: 54,
+      starterCode: "",
+      referenceSolution: "   ",
+      testCases: [{ input: "", args: "", expectedOutput: "x", hidden: false }],
+      comparisonMode: "exact",
+      floatTolerance: "0.0001",
+      timeLimitMs: 2000,
+      memoryLimitKb: 262144,
+    });
+    expect(payload).not.toHaveProperty("referenceSolution");
   });
 });

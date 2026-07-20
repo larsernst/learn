@@ -27,7 +27,9 @@ export interface TaskDefinition<
   Pub = unknown
 > {
   type: TaskType;
-  payloadSchema: z.ZodType<P>;
+  // Input-Seite bewusst offen (unknown): Schemas mit .default()/.transform()
+  // haben bewusst unterschiedliche Ein-/Ausgabetypen.
+  payloadSchema: z.ZodType<P, z.ZodTypeDef, unknown>;
   attemptSchema: z.ZodType<A>;
   grade: (payload: P, attempt: A) => TaskResult;
   serialize: (

@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireEditorApi, requireAdminApi, isAdmin } from "@/lib/auth";
 import { adminQuestionsBodySchema as bodySchema } from "@/lib/validation";
-import { normalizeQuestionTask } from "@/lib/tasks/registry";
+import { normalizeQuestionTask, TASK_REGISTRY } from "@/lib/tasks/registry";
 import { canEditCourse } from "@/lib/course-access";
 import { slugify } from "@/lib/slug";
 import type { Course } from "@prisma/client";
@@ -57,21 +57,24 @@ function assertCourseEditPermission(
 
 // Wandelt ein validiertes Frage-Objekt (das sowohl das neue taskType/payload-
 // als auch das legacy mcqOptions-Format haben kann) in die kanonische Form
-// { taskType, payload, mcqOptionsLegacy } um. mcqOptionsLegacy wird für den
-// Dual-Write beibehalten, bis die Cleanup-Migration die Spalte entfernt.
+// { taskType, payload } um. Der Payload wird dabei gegen das Zod-Schema des
+// Task-Bundles validiert – die geparste (normalisierte) Form wird
+// gespeichert. Ungültige Payloads liefern ok:false samt Zod-Issues (→ 400).
 function toTaskFields(q: {
   taskType?: "recall" | "mcq" | "dragdrop" | "cloze" | "order" | "code";
   payload?: unknown;
   mcqOptions?: { id: string; text: string; correct: boolean }[];
-}): { taskType: string; payload: unknown } {
+}):
+  | { ok: true; taskType: string; payload: unknown }
+  | { ok: false; error: string; issues: unknown } {
   // recall: kein Payload.
   if (q.taskType === "recall") {
-    return { taskType: "recall", payload: null };
+    return { ok: true, taskType: "recall", payload: null };
   }
   // mcq: payload = { options }.
   if (q.taskType === "mcq") {
     const options = (q.payload as { options?: unknown[] } | undefined)?.options ?? [];
-    return { taskType: "mcq", payload: { options } };
+    return validateTaskPayload("mcq", { options });
   }
   // dragdrop/cloze/order/code: neuer Typ mit autor-seitigem payload.
   if (
@@ -80,18 +83,32 @@ function toTaskFields(q: {
     q.taskType === "order" ||
     q.taskType === "code"
   ) {
-    return { taskType: q.taskType, payload: q.payload ?? null };
+    return validateTaskPayload(q.taskType, q.payload ?? null);
   }
   // legacy: mcqOptions gesetzt (ohne taskType)
   if (q.mcqOptions !== undefined) {
     const normalized = normalizeQuestionTask("mcq", { options: q.mcqOptions }, q.mcqOptions);
-    return {
-      taskType: normalized.type,
-      payload: normalized.payload,
-    };
+    return validateTaskPayload(normalized.type, normalized.payload);
   }
   // default: recall
-  return { taskType: "recall", payload: null };
+  return { ok: true, taskType: "recall", payload: null };
+}
+
+function validateTaskPayload(
+  taskType: TaskType,
+  payload: unknown
+):
+  | { ok: true; taskType: string; payload: unknown }
+  | { ok: false; error: string; issues: unknown } {
+  const check = TASK_REGISTRY[taskType].payloadSchema.safeParse(payload);
+  if (!check.success) {
+    return {
+      ok: false,
+      error: `Payload verletzt ${taskType}-Schema.`,
+      issues: check.error.issues,
+    };
+  }
+  return { ok: true, taskType, payload: check.data };
 }
 
 export async function POST(request: Request) {
@@ -157,6 +174,12 @@ export async function POST(request: Request) {
   for (const q of parsed.data.questions) {
     const exists = existingById.get(q.id);
     const taskFields = toTaskFields(q);
+    if (!taskFields.ok) {
+      return NextResponse.json(
+        { error: `Frage ${q.id}: ${taskFields.error}`, issues: taskFields.issues },
+        { status: 400 }
+      );
+    }
     const payloadValue = taskFields.payload ?? Prisma.JsonNull;
     const courseId = q.courseId ?? null;
     // Kapitel-Zuordnung: explizite chapterId gewinnt (muss zum Kurs

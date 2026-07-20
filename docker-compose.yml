@@ -10,22 +10,37 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
+    networks:
+      - app-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lernapp -d lernapp"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # Judge0: Auto-Bewertung von Code-Aufgaben (Phase 4). Opt-in über das
-  # 'code'-Profil: `docker compose --profile code up`. Die App läuft auch
-  # ohne (Code-Aufgaben werden dann abgelehnt, JUDGE0_ENABLED=false).
-  # Judge0 benötigt seine eigene PostgreSQL- und Redis-Instanz; die offizielle
-  # Setup-Anleitung: https://github.com/judge0/judge0/blob/master/EXTRA_INSTALLATION.md
-  # Für lokale Entwicklung kann auch judge0-extra-api verwendet werden.
+  # Judge0: Auto-Bewertung von Code-Aufgaben. Opt-in über das 'code'-Profil:
+  # `docker compose --profile code up`. Die App läuft auch ohne (Code-Aufgaben
+  # werden dann abgelehnt, JUDGE0_ENABLED=false).
+  #
+  # Architektur (offizielle Judge0-1.13.x-Topologie): ein API-Server und
+  # mindestens ein Worker (gleiches Image, unterschiedliche Kommandos) plus
+  # eigene PostgreSQL- und Redis-Instanz. Der Worker führt den eingereichten
+  # Code sandboxed (isolate, privileged nötig) aus.
+  #
+  # Sicherheit:
+  #  - Alle Judge0-Dienste hängen ausschließlich im internen Netz `judge0-net`
+  #    (internal: true → kein Internet-Zugriff, kein Datenabfluss aus
+  #    eingereichtem Code). Die App-DB liegt im `app-net` und ist aus
+  #    eingereichtem Code nicht erreichbar.
+  #  - Der API-Server verlangt AUTHN_TOKEN (= JUDGE0_TOKEN aus .env); die App
+  #    schickt ihn als X-Auth-Token-Header mit. Port 2358 wird NICHT zum Host
+  #    veröffentlicht.
   judge0-redis:
     image: redis:7-alpine
     restart: unless-stopped
     profiles: ["code"]
+    networks:
+      - judge0-net
   judge0-db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -36,21 +51,71 @@ services:
       POSTGRES_DB: judge0
     volumes:
       - judge0-db-data:/var/lib/postgresql/data
+    networks:
+      - judge0-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0 -d judge0"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   judge0-server:
-    image: judge0/server:1.13.1
+    image: judge0/judge0:1.13.1
     restart: unless-stopped
     profiles: ["code"]
+    command: ["./scripts/server"]
+    privileged: true
     depends_on:
-      - judge0-redis
-      - judge0-db
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_started
     environment:
+      REDIS_HOST: judge0-redis
+      REDIS_PORT: "6379"
       REDIS_URL: "redis://judge0-redis:6379"
       POSTGRES_HOST: judge0-db
+      POSTGRES_PORT: "5432"
       POSTGRES_USER: judge0
       POSTGRES_PASSWORD: judge0
       POSTGRES_DB: judge0
-    volumes:
-      - judge0-data:/vendor
+      # Erzwingt X-Auth-Token auf allen API-Endpunkten.
+      AUTHN_TOKEN: "${JUDGE0_TOKEN:?JUDGE0_TOKEN muss gesetzt sein, wenn das code-Profil genutzt wird}"
+    networks:
+      - judge0-net
+    healthcheck:
+      # Port lauscht ⇒ Rails-API ist hochgefahren (Boot kann ~30 s dauern).
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/2358' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+  judge0-workers:
+    image: judge0/judge0:1.13.1
+    restart: unless-stopped
+    profiles: ["code"]
+    command: ["./scripts/workers"]
+    # privileged ist Pflicht: isolate-Sandbox (cgroups) für eingereichten Code.
+    privileged: true
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_started
+      judge0-server:
+        condition: service_started
+    environment:
+      REDIS_HOST: judge0-redis
+      REDIS_PORT: "6379"
+      REDIS_URL: "redis://judge0-redis:6379"
+      POSTGRES_HOST: judge0-db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0
+      POSTGRES_DB: judge0
+      # Anzahl paralleler Worker-Prozesse (jeder C++-Compile ≈ 1 CPU-Kern).
+      COUNT: "${JUDGE0_WORKER_COUNT:-2}"
+    networks:
+      - judge0-net
 
   web:
     build:
@@ -74,8 +139,18 @@ services:
       JUDGE0_TOKEN: "${JUDGE0_TOKEN:-}"
     ports:
       - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
+    networks:
+      - app-net
+      - judge0-net
+
+networks:
+  app-net:
+  # Internes Netz für Judge0: Container hierin haben KEINEN Internet-Zugriff
+  # und können das app-net (App-DB) nicht erreichen. Schützt vor
+  # bösartigem eingereichtem Code (Sandbox-Escapes/Datenabfluss).
+  judge0-net:
+    internal: true
 
 volumes:
   pgdata:
-  judge0-data:
   judge0-db-data:

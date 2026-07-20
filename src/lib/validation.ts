@@ -102,7 +102,10 @@ export const examAnswerSchema = z.discriminatedUnion("taskType", [
   z.object({
     questionId: z.string().min(1),
     taskType: z.literal("code"),
-    correct: z.boolean(),
+    // Signiertes Verdict aus /api/exam/code-grade (kein Client-Flag!).
+    // Leer/ungültig ist erlaubt und gilt als falsch (Skip-Pfad bei
+    // deaktiviertem Judge0).
+    verdict: z.string().max(2000),
   }),
 ]);
 

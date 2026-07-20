@@ -37,7 +37,11 @@ BASE_URL=http://<your-host>:<port> npm run test:e2e
   beide rein, unit-getestet).
 - Design-Tokens: `src/lib/design-tokens.ts` + `src/app/globals.css`
   (Vorgabe: `DESIGN.md`).
-- Prüfungsmodus: `src/lib/exam.ts` (Fragenauswahl, Bewertung).
+- Prüfungsmodus: `src/lib/exam.ts` (Fragenauswahl, Bewertung) +
+  `src/lib/exam-verdict.ts` (signierte Code-Verdicts).
+- Code-Aufgaben: `src/lib/judge0/` (Client, Comparator exact/trim/float,
+  paralleles Grading, Allowlist, Request-Guard) – Details in
+  `docs/CODE_TASKS.md` (Betrieb + Autorenleitfaden).
 - Ratenbegrenzung: `src/lib/rate-limit.ts` (In-Memory, ~10 Versuche/Minute/IP
   auf `/api/auth/login` und `/api/auth/register`).
 - Umgebungsvariablen: `src/lib/env.ts` (erzwingt gesetztes, nicht-triviales

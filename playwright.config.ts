@@ -45,7 +45,7 @@ export default defineConfig({
     },
     {
       name: "editor-chromium",
-      testMatch: [/editor\.spec\.ts/, /curriculum\.spec\.ts/, /question-editor\.spec\.ts/, /course-workflow\.spec\.ts/, /curriculum-extras\.spec\.ts/],
+      testMatch: [/editor\.spec\.ts/, /curriculum\.spec\.ts/, /question-editor\.spec\.ts/, /course-workflow\.spec\.ts/, /curriculum-extras\.spec\.ts/, /code-editor\.spec\.ts/],
       dependencies: ["editor-setup"],
       use: {
         browserName: "chromium",

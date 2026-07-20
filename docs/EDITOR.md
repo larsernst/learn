@@ -57,8 +57,12 @@ Zweispaltig (mobil einspaltig):
      Normalisierung (Groß-/Kleinschreibung, exakt, trim, Regex).
    - Sortieren: nummerierte Liste in korrekter Reihenfolge.
    - Code: Sprache (kuratiert), Starter-Code, Testfälle
-     (öffentlich/versteckt), Limit-Presets; Hinweis bei
-     deaktiviertem Judge0.
+     (öffentlich/versteckt, stdin + optional argv), Vergleichsmodus
+     (exakt/Whitespace-/Float-tolerant samt Toleranz), Limit-Presets,
+     optionale **Musterlösung** mit „Musterlösung gegen Tests prüfen"
+     (Judge0-Lauf aller Tests direkt aus dem Formular; bei deaktiviertem
+     Judge0 deaktiviert + Hinweis). Die Musterlösung wird niemals an
+     Lernende ausgeliefert. Details: [`CODE_TASKS.md`](CODE_TASKS.md).
 4. **„Als Lernender testen"**: echte Lernenden-Renderer mit
    client-seitiger Bewertung (ohne Server, ohne SM-2-Eintrag).
 5. Speichern / **„Speichern & nächste Frage"** / Strg+Enter.

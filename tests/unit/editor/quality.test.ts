@@ -50,12 +50,17 @@ describe("analyzeCourseQuality", () => {
       { id: "o1", taskType: "order", payload: { items: [{ id: "s1", text: "eins" }], correctOrder: ["s1"] }, chapterId: "c" },
       { id: "k1", taskType: "code", payload: { languages: [], testCases: [], timeLimitMs: 1, memoryLimitKb: 1 }, chapterId: "c" },
       { id: "k2", taskType: "code", payload: { languages: [], testCases: [{ id: "t", input: "", expectedOutput: "", hidden: true }], timeLimitMs: 1, memoryLimitKb: 1 }, chapterId: "c" },
+      { id: "k3", taskType: "code", payload: { languages: [], testCases: [{ id: "t", input: "", expectedOutput: "x", hidden: false }], referenceSolution: "int main(){}", timeLimitMs: 1, memoryLimitKb: 1 }, chapterId: "c" },
     ]);
     const messages = q.warnings.map((w) => `${w.questionId}:${w.message}`);
     expect(messages).toContain("c1:Lückentext ohne Lücke");
     expect(messages).toContain("o1:Sortieren mit weniger als 2 Elementen");
     expect(messages).toContain("k1:Code-Aufgabe ohne Testfall");
     expect(messages).toContain("k2:Code-Aufgabe ohne öffentlichen Testfall");
+    // Musterlösungs-Hinweis für k1/k2, aber NICHT für k3 (hat eine).
+    expect(messages).toContain("k1:Code-Aufgabe ohne Musterlösung (Qualitäts-Check nicht möglich)");
+    expect(messages).toContain("k2:Code-Aufgabe ohne Musterlösung (Qualitäts-Check nicht möglich)");
+    expect(messages.filter((m) => m.startsWith("k3:"))).toEqual([]);
   });
 
   test("leere Fragenmenge", () => {

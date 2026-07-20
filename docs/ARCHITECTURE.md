@@ -195,14 +195,32 @@ MCQ-Fragen serverseitig zu `recall` (`serializeTask` in der Registry).
 
 Code-Aufgaben werden optional über einen
 [Judge0](https://judge0.com)-Server bewertet (`src/lib/judge0/`:
-`client`, `config`, `grade`). Das Feature ist per
-`JUDGE0_ENABLED=true` plus `JUDGE0_URL`/`JUDGE0_TOKEN` aktivierbar und
-läuft über das docker-compose-Profil `code` (eigene PostgreSQL- und
-Redis-Instanz für Judge0). Ist es deaktiviert (Default), lehnt
-`/api/review/code-submit` Code-Einreichungen serverseitig ab und die UI
-bietet den Editor nicht an. Der Client schickt Source-Code +
-Language-ID an Judge0, pollt das Submission-Token und mappt den
-Judge0-Status auf `correct`/`incorrect`.
+`client`, `config`, `grade`, `compare`, `languages`, `request-guard`).
+Das Feature ist per `JUDGE0_ENABLED=true` plus `JUDGE0_URL`/`JUDGE0_TOKEN`
+aktivierbar und läuft über das docker-compose-Profil `code` (API-Server +
+Worker aus `judge0/judge0:1.13.1`, eigene PostgreSQL- und Redis-Instanz).
+Alle Judge0-Dienste hängen im internen Netz `judge0-net`
+(`internal: true`) – eingereichter Code erreicht weder die App-DB
+(`app-net`) noch das Internet; der Server erzwingt `AUTHN_TOKEN`
+(X-Auth-Token-Header). Ist das Feature deaktiviert (Default), lehnen alle
+Code-Endpunkte mit 503 ab und die UI bietet den Editor nicht an.
+
+Der Grader (`gradeCodeWithJudge0`) schickt pro Testfall eine Submission
+(parallel, Concurrency 4) **ohne** `expected_output` an Judge0; der
+Vergleich läuft serverseitig in `compare.ts` mit den Modi
+`exact`/`trim`/`float` (Float-Toleranz, Default 1e-4). Testfälle können
+`args` enthalten (Judge0 `command_line_arguments`). Submissions tragen
+`enable_per_process_and_thread_{time,memory}_limit=true`
+(cgroups-v2-Kompatibilität).
+
+Endpunkte: `POST /api/review/code-submit` (bewertet, SM-2 + ReviewEvent),
+`POST /api/review/code-run` (Probelauf nur öffentliche Tests, unbewertet),
+`POST /api/exam/code-grade` (Prüfungsmodus: bewertet und stellt ein
+HMAC-signiertes Verdict aus, das `/api/exam/submit` statt eines
+Client-Flags verlangt – `src/lib/exam-verdict.ts`) und
+`POST /api/courses/[id]/questions/code-check` (Autoren: Musterlösung
+gegen alle Tests). Details + Autorenleitfaden:
+[`CODE_TASKS.md`](CODE_TASKS.md).
 
 ## Markdown-Pipeline
 

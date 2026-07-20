@@ -93,7 +93,7 @@ export function QuestionEditor({
   const [code, setCode] = useState<CodeFormState>(
     initial?.taskType === "code"
       ? codeToForm(initial.payload)
-      : { languageId: 71, starterCode: "", testCases: [{ input: "", expectedOutput: "", hidden: false }], timeLimitMs: 2000, memoryLimitKb: 262144 }
+      : { languageId: 71, starterCode: "", referenceSolution: "", testCases: [{ input: "", args: "", expectedOutput: "", hidden: false }], comparisonMode: "exact", floatTolerance: "0.0001", timeLimitMs: 2000, memoryLimitKb: 262144 }
   );
   const [showPreview, setShowPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -205,7 +205,7 @@ export function QuestionEditor({
         setDragdrop({ zones: [{ label: "" }], items: [{ text: "", zoneIndex: null }] });
         setCloze({ text: "", blanks: [] });
         setOrder({ items: ["", ""] });
-        setCode({ languageId: 71, starterCode: "", testCases: [{ input: "", expectedOutput: "", hidden: false }], timeLimitMs: 2000, memoryLimitKb: 262144 });
+        setCode({ languageId: 71, starterCode: "", referenceSolution: "", testCases: [{ input: "", args: "", expectedOutput: "", hidden: false }], comparisonMode: "exact", floatTolerance: "0.0001", timeLimitMs: 2000, memoryLimitKb: 262144 });
         setShowPreview(false);
       }
     }
@@ -303,7 +303,7 @@ export function QuestionEditor({
       {taskType === "dragdrop" && <DragDropEditor value={dragdrop} onChange={setDragdrop} />}
       {taskType === "cloze" && <ClozeEditor value={cloze} onChange={setCloze} />}
       {taskType === "order" && <OrderEditor value={order} onChange={setOrder} />}
-      {taskType === "code" && <CodeEditor value={code} onChange={setCode} judge0Enabled={judge0Enabled} />}
+      {taskType === "code" && <CodeEditor value={code} onChange={setCode} judge0Enabled={judge0Enabled} courseId={courseId} />}
 
       {formError && (
         <div className="badge" style={{ background: "rgba(174,46,36,0.1)", color: "#ae2e24" }}>

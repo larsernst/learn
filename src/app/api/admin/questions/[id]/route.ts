@@ -104,7 +104,9 @@ export async function PATCH(
       );
     }
     data.taskType = parsed.data.taskType;
-    data.payload = taskPayload === null ? Prisma.JsonNull : (taskPayload as Prisma.InputJsonValue);
+    // Geparste (normalisierte) Daten speichern, nicht den Rohtext.
+    data.payload =
+      taskPayload === null ? Prisma.JsonNull : (payloadCheck.data as Prisma.InputJsonValue);
   } else if (parsed.data.payload !== undefined) {
     // Payload ohne Typwechsel: gegen den bestehenden Typ validieren.
     const current = await prisma.question.findUnique({
@@ -128,7 +130,7 @@ export async function PATCH(
     data.payload =
       parsed.data.payload === null
         ? Prisma.JsonNull
-        : (parsed.data.payload as Prisma.InputJsonValue);
+        : (payloadCheck.data as Prisma.InputJsonValue);
   }
 
   if (Object.keys(data).length === 0) {
