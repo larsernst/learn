@@ -221,15 +221,13 @@ export function QuestionEditor({
   return (
     <form
       ref={formRef}
-      className="card stack"
-      style={{ padding: 20 }}
+      className="stack"
       onKeyDown={onKeyDown}
       onSubmit={(e) => {
         e.preventDefault();
         void submit(false);
       }}
     >
-      <h3 style={{ margin: 0 }}>{editMode ? "Frage bearbeiten" : "Neue Frage"}</h3>
 
       {draftAvailable && !editMode && (
         <div className="badge badge--muted row" style={{ gap: 8, justifyContent: "space-between" }}>

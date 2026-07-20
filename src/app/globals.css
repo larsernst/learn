@@ -147,6 +147,58 @@ button {
   max-width: 760px;
 }
 
+.page--wide {
+  max-width: 1440px;
+}
+
+/* Curriculum-Builder: Arbeitsfläche mit sticky Kapitel-Spalte */
+.curriculum-sidebar {
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+/* Editor-Modal: fokussiertes Arbeiten ohne Layout-Verschiebung */
+.editor-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 30, 66, 0.5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5vh 16px 16px;
+  z-index: 60;
+  overflow-y: auto;
+}
+
+.editor-modal {
+  background: var(--ds-surface, #fff);
+  border-radius: var(--ds-radius);
+  border: 1px solid var(--ds-border);
+  box-shadow: 0 12px 40px rgba(9, 30, 66, 0.25);
+  width: 100%;
+  max-width: 920px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.editor-modal__header {
+  position: sticky;
+  top: 0;
+  background: var(--ds-surface, #fff);
+  border-bottom: 1px solid var(--ds-border);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+
+body.editor-modal-open {
+  overflow: hidden;
+}
+
 .stack > * + * {
   margin-top: var(--ds-space-md);
 }
@@ -654,6 +706,16 @@ button {
 @media (max-width: 860px) {
   .curriculum-grid {
     grid-template-columns: 1fr !important;
+  }
+  .curriculum-sidebar {
+    position: static;
+    max-height: none;
+  }
+  .editor-modal {
+    max-height: 96vh;
+  }
+  .editor-modal-backdrop {
+    padding: 2vh 8px 8px;
   }
 }
 

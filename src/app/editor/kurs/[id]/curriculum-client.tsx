@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Markdown } from "@/components/markdown";
 import { QuestionEditor, type EditorSubmitData } from "@/components/editor/question-editor";
+import { EditorModal } from "@/components/editor/editor-modal";
 import { slugify } from "@/lib/slug";
 
 type ChapterData = {
@@ -66,6 +67,7 @@ export default function CurriculumClient({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<QuestionData | null>(null);
   const [newChapterTitle, setNewChapterTitle] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
@@ -456,47 +458,47 @@ export default function CurriculumClient({
     <div className="stack">
       <Notice error={error} success={success} />
 
-      <div className="card" style={{ padding: 16 }}>
-        <div className="row row--between" style={{ flexWrap: "wrap", gap: 8, alignItems: "flex-start" }}>
-          <div className="stack" style={{ gap: 4, flex: 1, minWidth: 200 }}>
-            <strong>{course.title}</strong>
-            {course.description && (
-              <span className="muted" style={{ fontSize: 13 }}>{course.description}</span>
-            )}
-            <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>
-                {course.status === "published" ? "Veröffentlicht" : "Entwurf"}
-              </span>
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>
-                /kurs/{course.slug}
-              </span>
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>
-                {sortedChapters.length} Kapitel · {questions.length} Fragen
-              </span>
-            </div>
-          </div>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            <Link href={`/kurs/${course.id}`} className="btn btn--ghost btn--sm">
-              Als Lernender ansehen
-            </Link>
-            <Link href={`/editor/kurs/${course.id}/einstellungen`} className="btn btn--ghost btn--sm">
-              Einstellungen
-            </Link>
+      <div className="row row--between" style={{ flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+        <div className="row" style={{ gap: 12, alignItems: "baseline", flexWrap: "wrap", minWidth: 0 }}>
+          <h2 style={{ margin: 0, fontSize: 20 }}>{course.title}</h2>
+          <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+            <span className={`badge ${course.status === "published" ? "badge--success" : "badge--muted"}`} style={{ fontSize: 11 }}>
+              {course.status === "published" ? "Veröffentlicht" : "Entwurf"}
+            </span>
+            <span className="badge badge--muted" style={{ fontSize: 11 }}>
+              /kurs/{course.slug}
+            </span>
+            <span className="badge badge--muted" style={{ fontSize: 11 }}>
+              {sortedChapters.length} Kapitel · {questions.length} Fragen
+            </span>
           </div>
         </div>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+          <Link href={`/kurs/${course.id}`} className="btn btn--ghost btn--sm">
+            Als Lernender ansehen
+          </Link>
+          <Link href={`/editor/kurs/${course.id}/einstellungen`} className="btn btn--secondary btn--sm">
+            Einstellungen
+          </Link>
+        </div>
       </div>
+      {course.description && (
+        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+          {course.description}
+        </p>
+      )}
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(220px, 280px) 1fr",
-          gap: 16,
+          gridTemplateColumns: "300px 1fr",
+          gap: 20,
           alignItems: "start",
         }}
         className="curriculum-grid"
       >
         {/* ── Kapitel-Spalte ── */}
-        <div className="card" style={{ padding: 12 }}>
+        <div className="card curriculum-sidebar" style={{ padding: 12 }}>
           <div className="row row--between" style={{ marginBottom: 8 }}>
             <strong style={{ fontSize: 14 }}>Kapitel</strong>
             <span className="badge badge--muted" style={{ fontSize: 11 }}>{sortedChapters.length}</span>
@@ -687,18 +689,46 @@ export default function CurriculumClient({
           )}
 
           {showForm && activeChapterData && (
-            <QuestionEditor
-              chapters={sortedChapters}
-              defaultChapterId={activeChapterData.id}
-              courseId={course.id}
-              judge0Enabled={judge0Enabled}
-              onSubmit={async (data) => {
-                const ok = await addQuestion(data);
-                if (ok) setShowForm(false);
-                return ok;
-              }}
-              onCancel={() => setShowForm(false)}
-            />
+            <EditorModal title="Neue Frage" onClose={() => setShowForm(false)}>
+              <QuestionEditor
+                chapters={sortedChapters}
+                defaultChapterId={activeChapterData.id}
+                courseId={course.id}
+                judge0Enabled={judge0Enabled}
+                onSubmit={async (data) => {
+                  const ok = await addQuestion(data);
+                  if (ok) setShowForm(false);
+                  return ok;
+                }}
+                onCancel={() => setShowForm(false)}
+              />
+            </EditorModal>
+          )}
+
+          {editingQuestion && (
+            <EditorModal title="Frage bearbeiten" onClose={() => setEditingQuestion(null)}>
+              <QuestionEditor
+                chapters={sortedChapters}
+                defaultChapterId={editingQuestion.chapterId ?? sortedChapters[0]?.id ?? ""}
+                courseId={course.id}
+                judge0Enabled={judge0Enabled}
+                initial={{
+                  chapterId: editingQuestion.chapterId ?? sortedChapters[0]?.id ?? "",
+                  question: editingQuestion.question,
+                  answer: editingQuestion.answer,
+                  sourceRef: editingQuestion.sourceRef,
+                  confidence: (editingQuestion.confidence as "high" | "low" | "") ?? "",
+                  taskType: (editingQuestion.taskType ?? "recall") as EditorSubmitData["taskType"],
+                  payload: editingQuestion.payload,
+                }}
+                onSubmit={async (data) => {
+                  const ok = await editQuestion(editingQuestion.id, data);
+                  if (ok) setEditingQuestion(null);
+                  return ok;
+                }}
+                onCancel={() => setEditingQuestion(null)}
+              />
+            </EditorModal>
           )}
 
           {!activeChapterData && activeQuestions.length === 0 && sortedChapters.length === 0 && (
@@ -718,14 +748,12 @@ export default function CurriculumClient({
               key={q.id}
               question={q}
               chapters={sortedChapters}
-              courseId={course.id}
-              judge0Enabled={judge0Enabled}
               selected={selected.has(q.id)}
               onToggleSelect={() => toggleSelect(q.id)}
               isFirst={idx === 0}
               isLast={idx === activeQuestions.length - 1}
               onDelete={() => deleteQuestion(q)}
-              onEdit={(data) => editQuestion(q.id, data)}
+              onStartEdit={() => setEditingQuestion(q)}
               onMove={(target) => moveQuestion(q, target)}
               onDuplicate={() => duplicateQuestion(q)}
               onReorder={(dir) => moveQuestionOrder(q, dir)}
@@ -753,59 +781,28 @@ function Notice({ error, success }: { error: string | null; success: string | nu
 function QuestionRow({
   question: q,
   chapters,
-  courseId,
-  judge0Enabled,
   selected,
   onToggleSelect,
   isFirst,
   isLast,
   onDelete,
-  onEdit,
+  onStartEdit,
   onMove,
   onDuplicate,
   onReorder,
 }: {
   question: QuestionData;
   chapters: ChapterData[];
-  courseId: string;
-  judge0Enabled: boolean;
   selected: boolean;
   onToggleSelect: () => void;
   isFirst: boolean;
   isLast: boolean;
   onDelete: () => void;
-  onEdit: (data: EditorSubmitData) => Promise<boolean>;
+  onStartEdit: (q: QuestionData) => void;
   onMove: (targetChapterId: string | null) => void;
   onDuplicate: () => void;
   onReorder: (dir: -1 | 1) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-
-  if (editing) {
-    return (
-      <QuestionEditor
-        chapters={chapters.map((c) => ({ id: c.id, title: c.title, order: c.order }))}
-        defaultChapterId={q.chapterId ?? chapters[0]?.id ?? ""}
-        courseId={courseId}
-        judge0Enabled={judge0Enabled}
-        initial={{
-          chapterId: q.chapterId ?? chapters[0]?.id ?? "",
-          question: q.question,
-          answer: q.answer,
-          sourceRef: q.sourceRef,
-          confidence: (q.confidence as "high" | "low" | "") ?? "",
-          taskType: (q.taskType ?? "recall") as EditorSubmitData["taskType"],
-          payload: q.payload,
-        }}
-        onSubmit={async (data) => {
-          const ok = await onEdit(data);
-          if (ok) setEditing(false);
-          return ok;
-        }}
-        onCancel={() => setEditing(false)}
-      />
-    );
-  }
 
   return (
     <div className="card" style={{ padding: 16 }}>
@@ -844,7 +841,7 @@ function QuestionRow({
             <button type="button" className="btn btn--ghost btn--sm" style={{ padding: "0 6px" }} disabled={isLast} onClick={() => onReorder(1)} title="Nach unten">
               ↓
             </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setEditing(true)}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => onStartEdit(q)}>
               Bearbeiten
             </button>
             <button type="button" className="btn btn--ghost btn--sm" onClick={onDuplicate} title="Duplizieren">

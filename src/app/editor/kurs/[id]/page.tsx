@@ -49,14 +49,13 @@ export default async function EditorKursPage({
   }
 
   return (
-    <div className="page page--narrow" style={{ paddingTop: 64 }}>
+    <div className="page page--wide" style={{ paddingTop: 56 }}>
       <p className="eyebrow">
         <Link href="/editor" style={{ color: "inherit", textDecoration: "none" }}>
           Editor
         </Link>{" "}
         · Curriculum
       </p>
-      <h1>{course.title}</h1>
       <CurriculumClient
         course={{
           id: course.id,
