@@ -28,6 +28,7 @@ export type OrderFormState = {
 
 export type CodeTestCaseForm = {
   input: string;
+  args: string;
   expectedOutput: string;
   hidden: boolean;
 };
@@ -36,6 +37,9 @@ export type CodeFormState = {
   languageId: number;
   starterCode: string;
   testCases: CodeTestCaseForm[];
+  comparisonMode: "exact" | "trim" | "float";
+  // Formular-Repräsentation (Textfeld); wird beim Bauen geparst.
+  floatTolerance: string;
   timeLimitMs: number;
   memoryLimitKb: number;
 };
@@ -147,6 +151,7 @@ export const CODE_LIMIT_PRESETS: { label: string; timeLimitMs: number; memoryLim
 
 export function buildCodePayload(form: CodeFormState): CodePayload {
   const lang = CODE_LANGUAGES.find((l) => l.languageId === form.languageId);
+  const tolerance = Number(form.floatTolerance);
   return {
     languages: [
       {
@@ -158,9 +163,16 @@ export function buildCodePayload(form: CodeFormState): CodePayload {
     testCases: form.testCases.map((t, i) => ({
       id: `test-${i + 1}`,
       input: t.input,
+      ...(t.args.trim() ? { args: t.args.trim() } : {}),
       expectedOutput: t.expectedOutput,
       hidden: t.hidden,
     })),
+    comparison: {
+      mode: form.comparisonMode,
+      ...(form.comparisonMode === "float" && Number.isFinite(tolerance) && tolerance > 0
+        ? { floatTolerance: tolerance }
+        : {}),
+    },
     timeLimitMs: form.timeLimitMs,
     memoryLimitKb: form.memoryLimitKb,
   };
@@ -174,9 +186,12 @@ export function codeToForm(payload: unknown): CodeFormState {
     starterCode: lang?.starterCode ?? "",
     testCases: (p?.testCases ?? []).map((t) => ({
       input: t.input,
+      args: t.args ?? "",
       expectedOutput: t.expectedOutput,
       hidden: t.hidden,
     })),
+    comparisonMode: p?.comparison?.mode ?? "exact",
+    floatTolerance: p?.comparison?.floatTolerance?.toString() ?? "0.0001",
     timeLimitMs: p?.timeLimitMs ?? 2000,
     memoryLimitKb: p?.memoryLimitKb ?? 262144,
   };
@@ -202,6 +217,12 @@ export function codeFormError(form: CodeFormState): string | null {
   }
   if (!form.testCases.some((t) => !t.hidden)) {
     return "Mindestens ein Testfall sollte öffentlich sein (Lernende sehen ihn).";
+  }
+  if (form.comparisonMode === "float") {
+    const t = Number(form.floatTolerance);
+    if (!Number.isFinite(t) || t <= 0 || t > 1) {
+      return "Float-Modus: Toleranz muss eine Zahl in (0, 1] sein.";
+    }
   }
   return null;
 }

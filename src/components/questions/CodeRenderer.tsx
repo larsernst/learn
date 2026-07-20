@@ -23,6 +23,14 @@ export interface CodeRendererProps {
         stdout?: string | null;
         stderr?: string | null;
         compileOutput?: string | null;
+        mismatch?: {
+          line: number;
+          expected: string;
+          actual: string;
+          reason: "content" | "missing-lines" | "extra-lines";
+        };
+        time?: string | null;
+        memory?: number | null;
       }>;
       compileError?: string;
     } | null;
@@ -133,6 +141,14 @@ export function CodeRenderer(props: CodeRendererProps) {
                   <pre style={{ margin: "4px 0", fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
                     {t.input || "(leer)"}
                   </pre>
+                  {t.args && (
+                    <>
+                      <strong>Argumente (argv):</strong>
+                      <pre style={{ margin: "4px 0", fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
+                        {t.args}
+                      </pre>
+                    </>
+                  )}
                 </div>
                 <div>
                   <strong>Erwartet:</strong>
@@ -190,7 +206,43 @@ export function CodeRenderer(props: CodeRendererProps) {
                 >
                   {t.passed ? "✓ bestanden" : `✗ ${t.status}`}
                 </span>
+                {t.passed && t.time != null && (
+                  <span className="badge badge--muted" style={{ fontSize: 11 }}>
+                    {t.time} s{t.memory != null && ` · ${Math.round(t.memory / 1024)} MB`}
+                  </span>
+                )}
               </div>
+              {t.mismatch && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 12,
+                    padding: 8,
+                    background: "rgba(174,46,36,0.06)",
+                    borderRadius: 4,
+                  }}
+                >
+                  <strong>
+                    Erste Abweichung in Zeile {t.mismatch.line}
+                    {t.mismatch.reason === "missing-lines" && " (Ausgabe endet hier schon)"}
+                    {t.mismatch.reason === "extra-lines" && " (hier kommt zu viel)"}:
+                  </strong>
+                  <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                      <span className="muted">Erwartet:</span>
+                      <pre style={{ margin: "2px 0", fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
+                        {t.mismatch.expected || "(nichts)"}
+                      </pre>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 160 }}>
+                      <span className="muted">Deine Ausgabe:</span>
+                      <pre style={{ margin: "2px 0", fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
+                        {t.mismatch.actual || "(nichts)"}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
               {!t.hidden && (t.stdout || t.stderr || t.compileOutput) && (
                 <div style={{ marginTop: 6, fontSize: 12 }}>
                   {t.compileOutput && (

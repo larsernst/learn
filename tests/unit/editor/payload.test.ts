@@ -172,9 +172,11 @@ describe("editor/payload: code", () => {
     languageId: 71,
     starterCode: "print()",
     testCases: [
-      { input: "1", expectedOutput: "1\n", hidden: false },
-      { input: "2", expectedOutput: "2\n", hidden: true },
+      { input: "1", args: "", expectedOutput: "1\n", hidden: false },
+      { input: "2", args: "--flag", expectedOutput: "2\n", hidden: true },
     ],
+    comparisonMode: "exact" as const,
+    floatTolerance: "0.0001",
     timeLimitMs: 2000,
     memoryLimitKb: 262144,
   };
@@ -193,15 +195,40 @@ describe("editor/payload: code", () => {
   test("codeFormError: Testfall-Pflicht und öffentlicher Test", () => {
     expect(codeFormError({ ...form, testCases: [] })).toContain("Testfall");
     expect(
-      codeFormError({ ...form, testCases: [{ input: "", expectedOutput: "x", hidden: true }] })
+      codeFormError({
+        ...form,
+        testCases: [{ input: "", args: "", expectedOutput: "x", hidden: true }],
+      })
     ).toContain("öffentlich");
     expect(codeFormError(form)).toBeNull();
   });
 
   test("codeFormError: Testfall ohne erwartete Ausgabe", () => {
     expect(
-      codeFormError({ ...form, testCases: [{ input: "", expectedOutput: " ", hidden: false }] })
+      codeFormError({
+        ...form,
+        testCases: [{ input: "", args: "", expectedOutput: " ", hidden: false }],
+      })
     ).toContain("erwartete Ausgabe");
+  });
+
+  test("codeFormError: Float-Modus braucht gültige Toleranz", () => {
+    const floatForm = { ...form, comparisonMode: "float" as const };
+    expect(codeFormError({ ...floatForm, floatTolerance: "0.001" })).toBeNull();
+    expect(codeFormError({ ...floatForm, floatTolerance: "abc" })).toContain("Toleranz");
+    expect(codeFormError({ ...floatForm, floatTolerance: "0" })).toContain("Toleranz");
+    expect(codeFormError({ ...floatForm, floatTolerance: "2" })).toContain("Toleranz");
+  });
+
+  test("buildCodePayload: args und comparison werden abgebildet", () => {
+    const payload = buildCodePayload({
+      ...form,
+      comparisonMode: "float",
+      floatTolerance: "0.001",
+    });
+    expect(payload.comparison).toEqual({ mode: "float", floatTolerance: 0.001 });
+    expect(payload.testCases[0]).not.toHaveProperty("args");
+    expect(payload.testCases[1].args).toBe("--flag");
   });
 
   test("codeToForm: null ergibt Standardwerte", () => {
@@ -209,6 +236,8 @@ describe("editor/payload: code", () => {
       languageId: 71,
       starterCode: "",
       testCases: [],
+      comparisonMode: "exact",
+      floatTolerance: "0.0001",
       timeLimitMs: 2000,
       memoryLimitKb: 262144,
     });

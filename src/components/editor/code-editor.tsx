@@ -70,6 +70,47 @@ export function CodeEditor({
         </div>
       </div>
 
+      <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+        <div className="field" style={{ flex: "0 0 220px" }}>
+          <label>Vergleichsmodus</label>
+          <select
+            className="input"
+            value={value.comparisonMode}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                comparisonMode: e.target.value as CodeFormState["comparisonMode"],
+              })
+            }
+          >
+            <option value="exact">Exakt (Byte-gleich)</option>
+            <option value="trim">Whitespace-tolerant (Zeilenenden)</option>
+            <option value="float">Float-tolerant (Zahlen mit Toleranz)</option>
+          </select>
+        </div>
+        {value.comparisonMode === "float" && (
+          <div className="field" style={{ flex: "0 0 180px" }}>
+            <label>Float-Toleranz</label>
+            <input
+              className="input"
+              type="text"
+              inputMode="decimal"
+              value={value.floatTolerance}
+              onChange={(e) => onChange({ ...value, floatTolerance: e.target.value })}
+              placeholder="0.0001"
+            />
+          </div>
+        )}
+      </div>
+      <p className="muted" style={{ fontSize: 12, margin: "-4px 0 0" }}>
+        {value.comparisonMode === "exact" &&
+          "Exakt: Ausgabe muss Byte für Byte stimmen (inkl. Zeilenumbrüche)."}
+        {value.comparisonMode === "trim" &&
+          "Whitespace-tolerant: Leerzeichen/-zeilen am Zeilenende werden ignoriert."}
+        {value.comparisonMode === "float" &&
+          "Float-tolerant: Zahlen dürfen um die Toleranz abweichen (z. B. 15.3333 vs. 15.33333)."}
+      </p>
+
       <div className="field">
         <label>Starter-Code (Vorgabe für Lernende)</label>
         <textarea
@@ -91,7 +132,7 @@ export function CodeEditor({
             onClick={() =>
               onChange({
                 ...value,
-                testCases: [...value.testCases, { input: "", expectedOutput: "", hidden: false }],
+                testCases: [...value.testCases, { input: "", args: "", expectedOutput: "", hidden: false }],
               })
             }
           >
@@ -109,6 +150,15 @@ export function CodeEditor({
                   value={t.input}
                   onChange={(e) => setTestCase(idx, { input: e.target.value })}
                   style={{ fontFamily: "monospace", fontSize: 12 }}
+                  spellCheck={false}
+                />
+                <input
+                  className="input"
+                  type="text"
+                  value={t.args}
+                  onChange={(e) => setTestCase(idx, { args: e.target.value })}
+                  placeholder="argv (optional, z. B. wort1 wort2)"
+                  style={{ fontFamily: "monospace", fontSize: 12, marginTop: 4 }}
                   spellCheck={false}
                 />
               </div>

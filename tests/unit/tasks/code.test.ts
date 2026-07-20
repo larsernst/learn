@@ -8,6 +8,7 @@ const payload: CodePayload = {
     { id: "t1", input: "", expectedOutput: "42", hidden: false },
     { id: "t2", input: "5", expectedOutput: "25", hidden: true },
   ],
+  comparison: { mode: "exact" },
   timeLimitMs: 3000,
   memoryLimitKb: 262144,
 };

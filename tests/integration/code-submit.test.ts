@@ -222,9 +222,20 @@ describe.skipIf(!dbOk)("api/review/code-submit (Integration)", () => {
     await createCourse("c6", "published", null);
     await createQuestion("q-ok", "c6", "code", CODE_PAYLOAD);
     getCurrentUserMock.mockResolvedValue({ sub: u.id, email: u.email, name: u.name, roles: [] });
-    const { client, submissions } = stubClient();
+    const { submissions, client } = (() => {
+      const subs: Judge0Submission[] = [];
+      return {
+        submissions: subs,
+        client: {
+          submit: async (s: Judge0Submission) => {
+            subs.push(s);
+            // Antwort passend zum Testfall (t1: "42", t2: "25").
+            return { status: { id: 3, description: "Accepted" }, stdout: s.stdin === "5" ? "25\n" : "42\n" };
+          },
+        },
+      };
+    })();
     getJudge0ClientMock.mockReturnValue(client);
-
     const res = await POST(
       req({ questionId: "q-ok", languageId: 54, sourceCode: "int main(){ return 0; }" })
     );
@@ -232,9 +243,11 @@ describe.skipIf(!dbOk)("api/review/code-submit (Integration)", () => {
     const body = await res.json();
     expect(body.correct).toBe(true);
     expect(body.detail.perTest).toHaveLength(2);
-    // stdin/expected_output der Testfälle wurden an Judge0 übergeben.
-    expect(submissions[0]).toMatchObject({ language_id: 54, stdin: "", expected_output: "42\n" });
-    expect(submissions[1]).toMatchObject({ stdin: "5", expected_output: "25\n" });
+    // stdin wird übergeben; expected_output nicht (Vergleich erfolgt
+    // serverseitig via Comparator).
+    expect(submissions[0]).toMatchObject({ language_id: 54, stdin: "" });
+    expect(submissions[0]).not.toHaveProperty("expected_output");
+    expect(submissions[1]).toMatchObject({ stdin: "5" });
 
     const review = await prisma.review.findUnique({
       where: { userId_questionId: { userId: u.id, questionId: "q-ok" } },
