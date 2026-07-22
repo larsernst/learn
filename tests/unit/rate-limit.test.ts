@@ -56,14 +56,26 @@ describe("rateLimit (fixed window)", () => {
 });
 
 describe("getClientIp", () => {
-  it("reads the first IP from x-forwarded-for", () => {
+  const original = process.env.TRUST_PROXY;
+
+  it("ignoriert x-forwarded-for ohne TRUST_PROXY", () => {
+    delete process.env.TRUST_PROXY;
+    const req = new Request("https://x/", {
+      headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" },
+    });
+    expect(getClientIp(req)).toBe("unknown");
+  });
+
+  it("reads the first IP from x-forwarded-for when TRUST_PROXY=true", () => {
+    process.env.TRUST_PROXY = "true";
     const req = new Request("https://x/", {
       headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" },
     });
     expect(getClientIp(req)).toBe("203.0.113.7");
   });
 
-  it("falls back to x-real-ip", () => {
+  it("falls back to x-real-ip when TRUST_PROXY=true", () => {
+    process.env.TRUST_PROXY = "true";
     const req = new Request("https://x/", {
       headers: { "x-real-ip": "198.51.100.9" },
     });
@@ -71,7 +83,13 @@ describe("getClientIp", () => {
   });
 
   it("returns 'unknown' when no IP header is present", () => {
+    delete process.env.TRUST_PROXY;
     const req = new Request("https://x/");
     expect(getClientIp(req)).toBe("unknown");
+  });
+
+  afterAll(() => {
+    if (original === undefined) delete process.env.TRUST_PROXY;
+    else process.env.TRUST_PROXY = original;
   });
 });

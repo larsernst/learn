@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { isAdmin, isEditor } from "@/lib/auth";
 import type { SessionPayload } from "@/lib/session";
+import { Prisma } from "@prisma/client";
 
 export type CourseStatus = "draft" | "published";
 
@@ -22,6 +23,19 @@ export function canViewCourse(
   if (isAdmin(user)) return true;
   if (course.ownerId !== null && course.ownerId === user.sub) return true;
   return false;
+}
+
+// Hilfs-Where-Clause fuer Prisma-Queries: nur veroeffentlichte Kurse
+// oder eigene Drafts (Admins sehen alles).
+export function courseVisibilityWhere(
+  user: Pick<SessionPayload, "sub" | "roles">
+): Prisma.QuestionWhereInput | undefined {
+  if (isAdmin(user)) return undefined;
+  return {
+    course: {
+      OR: [{ status: "published" }, { ownerId: user.sub }],
+    },
+  };
 }
 
 // Darf ein Nutzer den Kurs bearbeiten? Admins immer; Editoren nur für eigene

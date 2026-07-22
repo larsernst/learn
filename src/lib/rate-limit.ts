@@ -48,13 +48,18 @@ export function rateLimit(
 }
 
 export function getClientIp(request: Request): string {
-  const xff = request.headers.get("x-forwarded-for");
-  if (xff) {
-    const first = xff.split(",")[0]?.trim();
-    if (first) return first;
+  // Proxy-Header nur honorieren, wenn die App hinter einem
+  // vertrauenswürdigen Proxy läuft. Sonst kann ein Angreifer mit
+  // wechselndem X-Forwarded-For das Rate-Limit trivial umgehen.
+  if (process.env.TRUST_PROXY === "true") {
+    const xff = request.headers.get("x-forwarded-for");
+    if (xff) {
+      const first = xff.split(",")[0]?.trim();
+      if (first) return first;
+    }
+    const real = request.headers.get("x-real-ip");
+    if (real) return real.trim();
   }
-  const real = request.headers.get("x-real-ip");
-  if (real) return real.trim();
   return "unknown";
 }
 

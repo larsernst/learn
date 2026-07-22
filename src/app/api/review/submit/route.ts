@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { applySm2, SM2_DEFAULTS } from "@/lib/sm2";
 import { reviewSubmitSchema } from "@/lib/validation";
 import { resolveReviewGrade } from "@/lib/review-grade";
+import { canViewCourse } from "@/lib/course-access";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -21,8 +22,11 @@ export async function POST(request: Request) {
   const body = parsed.data;
   const { questionId, isNew } = body;
 
-  const question = await prisma.question.findUnique({ where: { id: questionId } });
-  if (!question) {
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    include: { course: { select: { status: true, ownerId: true } } },
+  });
+  if (!question || !question.course || !canViewCourse(user, question.course)) {
     return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
   }
 

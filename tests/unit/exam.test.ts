@@ -104,23 +104,23 @@ describe("gradeExamAttempt: code", () => {
   it("gültiges Verdict zählt als richtig", async () => {
     const { signCodeVerdict } = await import("@/lib/exam-verdict");
     const attempts: ExamAttempt[] = [
-      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("code1", true, "src") },
+      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("code1", "u1", true, "src") },
     ];
-    const res = gradeExamAttempt(attempts, questionsById);
+    const res = gradeExamAttempt(attempts, questionsById, "u1");
     expect(res.score).toBe(1);
   });
 
   it("gültiges Verdict mit false zählt als falsch", async () => {
     const { signCodeVerdict } = await import("@/lib/exam-verdict");
     const attempts: ExamAttempt[] = [
-      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("code1", false, "src") },
+      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("code1", "u1", false, "src") },
     ];
-    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
+    expect(gradeExamAttempt(attempts, questionsById, "u1").score).toBe(0);
   });
 
   it("manipuliertes Verdict (Client-Flag) gilt als falsch", async () => {
     const { signCodeVerdict } = await import("@/lib/exam-verdict");
-    const token = signCodeVerdict("code1", false, "src");
+    const token = signCodeVerdict("code1", "u1", false, "src");
     const [v, body] = token.split(".");
     const forgedBody = Buffer.from(
       JSON.stringify({ qid: "code1", correct: true, sh: "x", exp: 9999999999 })
@@ -128,7 +128,7 @@ describe("gradeExamAttempt: code", () => {
     const attempts: ExamAttempt[] = [
       { questionId: "code1", taskType: "code", verdict: `${v}.${forgedBody}.${token.split(".")[2]}` },
     ];
-    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
+    expect(gradeExamAttempt(attempts, questionsById, "u1").score).toBe(0);
     void body;
   });
 
@@ -140,8 +140,8 @@ describe("gradeExamAttempt: code", () => {
   it("Verdict einer anderen Frage gilt als falsch", async () => {
     const { signCodeVerdict } = await import("@/lib/exam-verdict");
     const attempts: ExamAttempt[] = [
-      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("andere", true, "src") },
+      { questionId: "code1", taskType: "code", verdict: signCodeVerdict("andere", "u1", true, "src") },
     ];
-    expect(gradeExamAttempt(attempts, questionsById).score).toBe(0);
+    expect(gradeExamAttempt(attempts, questionsById, "u1").score).toBe(0);
   });
 });

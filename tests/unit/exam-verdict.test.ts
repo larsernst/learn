@@ -10,21 +10,22 @@ process.env.JWT_SECRET = process.env.JWT_SECRET ?? "test-secret-fuer-verdicts-01
 
 describe("exam-verdict", () => {
   it("sign/verify Roundtrip", () => {
-    const token = signCodeVerdict("q1", true, "int main(){}");
+    const token = signCodeVerdict("q1", "u1", true, "int main(){}");
     const verdict = verifyCodeVerdict(token, "q1");
     expect(verdict).not.toBeNull();
     expect(verdict?.qid).toBe("q1");
+    expect(verdict?.sub).toBe("u1");
     expect(verdict?.correct).toBe(true);
     expect(verdict?.sh).toBe(hashSource("int main(){}"));
   });
 
   it("falsches Ergebnis bleibt falsch", () => {
-    const token = signCodeVerdict("q1", false, "x");
+    const token = signCodeVerdict("q1", "u1", false, "x");
     expect(verifyCodeVerdict(token, "q1")?.correct).toBe(false);
   });
 
   it("manipulierte Payload wird abgelehnt", () => {
-    const token = signCodeVerdict("q1", false, "x");
+    const token = signCodeVerdict("q1", "u1", false, "x");
     const [v, body] = token.split(".");
     const tampered = JSON.parse(Buffer.from(body, "base64url").toString());
     tampered.correct = true; // Schummelversuch: false → true
@@ -34,20 +35,25 @@ describe("exam-verdict", () => {
   });
 
   it("Verdict für fremde questionId wird abgelehnt", () => {
-    const token = signCodeVerdict("q1", true, "x");
+    const token = signCodeVerdict("q1", "u1", true, "x");
     expect(verifyCodeVerdict(token, "q2")).toBeNull();
+  });
+
+  it("Verdict für fremden Nutzer wird abgelehnt", () => {
+    const token = signCodeVerdict("q1", "u1", true, "x");
+    expect(verifyCodeVerdict(token, "q1", "u2")).toBeNull();
   });
 
   it("abgelaufenes Verdict wird abgelehnt", () => {
     const now = Math.floor(Date.now() / 1000);
-    const token = signCodeVerdict("q1", true, "x", now - VERDICT_TTL_SECONDS - 10);
+    const token = signCodeVerdict("q1", "u1", true, "x", now - VERDICT_TTL_SECONDS - 10);
     expect(verifyCodeVerdict(token, "q1")).toBeNull();
   });
 
   it("frisch ausgestelltes Verdict ist innerhalb der TTL gültig", () => {
     const now = Math.floor(Date.now() / 1000);
-    const token = signCodeVerdict("q1", true, "x", now);
-    expect(verifyCodeVerdict(token, "q1", now + VERDICT_TTL_SECONDS - 60)).not.toBeNull();
+    const token = signCodeVerdict("q1", "u1", true, "x", now);
+    expect(verifyCodeVerdict(token, "q1", undefined, now + VERDICT_TTL_SECONDS - 60)).not.toBeNull();
   });
 
   it("Müll-Strings werden abgelehnt", () => {

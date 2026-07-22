@@ -30,6 +30,9 @@ export interface SessionCookieOptions {
 }
 
 export function isSecureCookie(): boolean {
+  if (process.env.NODE_ENV === "production") {
+    return process.env.SESSION_COOKIE_SECURE !== "false";
+  }
   return process.env.SESSION_COOKIE_SECURE === "true";
 }
 

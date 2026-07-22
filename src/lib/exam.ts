@@ -50,7 +50,8 @@ const AUTO_GRADED_TYPES: TaskType[] = ["mcq", "dragdrop", "cloze", "order"];
 
 export function gradeExamAttempt(
   attempts: ExamAttempt[],
-  questionsById: Map<string, ExamQuestionRef>
+  questionsById: Map<string, ExamQuestionRef>,
+  userSub?: string
 ): ExamGradeResult {
   const perQuestion: ExamGradeRow[] = attempts.map((a) => {
     const q = questionsById.get(a.questionId);
@@ -59,8 +60,8 @@ export function gradeExamAttempt(
     if (a.taskType === "recall") {
       correct = a.correct === true;
     } else if (a.taskType === "code") {
-      // Code: nur signierte Verdicts zählen (Signatur, Ablauf, questionId).
-      const verdict = verifyCodeVerdict(a.verdict, a.questionId);
+      // Code: nur signierte Verdicts zählen (Signatur, Ablauf, questionId, Nutzer).
+      const verdict = verifyCodeVerdict(a.verdict, a.questionId, userSub);
       correct = verdict?.correct === true;
     } else if (AUTO_GRADED_TYPES.includes(a.taskType) && q) {
       const normalized = normalizeQuestionTask(q.taskType, q.payload, q.mcqOptions);

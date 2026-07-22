@@ -20,6 +20,7 @@ export const VERDICT_TTL_SECONDS = 6 * 60 * 60;
 
 export interface CodeVerdict {
   qid: string;
+  sub: string;
   correct: boolean;
   // sha256 des eingereichten Source-Codes (Nachvollziehbarkeit).
   sh: string;
@@ -49,12 +50,14 @@ export function hashSource(sourceCode: string): string {
 
 export function signCodeVerdict(
   questionId: string,
+  userId: string,
   correct: boolean,
   sourceCode: string,
   now: number = Math.floor(Date.now() / 1000)
 ): string {
   const payload: CodeVerdict = {
     qid: questionId,
+    sub: userId,
     correct,
     sh: hashSource(sourceCode),
     exp: now + VERDICT_TTL_SECONDS,
@@ -63,11 +66,13 @@ export function signCodeVerdict(
   return `v1.${body}.${sign(body)}`;
 }
 
-// Prüft Signatur, Ablauf und questionId-Bezug. Liefert das Verdict oder
-// null (manipuliert/abgelaufen/fremde Frage ⇒ als falsch zu werten).
+// Prüft Signatur, Ablauf, questionId-Bezug und optional den Nutzer.
+// Liefert das Verdict oder null (manipuliert/abgelaufen/fremde Frage
+// bzw. fremder Nutzer ⇒ als falsch zu werten).
 export function verifyCodeVerdict(
   token: string,
   questionId: string,
+  userSub?: string,
   now: number = Math.floor(Date.now() / 1000)
 ): CodeVerdict | null {
   const parts = token.split(".");
@@ -86,7 +91,9 @@ export function verifyCodeVerdict(
     return null;
   }
   if (typeof payload.qid !== "string" || typeof payload.correct !== "boolean") return null;
+  if (typeof payload.sub !== "string") return null;
   if (typeof payload.exp !== "number" || payload.exp < now) return null;
   if (payload.qid !== questionId) return null;
+  if (userSub !== undefined && payload.sub !== userSub) return null;
   return payload;
 }

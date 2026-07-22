@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { gradeExamAttempt, type ExamAttempt } from "@/lib/exam";
 import { applySm2, mcqGrade, SM2_DEFAULTS } from "@/lib/sm2";
 import { examSubmitSchema } from "@/lib/validation";
+import { canViewCourse } from "@/lib/course-access";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -21,7 +22,13 @@ export async function POST(request: Request) {
   const { answers, saveToSm2 } = parsed.data;
 
   const questionIds = answers.map((a) => a.questionId);
-  const questions = await prisma.question.findMany({ where: { id: { in: questionIds } } });
+  const questions = await prisma.question.findMany({
+    where: { id: { in: questionIds } },
+    include: { course: { select: { status: true, ownerId: true } } },
+  });
+  if (questions.length !== questionIds.length || questions.some((q) => !q.course || !canViewCourse(user, q.course))) {
+    return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
+  }
   const questionsById = new Map(
     questions.map((q) => [
       q.id,
@@ -32,7 +39,7 @@ export async function POST(request: Request) {
     ])
   );
 
-  const result = gradeExamAttempt(answers as ExamAttempt[], questionsById);
+  const result = gradeExamAttempt(answers as ExamAttempt[], questionsById, user.sub);
 
   if (saveToSm2) {
     const existing = await prisma.review.findMany({

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { selectExamQuestions } from "@/lib/exam";
 import { serializeQuestion, type SerializableQuestion } from "@/lib/serialize";
+import { canViewCourse, courseVisibilityWhere } from "@/lib/course-access";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const countRaw = Number(url.searchParams.get("count") ?? "30");
-  const count = Number.isFinite(countRaw) && countRaw > 0 ? countRaw : 30;
+  const count = Number.isFinite(countRaw) && countRaw > 0 && countRaw <= 100 ? countRaw : 30;
   const courseId = url.searchParams.get("courseId");
 
   const me = await prisma.user.findUnique({
@@ -21,8 +22,20 @@ export async function GET(request: Request) {
   });
   const mcqEnabled = me?.mcqEnabled ?? true;
 
+  if (courseId) {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { status: true, ownerId: true },
+    });
+    if (!course || !canViewCourse(user, course)) {
+      return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 });
+    }
+  }
+
   const all = await prisma.question.findMany(
-    courseId ? { where: { courseId } } : undefined
+    courseId
+      ? { where: { courseId } }
+      : { where: courseVisibilityWhere(user) }
   );
   const picked = selectExamQuestions(all, count);
 

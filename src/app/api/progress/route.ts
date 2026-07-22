@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { getMatureThresholdDays } from "@/lib/settings";
+import { canViewCourse, courseVisibilityWhere } from "@/lib/course-access";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -11,14 +12,24 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const courseId = url.searchParams.get("courseId") ?? undefined;
-  const where = courseId ? { courseId } : undefined;
+  const where = courseId ? { courseId } : courseVisibilityWhere(user);
+
+  if (courseId) {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { status: true, ownerId: true },
+    });
+    if (!course || !canViewCourse(user, course)) {
+      return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 });
+    }
+  }
 
   const now = new Date();
 
   const total = await prisma.question.count({ where });
 
   const reviews = await prisma.review.findMany({
-    where: { userId: user.sub, question: where ? { courseId } : undefined },
+    where: { userId: user.sub, ...(where ? { question: where } : {}) },
     select: { questionId: true, repetitions: true, lapses: true, intervalDays: true, dueAt: true },
   });
 

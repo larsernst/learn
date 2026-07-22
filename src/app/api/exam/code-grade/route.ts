@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       ok: true,
       correct: result.correct,
       detail: result.detail,
-      verdict: signCodeVerdict(questionId, result.correct, sourceCode),
+      verdict: signCodeVerdict(questionId, user.sub, result.correct, sourceCode),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unbekannter Fehler.";

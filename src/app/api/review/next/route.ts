@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/session";
 import { serializeQuestion, type SerializableQuestion } from "@/lib/serialize";
+import { canViewCourse, courseVisibilityWhere } from "@/lib/course-access";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -17,6 +18,36 @@ export async function GET(request: Request) {
   const reviewLearned = url.searchParams.get("review") === "learned";
   const now = new Date();
 
+  if (courseId) {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { status: true, ownerId: true },
+    });
+    if (!course || !canViewCourse(user, course)) {
+      return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 });
+    }
+  }
+
+  const visibility = courseId ? undefined : courseVisibilityWhere(user);
+
+  const questionFilter: Record<string, unknown> = {};
+  if (courseId) questionFilter.courseId = courseId;
+  if (chapter !== undefined) questionFilter.chapter = chapter;
+  if (!courseId) {
+    const v = courseVisibilityWhere(user);
+    if (v) questionFilter.course = v.course;
+  }
+  const reviewQuestionFilter =
+    Object.keys(questionFilter).length > 0 ? { question: questionFilter } : undefined;
+
+  const questionWhere: Record<string, unknown> = {};
+  if (courseId) questionWhere.courseId = courseId;
+  if (chapter !== undefined) questionWhere.chapter = chapter;
+  if (!courseId) {
+    const v = courseVisibilityWhere(user);
+    if (v) questionWhere.course = v.course;
+  }
+
   const me = await prisma.user.findUnique({
     where: { id: user.sub },
     select: { mcqEnabled: true, newQuestionsFirst: true },
@@ -24,16 +55,11 @@ export async function GET(request: Request) {
   const mcqEnabled = me?.mcqEnabled ?? true;
   const newQuestionsFirst = me?.newQuestionsFirst ?? true;
 
-  const questionFilter: Record<string, unknown> = {};
-  if (courseId) questionFilter.courseId = courseId;
-  if (chapter !== undefined) questionFilter.chapter = chapter;
-  const courseFilter = Object.keys(questionFilter).length > 0 ? { question: questionFilter } : undefined;
-
   if (reviewLearned) {
     const learnedReviews = await prisma.review.findMany({
       where: {
         userId: user.sub,
-        ...(courseFilter ?? {}),
+        ...(reviewQuestionFilter ?? {}),
       },
       include: { question: true },
       orderBy: [{ lastReviewedAt: "asc" }],
@@ -59,7 +85,7 @@ export async function GET(request: Request) {
       userId: user.sub,
       dueAt: { lte: now },
       ...(difficultOnly ? { lapses: { gte: 1 } } : {}),
-      ...(courseFilter ?? {}),
+      ...(reviewQuestionFilter ?? {}),
     },
     include: { question: true },
     orderBy: [{ dueAt: "asc" }, { lastReviewedAt: "asc" }],
@@ -69,13 +95,13 @@ export async function GET(request: Request) {
   const dueFound = dueReviews.length > 0;
 
   const learnedQuestionIds = await prisma.review.findMany({
-    where: { userId: user.sub },
+    where: { userId: user.sub, ...(reviewQuestionFilter ?? {}) },
     select: { questionId: true },
   });
   const learnedIds = new Set(learnedQuestionIds.map((r) => r.questionId));
 
   const allQuestions = await prisma.question.findMany({
-    where: courseId ? { courseId } : undefined,
+    where: Object.keys(questionWhere).length > 0 ? questionWhere : undefined,
     orderBy: [{ chapter: "asc" }, { id: "asc" }],
   });
   const nextNew = allQuestions.find(
