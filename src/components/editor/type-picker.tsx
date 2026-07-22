@@ -76,7 +76,7 @@ export function TypePicker({
               padding: "10px 12px",
               borderRadius: "var(--ds-radius)",
               border: `2px solid ${value === c.type ? "var(--ds-brand)" : "var(--ds-border)"}`,
-              background: value === c.type ? "rgba(24,104,219,0.06)" : "var(--ds-surface, #fff)",
+              background: value === c.type ? "var(--ds-surface-selected)" : "var(--ds-surface)",
             }}
           >
             <div style={{ fontSize: 15, fontWeight: 600 }}>

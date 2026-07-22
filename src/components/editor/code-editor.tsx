@@ -58,7 +58,7 @@ export function CodeEditor({
       {!judge0Enabled && (
         <div
           className="badge"
-          style={{ background: "rgba(138,75,8,0.12)", color: "#8a4b08", fontSize: 12 }}
+          style={{ background: "var(--ds-background-warning-subtle)", color: "var(--ds-text-warning)", fontSize: 12 }}
         >
           Hinweis: Judge0 ist auf diesem Server deaktiviert (JUDGE0_ENABLED=false) – die
           Aufgabe kann gespeichert, von Lernenden aber nicht ausgeführt werden.

@@ -1,5 +1,4 @@
 @import "katex/dist/katex.min.css";
-@import "highlight.js/styles/github-dark.min.css";
 
 :root {
   /* ── Dark mode (Standard) ──────────────────────────── */
@@ -33,6 +32,13 @@
   --ds-background-success-subtle: rgba(63, 185, 80, 0.15);
   --ds-heatmap-1: rgba(31, 111, 235, 0.35);
   --ds-heatmap-2: rgba(31, 111, 235, 0.65);
+  --ds-focus-ring: rgba(31, 111, 235, 0.35);
+  --ds-code-keyword: #ff7b72;
+  --ds-code-string: #a5d6ff;
+  --ds-code-number: #79c0ff;
+  --ds-code-function: #d2a8ff;
+  --ds-code-type: #ffa657;
+  --ds-code-comment: #8b949e;
 
   --ds-radius-xs: 3px;
   --ds-radius-sm: 4px;
@@ -89,6 +95,13 @@
   --ds-background-success-subtle: rgba(34, 160, 107, 0.12);
   --ds-heatmap-1: rgba(24, 104, 219, 0.35);
   --ds-heatmap-2: rgba(24, 104, 219, 0.65);
+  --ds-focus-ring: rgba(24, 104, 219, 0.25);
+  --ds-code-keyword: #cf222e;
+  --ds-code-string: #0a3069;
+  --ds-code-number: #0550ae;
+  --ds-code-function: #8250df;
+  --ds-code-type: #953800;
+  --ds-code-comment: #6e7781;
 }
 
 * {
@@ -448,7 +461,7 @@ body.editor-modal-open {
 .textarea:focus {
   outline: none;
   border-color: var(--ds-link);
-  box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.25);
+  box-shadow: 0 0 0 2px var(--ds-focus-ring);
 }
 
 .textarea {
@@ -1183,6 +1196,76 @@ body.editor-modal-open {
 }
 
 /* Code-Blöcke (via rehype-highlight) */
+.hljs {
+  color: var(--ds-ink);
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--ds-code-comment);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-template-tag,
+.hljs-meta {
+  color: var(--ds-code-keyword);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition {
+  color: var(--ds-code-string);
+}
+
+.hljs-number,
+.hljs-literal {
+  color: var(--ds-code-number);
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section,
+.hljs-name {
+  color: var(--ds-code-function);
+}
+
+.hljs-title.class_,
+.hljs-type,
+.hljs-built_in {
+  color: var(--ds-code-type);
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-selector-attr,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: var(--ds-code-number);
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link {
+  color: var(--ds-code-type);
+}
+
+.hljs-deletion {
+  color: var(--ds-chart-red);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 600;
+}
+
 .review-answer pre {
   background: var(--ds-surface-selected);
   border: 1px solid var(--ds-border);

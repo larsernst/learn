@@ -517,7 +517,7 @@ export default function CurriculumClient({
                   borderRadius: "var(--ds-radius)",
                   padding: "8px 10px",
                   cursor: "pointer",
-                  background: ch.id === activeId ? "rgba(24,104,219,0.06)" : undefined,
+                  background: ch.id === activeId ? "var(--ds-surface-selected)" : undefined,
                   opacity: dragChapterId === ch.id ? 0.5 : 1,
                 }}
                 onClick={() => {
@@ -577,7 +577,7 @@ export default function CurriculumClient({
                   borderRadius: "var(--ds-radius)",
                   padding: "8px 10px",
                   cursor: "pointer",
-                  background: activeChapter === UNASSIGNED ? "rgba(24,104,219,0.06)" : undefined,
+                  background: activeChapter === UNASSIGNED ? "var(--ds-surface-selected)" : undefined,
                 }}
                 onClick={() => {
                   setActiveChapter(UNASSIGNED);
@@ -656,7 +656,7 @@ export default function CurriculumClient({
           </div>
 
           {selectedInView.length > 0 && (
-            <div className="card" style={{ padding: 10, background: "rgba(24,104,219,0.05)" }}>
+            <div className="card" style={{ padding: 10, background: "var(--ds-surface-selected)" }}>
               <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <strong style={{ fontSize: 13 }}>{selectedInView.length} ausgewählt</strong>
                 <select

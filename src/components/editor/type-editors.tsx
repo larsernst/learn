@@ -82,7 +82,14 @@ export function McqEditor({
 }
 
 // ── Drag & Drop ───────────────────────────────────────────────────────
-const ZONE_COLORS = ["#1868db", "#0c7a5b", "#8a4b08", "#7c3aed", "#b91c1c", "#0369a1"];
+const ZONE_COLORS = [
+  "var(--ds-chart-blue)",
+  "var(--ds-chart-green)",
+  "var(--ds-chart-orange)",
+  "var(--ds-chart-purple)",
+  "var(--ds-chart-red)",
+  "var(--ds-link)",
+];
 
 export function DragDropEditor({
   value,

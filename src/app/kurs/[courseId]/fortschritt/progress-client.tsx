@@ -42,7 +42,7 @@ export default function ProgressClient({
           <p className="eyebrow" style={{ color: "rgba(255,255,255,0.8)" }}>
             Heute fällig
           </p>
-          <h2 style={{ color: "#fff", marginBottom: 8 }}>{stats.dueToday}</h2>
+          <h2 style={{ color: "var(--ds-ink-on-dark)", marginBottom: 8 }}>{stats.dueToday}</h2>
           <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14 }}>
             Wiederholungen nach SM-2
           </p>

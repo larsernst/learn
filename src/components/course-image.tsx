@@ -18,7 +18,7 @@ export function CourseImage({
         style={{
           height,
           borderRadius: "var(--ds-radius) var(--ds-radius) 0 0",
-          background: "linear-gradient(135deg, rgba(24,104,219,0.14), rgba(24,104,219,0.04))",
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--ds-brand) 14%, transparent), color-mix(in srgb, var(--ds-brand) 4%, transparent))",
           borderBottom: "1px solid var(--ds-border)",
         }}
       />

@@ -11,9 +11,11 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import {
   bracketMatching,
   defaultHighlightStyle,
+  HighlightStyle,
   indentOnInput,
   syntaxHighlighting,
 } from "@codemirror/language";
+import { tags as t } from "@lezer/highlight";
 import { closeBrackets } from "@codemirror/autocomplete";
 import { Compartment, type Extension } from "@codemirror/state";
 
@@ -35,31 +37,59 @@ async function languageFor(languageId: number): Promise<Extension> {
   }
 }
 
-// Schlichtes helles Theme, angelehnt an die Design-Tokens (DESIGN.md).
-const theme = EditorView.theme(
-  {
-    "&": {
-      fontSize: "13px",
-      border: "1px solid #dddee1",
-      borderRadius: "3px",
-      backgroundColor: "#ffffff",
-    },
-    ".cm-content": {
-      fontFamily: "ui-monospace, Menlo, Consolas, monospace",
-      padding: "10px 0",
-      minHeight: "220px",
-    },
-    ".cm-scroller": { overflow: "auto", maxHeight: "520px" },
-    "&.cm-focused": { outline: "2px solid #1868db", outlineOffset: "-1px" },
-    ".cm-gutters": {
-      backgroundColor: "#f7f8f9",
-      color: "#63666b",
-      border: "none",
-      borderRight: "1px solid #dddee1",
-    },
+function isDarkTheme(): boolean {
+  return document.documentElement.dataset.theme !== "light";
+}
+
+// Syntax-Farben fürs Dark-Theme (github-dark-Palette, analog zum
+// Markdown-Highlighting). Das Light-Theme nutzt defaultHighlightStyle.
+const darkHighlight = HighlightStyle.define([
+  { tag: [t.keyword, t.operator, t.modifier], color: "#ff7b72" },
+  { tag: [t.string, t.special(t.string), t.regexp], color: "#a5d6ff" },
+  { tag: [t.number, t.bool, t.null, t.atom], color: "#79c0ff" },
+  { tag: t.comment, color: "#8b949e", fontStyle: "italic" },
+  { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "#d2a8ff" },
+  { tag: [t.typeName, t.className, t.tagName], color: "#ffa657" },
+  { tag: [t.propertyName, t.attributeName], color: "#79c0ff" },
+  { tag: t.variableName, color: "#e6edf3" },
+]);
+
+function highlightForTheme(): Extension {
+  return syntaxHighlighting(isDarkTheme() ? darkHighlight : defaultHighlightStyle, {
+    fallback: true,
+  });
+}
+
+// Editor-Chrome komplett über Design-Tokens – folgt dem Theme automatisch.
+const theme = EditorView.theme({
+  "&": {
+    fontSize: "13px",
+    border: "1px solid var(--ds-border)",
+    borderRadius: "3px",
+    backgroundColor: "var(--ds-background-canvas)",
+    color: "var(--ds-ink)",
   },
-  { dark: false }
-);
+  ".cm-content": {
+    fontFamily: "ui-monospace, Menlo, Consolas, monospace",
+    padding: "10px 0",
+    minHeight: "220px",
+    caretColor: "var(--ds-ink)",
+  },
+  ".cm-scroller": { overflow: "auto", maxHeight: "520px" },
+  "&.cm-focused": { outline: "2px solid var(--ds-link)", outlineOffset: "-1px" },
+  ".cm-gutters": {
+    backgroundColor: "var(--ds-surface)",
+    color: "var(--ds-text-subtlest)",
+    border: "none",
+    borderRight: "1px solid var(--ds-border)",
+  },
+  ".cm-activeLine": { backgroundColor: "var(--ds-surface-selected)" },
+  ".cm-activeLineGutter": { backgroundColor: "var(--ds-surface-selected)" },
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
+    backgroundColor: "color-mix(in srgb, var(--ds-brand) 30%, transparent)",
+  },
+  ".cm-cursor": { borderLeftColor: "var(--ds-ink)" },
+});
 
 export interface CodeMirrorEditorProps {
   value: string;
@@ -84,6 +114,7 @@ export default function CodeMirrorEditor({
   const valueRef = useRef(value);
   valueRef.current = value;
   const editableCompartment = useRef(new Compartment());
+  const highlightCompartment = useRef(new Compartment());
 
   // Editor einmal pro Sprache aufbauen (Sprachpaket ist statisch geladen).
   useEffect(() => {
@@ -103,7 +134,7 @@ export default function CodeMirrorEditor({
             indentOnInput(),
             bracketMatching(),
             closeBrackets(),
-            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+            highlightCompartment.current.of(highlightForTheme()),
             language,
             theme,
             placeholder("// Hier deine Lösung …"),
@@ -148,6 +179,21 @@ export default function CodeMirrorEditor({
       effects: editableCompartment.current.reconfigure(EditorView.editable.of(!disabled)),
     });
   }, [disabled]);
+
+  // Theme-Wechsel (data-theme auf <html>): nur Syntax-Farben neu konfigurieren,
+  // das Editor-Chrome folgt über CSS-Variablen von selbst.
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      viewRef.current?.dispatch({
+        effects: highlightCompartment.current.reconfigure(highlightForTheme()),
+      });
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   return <div ref={parentRef} data-testid="code-mirror-editor" />;
 }

@@ -211,7 +211,7 @@ export function CodeRenderer(props: CodeRendererProps) {
 
 function CompileErrorCard({ message }: { message: string }) {
   return (
-    <div className="card" style={{ padding: 12, background: "rgba(174,46,36,0.06)" }}>
+    <div className="card" style={{ padding: 12, background: "var(--ds-background-danger-subtle)" }}>
       <strong>Systemfehler:</strong>
       <pre style={{ margin: "4px 0", fontFamily: "monospace", whiteSpace: "pre-wrap", fontSize: 12 }}>
         {message}
@@ -254,7 +254,7 @@ function TestResultList({ perTest }: { perTest: PerTest[] }) {
                 marginTop: 6,
                 fontSize: 12,
                 padding: 8,
-                background: "rgba(174,46,36,0.06)",
+                background: "var(--ds-background-danger-subtle)",
                 borderRadius: 4,
               }}
             >

@@ -194,9 +194,9 @@ export function ClozeRenderer(props: ClozeRendererProps) {
                 minWidth: 80,
                 margin: "0 4px",
                 ...(isCorrect
-                  ? { borderColor: "var(--ds-chart-green)", background: "rgba(34,160,107,0.1)" }
+                  ? { borderColor: "var(--ds-chart-green)", background: "var(--ds-background-success-subtle)" }
                   : isWrong
-                  ? { borderColor: "var(--ds-chart-red)", background: "rgba(174,46,36,0.08)" }
+                  ? { borderColor: "var(--ds-chart-red)", background: "var(--ds-background-danger-subtle)" }
                   : {}),
               }}
               aria-label={`Lücke ${idx + 1}`}
@@ -266,9 +266,9 @@ export function OrderRenderer(props: OrderRendererProps) {
                 alignItems: "center",
                 gap: 8,
                 ...(isCorrect
-                  ? { borderColor: "var(--ds-chart-green)", background: "rgba(34,160,107,0.06)" }
+                  ? { borderColor: "var(--ds-chart-green)", background: "var(--ds-background-success-subtle)" }
                   : isWrong
-                  ? { borderColor: "var(--ds-chart-red)", background: "rgba(174,46,36,0.05)" }
+                  ? { borderColor: "var(--ds-chart-red)", background: "var(--ds-background-danger-subtle)" }
                   : {}),
               }}
             >
