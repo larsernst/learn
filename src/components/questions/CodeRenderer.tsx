@@ -55,7 +55,7 @@ export function CodeRenderer(props: CodeRendererProps) {
         <p className="badge badge--warn">
           Code-Aufgaben sind auf diesem Server deaktiviert.
         </p>
-        <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+        <p className="muted text-sm" style={{ marginTop: 8 }}>
           Der Server hat JUDGE0_ENABLED=false. Code-Aufgaben können nicht
           automatisch bewertet werden.
         </p>
@@ -75,7 +75,7 @@ export function CodeRenderer(props: CodeRendererProps) {
 
   return (
     <>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         Schreibe eine Lösung, die alle Testfälle besteht.
         {props.payload.hiddenTestCount > 0 &&
           ` (${props.payload.hiddenTestCount} versteckte(r) Testfall/-fälle nicht sichtbar.)`}
@@ -103,13 +103,13 @@ export function CodeRenderer(props: CodeRendererProps) {
             ))}
           </select>
         </div>
-        <span className="badge badge--muted" style={{ fontSize: 11 }}>
+        <span className="badge badge--muted badge--sm">
           Zeitlimit: {props.payload.timeLimitMs} ms
         </span>
-        <span className="badge badge--muted" style={{ fontSize: 11 }}>
+        <span className="badge badge--muted badge--sm">
           Speicher: {Math.round(props.payload.memoryLimitKb / 1024)} MB
         </span>
-        <span className="badge badge--muted" style={{ fontSize: 11 }}>
+        <span className="badge badge--muted badge--sm">
           {COMPARISON_LABELS[props.payload.comparison.mode] ?? props.payload.comparison.mode}
         </span>
       </div>
@@ -126,7 +126,7 @@ export function CodeRenderer(props: CodeRendererProps) {
 
       {props.payload.publicTests.length > 0 && (
         <details>
-          <summary className="muted" style={{ fontSize: 13, cursor: "pointer" }}>
+          <summary className="muted text-sm" style={{ cursor: "pointer" }}>
             Öffentliche Testfälle ({props.payload.publicTests.length})
           </summary>
           <div className="stack" style={{ marginTop: 8 }}>
@@ -243,7 +243,7 @@ function TestResultList({ perTest }: { perTest: PerTest[] }) {
               {t.passed ? "✓ bestanden" : `✗ ${t.status}`}
             </span>
             {t.passed && t.time != null && (
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+              <span className="badge badge--muted badge--sm">
                 {t.time} s{t.memory != null && ` · ${Math.round(t.memory / 1024)} MB`}
               </span>
             )}

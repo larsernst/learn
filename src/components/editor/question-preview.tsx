@@ -46,7 +46,7 @@ export function QuestionPreview({
       <div className="card" style={{ padding: 16 }}>
         <span className="eyebrow" style={{ fontSize: 11 }}>Vorschau</span>
         <Markdown source={question} className="review-question" />
-        <p className="muted" style={{ fontSize: 13 }}>
+        <p className="muted text-sm">
           Code-Aufgaben können in der Vorschau nicht ausgeführt werden – die Bewertung
           läuft über Judge0 auf dem Server.
         </p>

@@ -98,7 +98,7 @@ export function MarkdownField({ label, value, onChange, rows = 3, placeholder }:
         ))}
         <details style={{ marginLeft: "auto", fontSize: 12 }}>
           <summary className="muted" style={{ cursor: "pointer" }}>KaTeX-Hilfe</summary>
-          <div className="muted" style={{ fontSize: 12, padding: 8, border: "1px solid var(--ds-border)", borderRadius: "var(--ds-radius)", marginTop: 4 }}>
+          <div className="muted text-xs" style={{ padding: 8, border: "1px solid var(--ds-border)", borderRadius: "var(--ds-radius)", marginTop: 4 }}>
             Inline: <code>$x^2$</code> · Block: <code>$$…$$</code> · Bruch: <code>\frac{"{a}{b}"}</code> ·
             Wurzel: <code>\sqrt{"{x}"}</code> · Summe: <code>\sum_{"{i=1}"}^n</code> · Griechisch: <code>\alpha \beta \pi</code>
           </div>

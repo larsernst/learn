@@ -50,7 +50,7 @@ export default function SettingsClient({
       <div className="row row--between" style={{ flexWrap: "wrap" }}>
         <div>
           <strong>Multiple-Choice-Aufgaben</strong>
-          <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>
+          <p className="muted text-sm" style={{ marginTop: 4 }}>
             Wenn aktiviert, werden „Nennen…"-Fragen als Mehrfachauswahl angezeigt.
             Wenn deaktiviert, werden alle Fragen als freie Erinnerung behandelt.
           </p>
@@ -70,7 +70,7 @@ export default function SettingsClient({
       <div className="row row--between" style={{ flexWrap: "wrap" }}>
         <div>
           <strong>Einfache Bewertung (Richtig/Falsch)</strong>
-          <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>
+          <p className="muted text-sm" style={{ marginTop: 4 }}>
             Bei Freitext-Fragen nur noch Richtig/Falsch bewerten statt 4 Stufen.
             Falsch beantwortete Fragen kommen später in der Sitzung erneut.
           </p>
@@ -90,7 +90,7 @@ export default function SettingsClient({
       <div className="row row--between" style={{ flexWrap: "wrap" }}>
         <div>
           <strong>Neue Fragen zuerst lernen</strong>
-          <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>
+          <p className="muted text-sm" style={{ marginTop: 4 }}>
             Standardmäßig aktiviert – lernt neue Fragen, bevor bereits Gelerntes
             gefestigt wird. Ausschalten, um erst fällige Wiederholungen zu festigen.
           </p>

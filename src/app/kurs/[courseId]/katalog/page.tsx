@@ -119,7 +119,7 @@ export default async function KatalogPage({
         <Stat label="Gefestigt" value={mature} accent="success" />
       </div>
 
-      <p className="muted" style={{ fontSize: 14, marginTop: 16 }}>
+      <p className="muted text-sm" style={{ marginTop: 16 }}>
         Ø Ease-Faktor {avgEase.toFixed(2)} · {totalLapses} Versehen („Again") insgesamt
       </p>
 

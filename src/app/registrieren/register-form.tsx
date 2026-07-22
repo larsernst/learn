@@ -77,7 +77,7 @@ export default function RegisterForm() {
       <button type="submit" className="btn btn--primary" disabled={loading}>
         {loading ? "Wird erstellt …" : "Konto erstellen"}
       </button>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         Bereits registriert?{" "}
         <Link href="/login">Hier anmelden</Link>.
       </p>

@@ -22,7 +22,7 @@ export default async function CramPage({
     <div className="page page--narrow">
       <p className="eyebrow">{course.title} · Vorschau (ohne Bewertung)</p>
       <div className="row row--between" style={{ flexWrap: "wrap" }}>
-        <h1 style={{ fontSize: 24 }}>Kapitel {q.chapter} · {q.chapterTitle}</h1>
+        <h1>Kapitel {q.chapter} · {q.chapterTitle}</h1>
         <Link href={`/kurs/${course.id}/katalog`} className="btn btn--ghost">
           ← Zurück zum Katalog
         </Link>
@@ -37,7 +37,7 @@ export default async function CramPage({
         <Markdown source={q.answer} className="review-answer" />
       </div>
 
-      <p className="muted" style={{ fontSize: 13, marginTop: 12 }}>
+      <p className="muted text-sm" style={{ marginTop: 12 }}>
         Quelle: {q.sourceRef} · Diese Ansicht beeinflusst nicht deinen SM-2-Fortschritt.
       </p>
 

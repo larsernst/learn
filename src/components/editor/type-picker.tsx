@@ -83,10 +83,10 @@ export function TypePicker({
               <span style={{ marginRight: 6 }}>{c.icon}</span>
               {c.name}
             </div>
-            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+            <div className="muted text-xs" style={{ marginTop: 2 }}>
               {c.description}
             </div>
-            <div className="muted" style={{ fontSize: 11, marginTop: 4, fontStyle: "italic" }}>
+            <div className="muted text-xs" style={{ marginTop: 4, fontStyle: "italic" }}>
               Geeignet für: {c.suitedFor}
             </div>
           </button>

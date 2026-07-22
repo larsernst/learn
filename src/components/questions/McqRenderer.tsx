@@ -23,7 +23,7 @@ export function McqRenderer(props: McqRendererProps) {
   const emptyLabel = props.emptyLabel ?? "Bitte Optionen wählen";
   return (
     <>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         {isSingle
           ? "Wähle die richtige Antwort."
           : "Mehrere Antworten sind richtig. Wähle alle zutreffenden aus."}

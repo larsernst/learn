@@ -132,7 +132,7 @@ export function CodeEditor({
           </div>
         )}
       </div>
-      <p className="muted" style={{ fontSize: 12, margin: "-4px 0 0" }}>
+      <p className="muted text-xs" style={{ margin: "-4px 0 0" }}>
         {value.comparisonMode === "exact" &&
           "Exakt: Ausgabe muss Byte für Byte stimmen (inkl. Zeilenumbrüche)."}
         {value.comparisonMode === "trim" &&
@@ -174,7 +174,7 @@ export function CodeEditor({
             {checking ? "Prüflauf läuft …" : "Musterlösung gegen Tests prüfen"}
           </button>
           {!judge0Enabled && (
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted text-xs">
               benötigt aktives Judge0
             </span>
           )}
@@ -190,7 +190,7 @@ export function CodeEditor({
           )}
         </div>
         {checkError && (
-          <p className="badge badge--danger" style={{ fontSize: 12 }}>
+          <p className="badge badge--danger badge--sm">
             {checkError}
           </p>
         )}
@@ -281,7 +281,7 @@ export function CodeEditor({
                 </button>
               </div>
             </div>
-            <p className="muted" style={{ fontSize: 11, margin: "6px 0 0" }}>
+            <p className="muted text-xs" style={{ margin: "6px 0 0" }}>
               {t.hidden
                 ? "Versteckt: Lernende sehen weder Ein- noch Ausgabe."
                 : "Öffentlich: Lernende sehen Ein- und erwartete Ausgabe."}

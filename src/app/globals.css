@@ -132,8 +132,14 @@ h4 {
 }
 
 h1 {
-  font-size: clamp(40px, 5vw, 68px);
+  font-size: clamp(28px, 4vw, 40px);
   font-weight: 600;
+  line-height: 1.1;
+}
+
+/* Display-Größe nur für den Landing-Hero (DESIGN.md: eine Bühne pro Seite) */
+.h1--hero {
+  font-size: clamp(40px, 5vw, 68px);
   line-height: 1.05;
 }
 
@@ -297,6 +303,7 @@ body.editor-modal-open {
   color: var(--ds-ink);
   border-radius: var(--ds-radius-xs);
   font-size: 16px;
+  transition: color 0.15s;
 }
 
 .navlink:hover {
@@ -315,6 +322,7 @@ body.editor-modal-open {
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
+  transition: background-color 0.15s;
 }
 
 .nav-cta:hover {
@@ -368,6 +376,7 @@ body.editor-modal-open {
   text-decoration: none;
   cursor: pointer;
   min-height: 58px;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .btn--primary {
@@ -544,8 +553,12 @@ body.editor-modal-open {
 }
 
 /* Kleine Hilfsklassen */
+.text-xs {
+  font-size: 12px;
+}
+
 .text-sm {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .link-plain {
@@ -560,6 +573,15 @@ body.editor-modal-open {
 .card--media {
   padding: 0;
   overflow: hidden;
+}
+
+a.card {
+  transition: border-color 0.15s;
+}
+
+a.card:hover,
+button.card:hover {
+  border-color: var(--ds-border-strong);
 }
 
 .card--dashed {
@@ -596,6 +618,15 @@ body.editor-modal-open {
 :focus-visible {
   outline: 2px solid var(--ds-link);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .grade-btn:focus-visible,
@@ -745,6 +776,7 @@ body.editor-modal-open {
   color: var(--ds-text-subtle);
   font-weight: 500;
   font-size: 16px;
+  transition: background-color 0.15s, color 0.15s;
 }
 
 .tab--active {
@@ -1166,10 +1198,6 @@ body.editor-modal-open {
 
   .page {
     padding: var(--ds-space-xl) var(--ds-space-md) var(--ds-space-md);
-  }
-
-  h1 {
-    font-size: clamp(28px, 7vw, 40px);
   }
 
   h2 {

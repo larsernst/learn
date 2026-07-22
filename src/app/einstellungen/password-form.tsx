@@ -72,7 +72,7 @@ export default function PasswordForm() {
           minLength={8}
           autoComplete="new-password"
         />
-        <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>
+        <p className="muted text-sm" style={{ marginTop: 4 }}>
           Mindestens 8 Zeichen.
         </p>
       </div>

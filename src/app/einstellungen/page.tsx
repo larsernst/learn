@@ -27,7 +27,7 @@ export default async function EinstellungenPage() {
           <label>E-Mail</label>
           <input className="input" value={me.email} readOnly />
         </div>
-        <p className="muted" style={{ fontSize: 14 }}>
+        <p className="muted text-sm">
           Mitglied seit {me.createdAt.toLocaleDateString("de-DE")}.
         </p>
         <hr className="divider" />
@@ -39,7 +39,7 @@ export default async function EinstellungenPage() {
         <hr className="divider" />
         <div>
           <strong>Passwort ändern</strong>
-          <p className="muted" style={{ fontSize: 14, marginTop: 4, marginBottom: 16 }}>
+          <p className="muted text-sm" style={{ marginTop: 4, marginBottom: 16 }}>
             Wähle ein starkes Passwort, das du nirgendwo anders verwendest.
           </p>
           <PasswordForm />

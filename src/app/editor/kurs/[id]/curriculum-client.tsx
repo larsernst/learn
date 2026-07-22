@@ -465,10 +465,10 @@ export default function CurriculumClient({
             <span className={`badge ${course.status === "published" ? "badge--success" : "badge--muted"}`} style={{ fontSize: 11 }}>
               {course.status === "published" ? "Veröffentlicht" : "Entwurf"}
             </span>
-            <span className="badge badge--muted" style={{ fontSize: 11 }}>
+            <span className="badge badge--muted badge--sm">
               /kurs/{course.slug}
             </span>
-            <span className="badge badge--muted" style={{ fontSize: 11 }}>
+            <span className="badge badge--muted badge--sm">
               {sortedChapters.length} Kapitel · {questions.length} Fragen
             </span>
           </div>
@@ -483,7 +483,7 @@ export default function CurriculumClient({
         </div>
       </div>
       {course.description && (
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+        <p className="muted text-sm" style={{ margin: 0 }}>
           {course.description}
         </p>
       )}
@@ -501,7 +501,7 @@ export default function CurriculumClient({
         <div className="card curriculum-sidebar" style={{ padding: 12 }}>
           <div className="row row--between" style={{ marginBottom: 8 }}>
             <strong style={{ fontSize: 14 }}>Kapitel</strong>
-            <span className="badge badge--muted" style={{ fontSize: 11 }}>{sortedChapters.length}</span>
+            <span className="badge badge--muted badge--sm">{sortedChapters.length}</span>
           </div>
           <div className="stack" style={{ gap: 4 }}>
             {sortedChapters.map((ch, idx) => (
@@ -547,7 +547,7 @@ export default function CurriculumClient({
                       <span style={{ fontSize: 14, fontWeight: 500, flex: 1 }}>
                         {idx + 1}. {ch.title}
                       </span>
-                      <span className="badge badge--muted" style={{ fontSize: 10 }}>
+                      <span className="badge badge--muted badge--sm">
                         {chapterQuestionCount(ch.id)}
                       </span>
                     </div>
@@ -585,10 +585,10 @@ export default function CurriculumClient({
                 }}
               >
                 <div className="row row--between" style={{ gap: 4 }}>
-                  <span className="muted" style={{ fontSize: 13, fontStyle: "italic" }}>
+                  <span className="muted text-sm" style={{ fontStyle: "italic" }}>
                     Nicht zugeordnet
                   </span>
-                  <span className="badge badge--muted" style={{ fontSize: 10 }}>{unassignedCount}</span>
+                  <span className="badge badge--muted badge--sm">{unassignedCount}</span>
                 </div>
               </div>
             )}
@@ -817,19 +817,19 @@ function QuestionRow({
         <div className="stack" style={{ gap: 0, flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}><Markdown source={q.question} /></div>
           <div className="divider" style={{ margin: "8px 0" }} />
-          <div className="muted" style={{ fontSize: 13, lineHeight: 1.5 }}>
+          <div className="muted text-sm" style={{ lineHeight: 1.5 }}>
             <span className="eyebrow" style={{ fontSize: 11, display: "block", marginBottom: 4 }}>
               Antwort
             </span>
             <Markdown source={q.answer.slice(0, 150) + (q.answer.length > 150 ? "…" : "")} />
           </div>
           <div className="row" style={{ gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-            <span className="badge badge--muted" style={{ fontSize: 11 }}>
+            <span className="badge badge--muted badge--sm">
               {TYPE_LABELS[q.taskType ?? "recall"] ?? q.taskType}
             </span>
-            <span className="badge badge--muted" style={{ fontSize: 11 }}>{q.sourceRef}</span>
+            <span className="badge badge--muted badge--sm">{q.sourceRef}</span>
             {q.confidence === "low" && (
-              <span className="badge badge--warn" style={{ fontSize: 11 }}>prüfen</span>
+              <span className="badge badge--warn badge--sm">prüfen</span>
             )}
           </div>
         </div>

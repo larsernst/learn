@@ -137,7 +137,7 @@ export default function NutzerClient() {
         />
       </div>
 
-      <span className="muted" style={{ fontSize: 14 }}>
+      <span className="muted text-sm">
         {loading ? "Lädt …" : `${users.length} Nutzer`}
       </span>
 
@@ -257,13 +257,13 @@ function UserRow({
         <div className="stack" style={{ gap: 4 }}>
           <strong>
             {user.name}{" "}
-            {isAdmin && <span className="badge badge--muted" style={{ fontSize: 11 }}>Admin</span>}
+            {isAdmin && <span className="badge badge--muted badge--sm">Admin</span>}
             {!isAdmin && isEditor && (
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>Editor</span>
+              <span className="badge badge--muted badge--sm">Editor</span>
             )}
           </strong>
-          <span className="muted" style={{ fontSize: 13 }}>{user.email}</span>
-          <span className="muted" style={{ fontSize: 12 }}>
+          <span className="muted text-sm">{user.email}</span>
+          <span className="muted text-xs">
             Registriert: {new Date(user.createdAt).toLocaleDateString("de-DE")}
           </span>
           <span className={`badge ${user.mcqEnabled ? "badge--success" : ""}`} style={{ fontSize: 11 }}>

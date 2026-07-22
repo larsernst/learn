@@ -97,25 +97,25 @@ export default function EditorDashboardClient({ courses }: { courses: CourseCard
               </Link>
             </h3>
             {c.description && (
-              <p className="muted" style={{ fontSize: 13, margin: "0 0 12px" }}>
+              <p className="muted text-sm" style={{ margin: "0 0 12px" }}>
                 {c.description.slice(0, 90)}
                 {c.description.length > 90 ? "…" : ""}
               </p>
             )}
             <div className="row" style={{ gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+              <span className="badge badge--muted badge--sm">
                 {c.chapterCount} Kapitel
               </span>
-              <span className="badge badge--muted" style={{ fontSize: 11 }}>
+              <span className="badge badge--muted badge--sm">
                 {c.questionCount} Fragen
               </span>
               {Object.entries(c.quality.byType).map(([type, n]) => (
-                <span key={type} className="badge badge--muted" style={{ fontSize: 10 }}>
+                <span key={type} className="badge badge--muted badge--sm">
                   {TYPE_SHORT[type] ?? type}: {n}
                 </span>
               ))}
               {c.quality.unassigned > 0 && (
-                <span className="badge badge--warn" style={{ fontSize: 10 }} title="Fragen ohne Kapitel-Zuordnung">
+                <span className="badge badge--warn badge--sm" title="Fragen ohne Kapitel-Zuordnung">
                   {c.quality.unassigned} nicht zugeordnet
                 </span>
               )}
@@ -157,7 +157,7 @@ export default function EditorDashboardClient({ courses }: { courses: CourseCard
           >
             <div style={{ fontSize: 28, lineHeight: 1, marginBottom: 8 }}>+</div>
             <strong>Neuen Kurs anlegen</strong>
-            <p className="muted" style={{ fontSize: 13, margin: "4px 0 0" }}>
+            <p className="muted text-sm" style={{ margin: "4px 0 0" }}>
               Titel wählen und direkt mit dem Curriculum starten.
             </p>
           </button>

@@ -64,7 +64,7 @@ export default function LoginForm() {
       <button type="submit" className="btn btn--primary" disabled={loading}>
         {loading ? "Prüfe …" : "Anmelden"}
       </button>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         Noch kein Konto?{" "}
         <Link href="/registrieren">Jetzt registrieren</Link>.
       </p>

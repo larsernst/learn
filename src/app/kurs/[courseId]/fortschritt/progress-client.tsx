@@ -34,21 +34,21 @@ export default function ProgressClient({
           <div className="progress">
             <div className="progress__bar" style={{ width: `${learnedPct}%` }} />
           </div>
-          <p className="muted" style={{ marginTop: 12, fontSize: 14 }}>
+          <p className="muted text-sm" style={{ marginTop: 12 }}>
             {stats.learned} von {stats.total} Fragen
           </p>
         </div>
         <div className="card card--brand">
           <p className="eyebrow">Heute fällig</p>
           <p className="stat__value" style={{ marginBottom: 8 }}>{stats.dueToday}</p>
-          <p className="muted" style={{ fontSize: 14 }}>
+          <p className="muted text-sm">
             Wiederholungen nach SM-2
           </p>
         </div>
         <div className="card">
           <p className="eyebrow">Gefestigt</p>
           <p className="stat__value" style={{ marginBottom: 8 }}>{stats.mature}</p>
-          <p className="muted" style={{ fontSize: 14 }}>
+          <p className="muted text-sm">
             Fragen mit Intervalldauer ≥ 21 Tage
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function ProgressClient({
               <div className="progress" style={{ marginTop: 12 }}>
                 <div className="progress__bar" style={{ width: `${pct}%` }} />
               </div>
-              <p className="muted" style={{ fontSize: 14, marginTop: 8 }}>
+              <p className="muted text-sm" style={{ marginTop: 8 }}>
                 {pct}% gelernt
               </p>
             </div>

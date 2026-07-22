@@ -279,7 +279,7 @@ export function QuestionEditor({
 
       {!editMode && <TypePicker value={taskType} onChange={setTaskType} />}
       {editMode && (
-        <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+        <p className="muted text-xs" style={{ margin: 0 }}>
           Aufgabentyp: <strong>{taskType}</strong> (Typwechsel beim Bearbeiten nicht möglich)
         </p>
       )}
@@ -335,7 +335,7 @@ export function QuestionEditor({
         <button type="button" className="btn btn--ghost btn--sm" onClick={onCancel}>
           Abbrechen
         </button>
-        <span className="muted" style={{ fontSize: 11, marginLeft: "auto" }}>
+        <span className="muted text-xs" style={{ marginLeft: "auto" }}>
           Strg+Enter = Speichern
         </span>
       </div>

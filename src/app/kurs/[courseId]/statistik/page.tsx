@@ -69,7 +69,7 @@ export default async function StatistikPage({
 
       <section style={{ marginTop: 40 }}>
         <h2>Aktivität (letzte 12 Wochen)</h2>
-        <p className="muted" style={{ fontSize: 14 }}>
+        <p className="muted text-sm">
           {againCount} „Again"-Bewertungen über alle Versuche.
         </p>
         <div className="heatmap" role="img" aria-label="Aktivität der letzten 12 Wochen">

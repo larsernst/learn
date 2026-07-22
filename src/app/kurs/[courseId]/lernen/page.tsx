@@ -73,7 +73,7 @@ export default async function LernenPage({
         chapter={chapter}
         learnedAvailable={learnedAvailable}
       />
-      <p className="muted desktop-only" style={{ fontSize: 13, marginTop: 16 }}>
+      <p className="muted text-sm desktop-only" style={{ marginTop: 16 }}>
         Tastatur: <strong>Leertaste/Enter</strong> = Aufdecken/Bestätigen ·{" "}
         <strong>{me?.simpleGrading ? "1–2" : "1–4"}</strong> ={" "}
         {me?.simpleGrading ? "Falsch/Richtig" : "Again/Hard/Good/Easy"} (Freie Erinnerung) ·{" "}

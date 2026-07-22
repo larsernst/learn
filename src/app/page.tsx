@@ -28,7 +28,7 @@ export default async function HomePage() {
     return (
       <div className="page" style={{ paddingTop: "clamp(48px, 10vw, 96px)", paddingBottom: "clamp(48px, 10vw, 96px)" }}>
         <p className="eyebrow">Lern-Plattform · Fragenkataloge 2026</p>
-        <h1>Mehrere Kurse. Ein Lernsystem.</h1>
+        <h1 className="h1--hero">Mehrere Kurse. Ein Lernsystem.</h1>
         <p className="muted" style={{ maxWidth: 720, fontSize: "clamp(16px, 2.5vw, 20px)" }}>
           Wiederhole Prüfungsfragen aus verschiedenen Kursen mit Spaced Repetition
           (SM-2), verfolge deinen Fortschritt pro Kurs und Kapitel und merke dir,
@@ -172,7 +172,7 @@ export default async function HomePage() {
                       {course.title}
                     </Link>
                   </h3>
-                  <p className="muted" style={{ fontSize: 14, margin: "4px 0 0" }}>
+                  <p className="muted text-sm" style={{ margin: "4px 0 0" }}>
                     {course.description}
                   </p>
                 </div>
@@ -218,7 +218,7 @@ export default async function HomePage() {
                         <span style={{ fontSize: 14, fontWeight: 600 }}>
                           Kap. {c.chapter} · {c.chapterTitle}
                         </span>
-                        <span className="muted" style={{ fontSize: 13 }}>
+                        <span className="muted text-sm">
                           {c.learned}/{c.total}
                         </span>
                       </div>

@@ -28,7 +28,7 @@ export function McqEditor({
     <div className="stack">
       <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
         <strong style={{ fontSize: 14 }}>Antwort-Optionen</strong>
-        <span className="badge badge--muted" style={{ fontSize: 11 }}>
+        <span className="badge badge--muted badge--sm">
           {mode === "single" ? "Single-Choice (eine richtige)" : "Mehrfachauswahl"}
         </span>
       </div>
@@ -74,7 +74,7 @@ export function McqEditor({
           + Option hinzufügen
         </button>
       </div>
-      <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+      <p className="muted text-xs" style={{ margin: 0 }}>
         Häkchen = richtige Antwort. Lernende sehen die Optionen in gemischter Reihenfolge.
       </p>
     </div>
@@ -270,7 +270,7 @@ export function OrderEditor({
           + Element
         </button>
       </div>
-      <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+      <p className="muted text-xs" style={{ margin: 0 }}>
         Lernende sehen die Elemente in gemischter Reihenfolge.
       </p>
     </div>

@@ -113,7 +113,7 @@ export default async function CourseOverviewPage({
                 <div className="progress__bar" style={{ width: `${cpct}%` }} />
               </div>
               <div className="chapter-card__foot">
-                <span className="muted" style={{ fontSize: 14 }}>
+                <span className="muted text-sm">
                   {cpct}% gelernt
                 </span>
                 <Link

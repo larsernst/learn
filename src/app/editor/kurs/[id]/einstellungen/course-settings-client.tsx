@@ -227,7 +227,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
             />
           </div>
         </div>
-        <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+        <p className="muted text-xs" style={{ margin: 0 }}>
           Öffentlicher Pfad: /kurs/{slug} · Reihenfolge steuert die Sortierung auf der Startseite.
         </p>
         <div className="field">
@@ -250,7 +250,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
             <option value="draft">Entwurf (nur für dich und Admins sichtbar)</option>
             <option value="published">Veröffentlicht (für alle Lernenden sichtbar)</option>
           </select>
-          <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>
+          <p className="muted text-xs" style={{ margin: "4px 0 0" }}>
             Entwürfe erscheinen nicht auf der Startseite der Lernenden – ideal zum Aufbauen.
           </p>
         </div>
@@ -263,7 +263,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
 
       <div className="card stack" style={{ padding: 20 }}>
         <h3 style={{ margin: 0 }}>Kursbild</h3>
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+        <p className="muted text-sm" style={{ margin: 0 }}>
           Erscheint auf dem Editor-Dashboard, der Startseite und im Kurs-Header.
           PNG, JPEG oder WebP, maximal 2 MB.
         </p>
@@ -333,7 +333,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
             Als JSON exportieren
           </a>
         </div>
-        <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+        <p className="muted text-xs" style={{ margin: 0 }}>
           Duplizieren erstellt eine Kopie als Entwurf (ohne Nutzerfortschritte).
           Der Export enthält Kurs, Kapitel und alle Fragen – als Backup oder zum
           Teilen zwischen Instanzen.
@@ -342,7 +342,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
 
       <div className="card stack" style={{ padding: 20 }}>
         <h3 style={{ margin: 0 }}>Fragen importieren (JSON)</h3>
-        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+        <p className="muted text-sm" style={{ margin: 0 }}>
           Format wie beim Export (oder einfache Liste {`{ "questions": [ … ] }`}).
           Der Import prüft zuerst alle Einträge (Dry-Run) und zeigt Fehler pro Zeile.
         </p>
@@ -357,19 +357,19 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
             if (f) void dryRunImport(f);
           }}
         />
-        {importing && <p className="muted" style={{ fontSize: 13 }}>Prüfe Import …</p>}
+        {importing && <p className="muted text-sm">Prüfe Import …</p>}
         {importReport.state === "errors" && (
           <div className="stack" style={{ gap: 4 }}>
             <strong style={{ color: "var(--ds-text-danger)", fontSize: 14 }}>
               {importReport.errors.length} Problem(e) gefunden – nichts importiert:
             </strong>
             {importReport.errors.slice(0, 10).map((err, i) => (
-              <span key={i} className="muted" style={{ fontSize: 13 }}>
+              <span key={i} className="muted text-sm">
                 {err.index >= 0 ? `Eintrag ${err.index + 1}: ` : ""}{err.message}
               </span>
             ))}
             {importReport.errors.length > 10 && (
-              <span className="muted" style={{ fontSize: 13 }}>
+              <span className="muted text-sm">
                 … und {importReport.errors.length - 10} weitere.
               </span>
             )}
@@ -393,7 +393,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
 
       <div className="card" style={{ padding: 20, borderColor: "var(--ds-text-danger)" }}>
         <h3 style={{ marginTop: 0, color: "var(--ds-text-danger)" }}>Gefahrenzone</h3>
-        <p className="muted" style={{ fontSize: 14 }}>
+        <p className="muted text-sm">
           Kurs löschen entfernt {course.questionCount > 0 ? `alle ${course.questionCount} Fragen, ` : ""}
           Kapitel und Nutzerfortschritte unwiderruflich.
         </p>

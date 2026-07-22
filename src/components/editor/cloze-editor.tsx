@@ -63,7 +63,7 @@ export function ClozeEditor({
           Aus Auswahl Lücke machen
         </button>
       </div>
-      <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+      <p className="muted text-xs" style={{ margin: 0 }}>
         Text schreiben, ein Wort oder einen Satzteil markieren und auf „Aus Auswahl
         Lücke machen" klicken. Lücken erscheinen als [[1]], [[2]] … im Text.
       </p>

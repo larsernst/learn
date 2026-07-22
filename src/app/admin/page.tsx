@@ -20,13 +20,13 @@ export default async function AdminIndexPage() {
       <div className="stack">
         <a className="card" href="/admin/nutzer" style={{ textDecoration: "none", display: "block" }}>
           <h2 style={{ margin: "0 0 4px" }}>Nutzer</h2>
-          <p className="muted" style={{ fontSize: 14, margin: 0 }}>
+          <p className="muted text-sm" style={{ margin: 0 }}>
             Konten verwalten und Rollen (Admin/Editor) vergeben.
           </p>
         </a>
         <a className="card" href="/admin/einstellungen" style={{ textDecoration: "none", display: "block" }}>
           <h2 style={{ margin: "0 0 4px" }}>Einstellungen</h2>
-          <p className="muted" style={{ fontSize: 14, margin: 0 }}>
+          <p className="muted text-sm" style={{ margin: 0 }}>
             App-weite Einstellungen verwalten.
           </p>
         </a>

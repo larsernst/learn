@@ -38,7 +38,7 @@ export function DragDropRenderer(props: DragDropRendererProps) {
 
   return (
     <>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         Wähle erst ein Element, dann die Zielzone.{" "}
         {unassignedItems.length > 0 &&
           `Noch ${unassignedItems.length} von ${props.payload.items.length} zuzuordnen.`}
@@ -84,7 +84,7 @@ export function DragDropRenderer(props: DragDropRendererProps) {
               <strong style={{ fontSize: 14 }}>{zone.label}</strong>
               <div className="row" style={{ flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                 {itemsInZone.length === 0 ? (
-                  <span className="muted" style={{ fontSize: 13 }}>
+                  <span className="muted text-sm">
                     {selectedItem ? "Hier ablegen" : "leer"}
                   </span>
                 ) : (
@@ -165,7 +165,7 @@ export function ClozeRenderer(props: ClozeRendererProps) {
 
   return (
     <>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         Fülle alle Lücken aus.
       </p>
       <div className="review-answer" style={{ lineHeight: 2.2 }}>
@@ -247,7 +247,7 @@ export function OrderRenderer(props: OrderRendererProps) {
 
   return (
     <>
-      <p className="muted" style={{ fontSize: 14 }}>
+      <p className="muted text-sm">
         Bringe die Elemente in die richtige Reihenfolge (oben = zuerst).
       </p>
       <ol className="stack" style={{ listStyle: "none", padding: 0, counterReset: "orderitem" }}>

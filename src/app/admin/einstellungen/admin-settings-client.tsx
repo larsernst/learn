@@ -45,7 +45,7 @@ export default function AdminSettingsClient({
     <div className="stack">
       <div>
         <strong>Gefestigt-Schwellwert (Tage)</strong>
-        <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>
+        <p className="muted text-sm" style={{ marginTop: 4 }}>
           Eine Karte gilt als „gefestigt", sobald ihr SM-2-Intervall diesen Wert erreicht.
           Werte größer als das SM-2-Maximalintervall (2 Tage) ergeben „Gefestigt" = 0.
         </p>
