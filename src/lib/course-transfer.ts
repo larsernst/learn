@@ -196,6 +196,7 @@ export async function duplicateCourse(
       description: source.description,
       order: (maxOrder._max.order ?? 0) + 1,
       status: "draft",
+      srsEnabled: source.srsEnabled,
       ownerId: newOwnerId,
       chapters: {
         create: source.chapters.map((ch) => {

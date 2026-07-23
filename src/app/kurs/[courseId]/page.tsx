@@ -73,22 +73,35 @@ export default async function CourseOverviewPage({
       <p className="muted" style={{ maxWidth: 720 }}>
         {course.description}
       </p>
-      <KursNav courseId={course.id} />
+      <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
 
       <div className="grid grid--4" style={{ marginTop: 24 }}>
         <Stat label="Fragen gesamt" value={total} />
         <Stat label="Gelernt" value={`${pct}%`} accent="brand" sub={`${learned}/${total}`} />
-        <Stat label="Heute fällig" value={dueToday} accent="warn" />
-        <Stat label="Gefestigt" value={mature} accent="success" />
+        {course.srsEnabled && (
+          <>
+            <Stat label="Heute fällig" value={dueToday} accent="warn" />
+            <Stat label="Gefestigt" value={mature} accent="success" />
+          </>
+        )}
       </div>
 
+      {!course.srsEnabled && (
+        <p className="muted" style={{ marginTop: 16 }}>
+          Spaced Repetition ist für diesen Kurs deaktiviert – nutze den Katalog zum Stöbern
+          oder die Prüfung zum Üben.
+        </p>
+      )}
+
       <div className="row" style={{ marginTop: 24, flexWrap: "wrap" }}>
-        <Link
-          href={`/kurs/${course.id}/lernen`}
-          className="btn btn--primary"
-        >
-          {dueToday > 0 ? `${dueToday} Fragen wiederholen` : "Jetzt lernen"}
-        </Link>
+        {course.srsEnabled && (
+          <Link
+            href={`/kurs/${course.id}/lernen`}
+            className="btn btn--primary"
+          >
+            {dueToday > 0 ? `${dueToday} Fragen wiederholen` : "Jetzt lernen"}
+          </Link>
+        )}
         <Link href={`/kurs/${course.id}/pruefung`} className="btn btn--secondary">
           Prüfung proben
         </Link>
@@ -116,12 +129,14 @@ export default async function CourseOverviewPage({
                 <span className="muted text-sm">
                   {cpct}% gelernt
                 </span>
-                <Link
-                  href={`/kurs/${course.id}/lernen?chapter=${c.chapter}`}
-                  className="btn btn--secondary btn--sm"
-                >
-                  Kapitel lernen
-                </Link>
+                {course.srsEnabled && (
+                  <Link
+                    href={`/kurs/${course.id}/lernen?chapter=${c.chapter}`}
+                    className="btn btn--secondary btn--sm"
+                  >
+                    Kapitel lernen
+                  </Link>
+                )}
               </div>
             </div>
           );

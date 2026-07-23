@@ -42,9 +42,14 @@ export default async function CramPage({
       </p>
 
       <div className="row" style={{ marginTop: 16 }}>
-        <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary">
-          Jetzt lernen
-        </Link>
+        {course.srsEnabled && (
+          <Link
+            href={`/kurs/${course.id}/lernen?question=${q.id}`}
+            className="btn btn--primary"
+          >
+            Diese Frage lernen
+          </Link>
+        )}
         <Link href={`/kurs/${course.id}/pruefung`} className="btn btn--secondary">
           Prüfung proben
         </Link>

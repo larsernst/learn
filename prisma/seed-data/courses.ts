@@ -12,6 +12,8 @@ export interface CatalogCourse {
   description: string;
   order: number;
   published: boolean;
+  // false = Lern-Modul (Spaced Repetition) für diesen Kurs deaktiviert.
+  srsEnabled?: boolean;
   chapters?: CatalogChapter[];
 }
 

@@ -3,6 +3,7 @@ import {
   adminQuestionsBodySchema,
   adminResetPasswordSchema,
   adminUserPatchSchema,
+  coursePatchSchema,
   examSubmitSchema,
   loginSchema,
   passwordChangeSchema,
@@ -199,6 +200,26 @@ describe("adminResetPasswordSchema", () => {
     expect(
       adminResetPasswordSchema.safeParse({ userId: "u1", newPassword: "short" }).success
     ).toBe(false);
+  });
+});
+
+describe("coursePatchSchema", () => {
+  it("accepts a srsEnabled-only patch", () => {
+    expect(coursePatchSchema.safeParse({ srsEnabled: false }).success).toBe(true);
+  });
+
+  it("accepts srsEnabled together with other fields", () => {
+    expect(
+      coursePatchSchema.safeParse({ title: "Kurs", status: "draft", srsEnabled: true }).success
+    ).toBe(true);
+  });
+
+  it("rejects an empty patch", () => {
+    expect(coursePatchSchema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects a non-boolean srsEnabled", () => {
+    expect(coursePatchSchema.safeParse({ srsEnabled: "ja" }).success).toBe(false);
   });
 });
 

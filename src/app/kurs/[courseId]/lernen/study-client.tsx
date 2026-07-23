@@ -27,12 +27,14 @@ export default function StudyClient({
   simpleGrading = false,
   chapter,
   learnedAvailable = 0,
+  questionId,
 }: {
   deck?: "all" | "difficult";
   courseId: string;
   simpleGrading?: boolean;
   chapter?: number;
   learnedAvailable?: number;
+  questionId?: string;
 }) {
   const [data, setData] = useState<ReviewNextResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +82,7 @@ export default function StudyClient({
     if (deck === "difficult") params.set("deck", "difficult");
     params.set("courseId", courseId);
     if (chapter !== undefined) params.set("chapter", String(chapter));
+    if (questionId !== undefined) params.set("question", questionId);
     if (rl) params.set("review", "learned");
     const res = await fetch(`/api/review/next?${params.toString()}`);
     setLoading(false);
@@ -485,11 +488,22 @@ export default function StudyClient({
         </p>
       )}
 
-      {feedback && (
+      {feedback && !questionId && (
         <div className="row" style={{ justifyContent: "center" }}>
           <button className="btn btn--primary" onClick={() => loadNext()}>
             Nächste Frage
           </button>
+        </div>
+      )}
+
+      {feedback && questionId && (
+        <div className="row" style={{ justifyContent: "center", flexWrap: "wrap" }}>
+          <button className="btn btn--secondary" onClick={() => loadNext()}>
+            Erneut üben
+          </button>
+          <Link href={`/kurs/${courseId}/katalog`} className="btn btn--primary">
+            Zurück zum Katalog
+          </Link>
         </div>
       )}
     </div>

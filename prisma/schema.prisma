@@ -50,6 +50,7 @@ model Course {
   ownerId     String?
   owner       User?      @relation("CourseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   status      String     @default("published")
+  srsEnabled  Boolean    @default(true)
   imageMime   String?
   imageData   Bytes?
   createdAt   DateTime   @default(now())

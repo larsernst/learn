@@ -11,12 +11,13 @@ const TABS = [
   { key: "katalog", label: "Katalog", segment: "katalog" },
 ];
 
-export function KursNav({ courseId }: { courseId: string }) {
+export function KursNav({ courseId, srsEnabled = true }: { courseId: string; srsEnabled?: boolean }) {
   const pathname = usePathname();
   const base = `/kurs/${courseId}`;
   const current = pathname.startsWith(base)
     ? pathname.slice(base.length + 1).split("/")[0]
     : "";
+  const tabs = srsEnabled ? TABS : TABS.filter((t) => t.key !== "lernen");
 
   return (
     <nav className="tabs" style={{ marginTop: 16, marginBottom: 8, flexWrap: "wrap" }}>
@@ -26,7 +27,7 @@ export function KursNav({ courseId }: { courseId: string }) {
       >
         Übersicht
       </Link>
-      {TABS.map((t) => (
+      {tabs.map((t) => (
         <Link
           key={t.key}
           href={`${base}/${t.segment}`}

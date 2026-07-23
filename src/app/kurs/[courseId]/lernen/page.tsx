@@ -10,20 +10,46 @@ export default async function LernenPage({
   searchParams,
 }: {
   params: { courseId: string };
-  searchParams: { deck?: string; chapter?: string };
+  searchParams: { deck?: string; chapter?: string; question?: string };
 }) {
   const user = await getCurrentUserWithRoles();
   if (!user) redirect("/login");
   const course = await resolveCourse(params.courseId, { viewer: user });
+  if (!course.srsEnabled) redirect(`/kurs/${course.id}`);
 
   const now = new Date();
   const deck = searchParams.deck === "difficult" ? "difficult" : "all";
   const chapterParam = searchParams.chapter;
   const chapter = chapterParam && /^\d+$/.test(chapterParam) ? Number(chapterParam) : undefined;
+  const questionId = searchParams.question;
   const me = await prisma.user.findUnique({
     where: { id: user.sub },
     select: { simpleGrading: true },
   });
+
+  if (questionId) {
+    const target = await prisma.question.findUnique({
+      where: { id: questionId },
+      select: { id: true, courseId: true },
+    });
+    if (!target || target.courseId !== course.id) redirect(`/kurs/${course.id}/katalog`);
+    return (
+      <div className="page page--narrow">
+        <p className="eyebrow">{course.title} · Einzelne Frage</p>
+        <h1>Diese Frage lernen</h1>
+        <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
+        <div style={{ marginTop: 16 }}>
+          <StudyClient
+            deck="all"
+            courseId={course.id}
+            simpleGrading={me?.simpleGrading ?? false}
+            questionId={questionId}
+            learnedAvailable={0}
+          />
+        </div>
+      </div>
+    );
+  }
 
   const scopeFilter = {
     userId: user.sub,
@@ -51,7 +77,7 @@ export default async function LernenPage({
         {heading}
         {dueToday > 0 ? `: ${dueToday} fällig` : ""}
       </h1>
-      <KursNav courseId={course.id} />
+      <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
       <div className="row" style={{ marginTop: 16, marginBottom: 16, flexWrap: "wrap" }}>
         <a
           className={`tab${deck === "all" ? " tab--active" : ""}`}

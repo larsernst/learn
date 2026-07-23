@@ -63,7 +63,7 @@ export default async function FortschrittPage({
     <div className="page">
       <p className="eyebrow">{course.title} · Lernfortschritt</p>
       <h1>Dein Stand</h1>
-      <KursNav courseId={course.id} />
+      <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
       <div style={{ marginTop: 16 }}>
         <ProgressClient
           stats={{ total, learned, dueToday, mature, totalLapses }}

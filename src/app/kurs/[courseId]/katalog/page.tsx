@@ -106,22 +106,30 @@ export default async function KatalogPage({
           <p className="eyebrow">{course.title} · Fragenkatalog</p>
           <h1>Alle Fragen</h1>
         </div>
-        <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary">
-          Jetzt lernen
-        </Link>
+        {course.srsEnabled && (
+          <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary">
+            Jetzt lernen
+          </Link>
+        )}
       </div>
-      <KursNav courseId={course.id} />
+      <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
 
       <div className="grid grid--4" style={{ marginTop: 24 }}>
         <Stat label="Fragen gesamt" value={total} />
         <Stat label="Gelernt" value={learned} accent="brand" />
-        <Stat label="Fällig" value={due} accent="warn" />
-        <Stat label="Gefestigt" value={mature} accent="success" />
+        {course.srsEnabled && (
+          <>
+            <Stat label="Fällig" value={due} accent="warn" />
+            <Stat label="Gefestigt" value={mature} accent="success" />
+          </>
+        )}
       </div>
 
-      <p className="muted text-sm" style={{ marginTop: 16 }}>
-        Ø Ease-Faktor {avgEase.toFixed(2)} · {totalLapses} Versehen („Again") insgesamt
-      </p>
+      {course.srsEnabled && (
+        <p className="muted text-sm" style={{ marginTop: 16 }}>
+          Ø Ease-Faktor {avgEase.toFixed(2)} · {totalLapses} Versehen („Again") insgesamt
+        </p>
+      )}
 
       <div className="tabs" style={{ marginTop: 24 }}>
         {chapters.map((c) => (
@@ -162,11 +170,13 @@ export default async function KatalogPage({
                       <span className="katalog-item__q">{q.question}</span>
                       <span className="katalog-item__meta">
                         {isMcq ? "Multiple-Choice" : "Freie Erinnerung"}
-                        {r ? ` · ${r.repetitions}× wiederholt · ${r.lapses}× falsch` : ""}
-                        {r ? ` · fällig ${intervalLabel(r.intervalDays)}` : ""}
+                        {course.srsEnabled && r ? ` · ${r.repetitions}× wiederholt · ${r.lapses}× falsch` : ""}
+                        {course.srsEnabled && r ? ` · fällig ${intervalLabel(r.intervalDays)}` : ""}
                       </span>
                     </Link>
-                    <span className={STATUS_CLASS[status]}>{STATUS_LABEL[status]}</span>
+                    {course.srsEnabled && (
+                      <span className={STATUS_CLASS[status]}>{STATUS_LABEL[status]}</span>
+                    )}
                     {q.confidence === "low" && (
                       <span className="badge badge--warn" title="Diese Antwort basiert auf duennem Vorlesungsskript und sollte nochmal geprueft werden.">
                         prüfen

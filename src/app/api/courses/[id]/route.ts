@@ -12,7 +12,7 @@ type Params = { params: { id: string } };
 async function loadCourseForEdit(id: string) {
   const course = await prisma.course.findUnique({
     where: { id },
-    select: { id: true, slug: true, title: true, description: true, order: true, status: true, ownerId: true },
+    select: { id: true, slug: true, title: true, description: true, order: true, status: true, srsEnabled: true, ownerId: true },
   });
   if (!course) return null;
   return course;
@@ -52,6 +52,7 @@ export async function PATCH(request: Request, { params }: Params) {
     slug?: string;
     status?: string;
     order?: number;
+    srsEnabled?: boolean;
   } = {};
   if (parsed.data.title !== undefined) data.title = parsed.data.title;
   if (parsed.data.description !== undefined) data.description = parsed.data.description;
@@ -70,6 +71,7 @@ export async function PATCH(request: Request, { params }: Params) {
     data.status = parsed.data.status as CourseStatus;
   }
   if (parsed.data.order !== undefined) data.order = parsed.data.order;
+  if (parsed.data.srsEnabled !== undefined) data.srsEnabled = parsed.data.srsEnabled;
 
   try {
     const updated = await prisma.course.update({
@@ -82,6 +84,7 @@ export async function PATCH(request: Request, { params }: Params) {
         description: true,
         order: true,
         status: true,
+        srsEnabled: true,
         ownerId: true,
       },
     });

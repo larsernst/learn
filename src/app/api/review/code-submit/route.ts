@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   }
   const { questionId, languageId, sourceCode, isNew } = parsed.data;
 
-  const check = await checkCodeQuestionAccess(user, questionId, languageId);
+  const check = await checkCodeQuestionAccess(user, questionId, languageId, { requireSrs: true });
   if (!check.ok) {
     return NextResponse.json({ error: check.error }, { status: check.status });
   }

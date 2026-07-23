@@ -9,6 +9,7 @@ type CourseSettings = {
   slug: string;
   description: string;
   status: "draft" | "published";
+  srsEnabled: boolean;
   order: number;
   questionCount: number;
   hasImage: boolean;
@@ -26,6 +27,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
   const [slug, setSlug] = useState(course.slug);
   const [description, setDescription] = useState(course.description);
   const [status, setStatus] = useState<"draft" | "published">(course.status);
+  const [srsEnabled, setSrsEnabled] = useState(course.srsEnabled);
   const [order, setOrder] = useState(String(course.order));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
         description,
         slug,
         status,
+        srsEnabled,
         order: Number(order) || 0,
       }),
     });
@@ -252,6 +255,21 @@ export default function CourseSettingsClient({ course }: { course: CourseSetting
           </select>
           <p className="muted text-xs" style={{ margin: "4px 0 0" }}>
             Entwürfe erscheinen nicht auf der Startseite der Lernenden – ideal zum Aufbauen.
+          </p>
+        </div>
+        <div className="field">
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={srsEnabled}
+              onChange={(e) => setSrsEnabled(e.target.checked)}
+            />
+            Spaced Repetition (Lern-Modul) aktiviert
+          </label>
+          <p className="muted text-xs" style={{ margin: "4px 0 0" }}>
+            Wenn deaktiviert, verschwindet der Lern-Bereich für Lernende (keine Wiederholungen,
+            keine Fälligkeiten). Katalog und Prüfung bleiben nutzbar – sinnvoll für reine
+            Coding-Kurse.
           </p>
         </div>
         <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>

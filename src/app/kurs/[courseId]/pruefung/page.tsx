@@ -17,7 +17,7 @@ export default async function PruefungPage({
     <div className="page page--narrow">
       <p className="eyebrow">{course.title} · Prüfungssimulation</p>
       <h1>Prüfung proben</h1>
-      <KursNav courseId={course.id} />
+      <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
       <p className="muted" style={{ marginTop: 16 }}>
         Wähle eine Anzahl Fragen. Du bekommst sie in zufälliger Reihenfolge –
         Freie-Erinnerungs-Fragen bewertest du selbst (richtig/falsch),

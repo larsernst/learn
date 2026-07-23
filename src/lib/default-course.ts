@@ -13,7 +13,11 @@ export async function getDefaultCoursePath(
   section: CourseSection
 ): Promise<string> {
   const course = await prisma.course.findFirst({
-    where: { status: "published" },
+    where: {
+      status: "published",
+      // Kurse mit deaktiviertem SR haben keinen Lern-Bereich.
+      ...(section === "lernen" ? { srsEnabled: true } : {}),
+    },
     orderBy: { order: "asc" },
     select: { id: true },
   });

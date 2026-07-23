@@ -55,7 +55,7 @@ export default async function StatistikPage({
     <div className="page">
       <p className="eyebrow">{course.title} · Statistik</p>
       <h1>Deine Lern-Statistik</h1>
-      <KursNav courseId={course.id} />
+      <KursNav courseId={course.id} srsEnabled={course.srsEnabled} />
 
       <div className="grid grid--4" style={{ marginTop: 8 }}>
         <Stat label="Aktuelle Serie" value={`${streak} Tag${streak === 1 ? "" : "e"}`} accent="brand" />

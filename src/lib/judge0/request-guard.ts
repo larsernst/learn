@@ -15,11 +15,12 @@ export type CodeQuestionCheck =
 export async function checkCodeQuestionAccess(
   user: Pick<SessionPayload, "sub" | "roles">,
   questionId: string,
-  languageId: number
+  languageId: number,
+  opts: { requireSrs?: boolean } = {}
 ): Promise<CodeQuestionCheck> {
   const question = await prisma.question.findUnique({
     where: { id: questionId },
-    include: { course: { select: { status: true, ownerId: true } } },
+    include: { course: { select: { status: true, ownerId: true, srsEnabled: true } } },
   });
   if (!question) {
     return { ok: false, status: 404, error: "Frage nicht gefunden." };
@@ -28,6 +29,14 @@ export async function checkCodeQuestionAccess(
   // Sichtbarkeit; verwaiste Fragen ohne Kurs bleiben offen).
   if (question.course && !canViewCourse(user, question.course)) {
     return { ok: false, status: 404, error: "Frage nicht gefunden." };
+  }
+  // Review-Kontext (nicht Prüfung): Kurse mit deaktiviertem SR sperren.
+  if (opts.requireSrs && question.course && !question.course.srsEnabled) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Spaced Repetition ist für diesen Kurs deaktiviert.",
+    };
   }
   if (question.taskType !== "code" || !question.payload) {
     return { ok: false, status: 400, error: "Frage ist keine Code-Aufgabe." };

@@ -10,6 +10,7 @@ export interface ResolvedCourse {
   description: string;
   order: number;
   status: string;
+  srsEnabled: boolean;
   ownerId: string | null;
   imageMime: string | null;
 }

@@ -16,26 +16,64 @@ export async function GET(request: Request) {
   const chapterParam = url.searchParams.get("chapter");
   const chapter = chapterParam && /^\d+$/.test(chapterParam) ? Number(chapterParam) : undefined;
   const reviewLearned = url.searchParams.get("review") === "learned";
+  const questionId = url.searchParams.get("question") ?? undefined;
   const now = new Date();
 
   if (courseId) {
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      select: { status: true, ownerId: true },
+      select: { status: true, ownerId: true, srsEnabled: true },
     });
     if (!course || !canViewCourse(user, course)) {
       return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 });
     }
+    if (!course.srsEnabled) {
+      return NextResponse.json(
+        { error: "Spaced Repetition ist für diesen Kurs deaktiviert." },
+        { status: 403 }
+      );
+    }
   }
 
-  const visibility = courseId ? undefined : courseVisibilityWhere(user);
+  const me = await prisma.user.findUnique({
+    where: { id: user.sub },
+    select: { mcqEnabled: true, newQuestionsFirst: true },
+  });
+  const mcqEnabled = me?.mcqEnabled ?? true;
+  const newQuestionsFirst = me?.newQuestionsFirst ?? true;
+
+  // Einzel-Fragen-Modus: gezielt eine Frage lernen (z. B. aus dem Katalog).
+  if (questionId) {
+    const question = await prisma.question.findUnique({
+      where: { id: questionId },
+      include: { course: { select: { status: true, ownerId: true, srsEnabled: true } } },
+    });
+    if (
+      !question ||
+      !question.course ||
+      !canViewCourse(user, question.course) ||
+      !question.course.srsEnabled ||
+      (courseId !== undefined && question.courseId !== courseId)
+    ) {
+      return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
+    }
+    const existing = await prisma.review.findUnique({
+      where: { userId_questionId: { userId: user.sub, questionId } },
+      select: { questionId: true },
+    });
+    return NextResponse.json({
+      review: { question: serializeQuestion(question as SerializableQuestion, mcqEnabled) },
+      isNew: !existing,
+      deck: "all" as const,
+    });
+  }
 
   const questionFilter: Record<string, unknown> = {};
   if (courseId) questionFilter.courseId = courseId;
   if (chapter !== undefined) questionFilter.chapter = chapter;
   if (!courseId) {
     const v = courseVisibilityWhere(user);
-    if (v) questionFilter.course = v.course;
+    questionFilter.course = { ...(v ? v.course : {}), srsEnabled: true };
   }
   const reviewQuestionFilter =
     Object.keys(questionFilter).length > 0 ? { question: questionFilter } : undefined;
@@ -45,15 +83,8 @@ export async function GET(request: Request) {
   if (chapter !== undefined) questionWhere.chapter = chapter;
   if (!courseId) {
     const v = courseVisibilityWhere(user);
-    if (v) questionWhere.course = v.course;
+    questionWhere.course = { ...(v ? v.course : {}), srsEnabled: true };
   }
-
-  const me = await prisma.user.findUnique({
-    where: { id: user.sub },
-    select: { mcqEnabled: true, newQuestionsFirst: true },
-  });
-  const mcqEnabled = me?.mcqEnabled ?? true;
-  const newQuestionsFirst = me?.newQuestionsFirst ?? true;
 
   if (reviewLearned) {
     const learnedReviews = await prisma.review.findMany({

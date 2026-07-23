@@ -179,6 +179,7 @@ export const coursePatchSchema = z
     slug: z.string().min(1).max(120).optional(),
     status: z.enum(["draft", "published"]).optional(),
     order: z.number().int().optional(),
+    srsEnabled: z.boolean().optional(),
   })
   .refine(
     (v) =>
@@ -186,7 +187,8 @@ export const coursePatchSchema = z
       v.description !== undefined ||
       v.slug !== undefined ||
       v.status !== undefined ||
-      v.order !== undefined,
+      v.order !== undefined ||
+      v.srsEnabled !== undefined,
     { message: "Keine Daten zum Aktualisieren." }
   );
 

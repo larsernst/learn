@@ -19,6 +19,7 @@ async function main() {
         description: c.description,
         order: c.order,
         status: c.published ? "published" : "draft",
+        srsEnabled: c.srsEnabled ?? true,
       },
       update: {},
     });

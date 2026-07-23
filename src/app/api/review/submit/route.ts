@@ -24,10 +24,16 @@ export async function POST(request: Request) {
 
   const question = await prisma.question.findUnique({
     where: { id: questionId },
-    include: { course: { select: { status: true, ownerId: true } } },
+    include: { course: { select: { status: true, ownerId: true, srsEnabled: true } } },
   });
   if (!question || !question.course || !canViewCourse(user, question.course)) {
     return NextResponse.json({ error: "Frage nicht gefunden." }, { status: 404 });
+  }
+  if (!question.course.srsEnabled) {
+    return NextResponse.json(
+      { error: "Spaced Repetition ist für diesen Kurs deaktiviert." },
+      { status: 403 }
+    );
   }
 
   const { resolvedGrade, correct, correctOptionIds } = resolveReviewGrade(

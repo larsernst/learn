@@ -19,6 +19,7 @@ export default async function HomePage() {
       order: true,
       ownerId: true,
       status: true,
+      srsEnabled: true,
       imageMime: true,
     },
   });
@@ -85,16 +86,24 @@ export default async function HomePage() {
     select: { questionId: true, dueAt: true, intervalDays: true },
   });
   const learnedIds = new Set(reviews.map((r) => r.questionId));
-  const dueTodayTotal = reviews.filter((r) => r.dueAt.getTime() <= now.getTime()).length;
+  const srsCourseIds = new Set(courses.filter((c) => c.srsEnabled).map((c) => c.id));
+  const questionCourse = new Map(questions.map((q) => [q.id, q.courseId]));
+  const dueTodayTotal = reviews.filter(
+    (r) =>
+      r.dueAt.getTime() <= now.getTime() &&
+      srsCourseIds.has(questionCourse.get(r.questionId) ?? "")
+  ).length;
 
   const coursesWithStats = courses.map((c) => {
     const cq = questions.filter((q) => q.courseId === c.id);
     const total = cq.length;
     const learned = cq.filter((q) => learnedIds.has(q.id)).length;
     const courseReviewIds = new Set(cq.map((q) => q.id));
-    const dueToday = reviews.filter(
-      (r) => courseReviewIds.has(r.questionId) && r.dueAt.getTime() <= now.getTime()
-    ).length;
+    const dueToday = c.srsEnabled
+      ? reviews.filter(
+          (r) => courseReviewIds.has(r.questionId) && r.dueAt.getTime() <= now.getTime()
+        ).length
+      : 0;
 
     const byChapter = new Map<number, { chapter: number; chapterTitle: string; total: number; learned: number }>();
     for (const q of cq) {
@@ -186,9 +195,11 @@ export default async function HomePage() {
                 <div className="progress__bar" style={{ width: `${pct}%` }} />
               </div>
               <div className="row" style={{ marginTop: 16, flexWrap: "wrap" }}>
-                <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary btn--sm">
-                  {dueToday > 0 ? "Wiederholen" : "Lernen"}
-                </Link>
+                {course.srsEnabled && (
+                  <Link href={`/kurs/${course.id}/lernen`} className="btn btn--primary btn--sm">
+                    {dueToday > 0 ? "Wiederholen" : "Lernen"}
+                  </Link>
+                )}
                 <Link href={`/kurs/${course.id}`} className="btn btn--secondary btn--sm">
                   Übersicht
                 </Link>
