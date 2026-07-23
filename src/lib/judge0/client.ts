@@ -14,8 +14,12 @@
 // force_encoding (app/services/base64_service.rb) – im Plain-Modus schlägt
 // das Rendern jeder Submission fehl, deren stdout/stderr Nicht-ASCII-Zeichen
 // enthält (z. B. deutsche Umlaute in Programmausgaben). Mit Base64 sind
-// beliebige Bytes kein Problem. Wir kodieren daher alle Text-Felder beim
+// beliebige Bytes kein Problem. Wir kodieren daher die Text-Felder beim
 // Senden und dekodieren stdout/stderr/compile_output beim Empfangen.
+// AUSNAHME: command_line_arguments bleibt Plain-Text – Judge0 hat dafür
+// keinen Base64-Codec (nur source_code, stdin, stdout, expected_output,
+// stderr und compile_output werden in submission.rb de-/enkodiert) und
+// würde den kodierten String wörtlich an das Programm weiterreichen.
 
 const TERMINAL_STATES = new Set([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
 
@@ -97,8 +101,8 @@ export function createJudge0Client(opts: Judge0ClientOptions): Judge0Client {
     if (submission.stdin !== undefined) encoded.stdin = b64encode(submission.stdin);
     if (submission.expected_output !== undefined)
       encoded.expected_output = b64encode(submission.expected_output);
-    if (submission.command_line_arguments !== undefined)
-      encoded.command_line_arguments = b64encode(submission.command_line_arguments);
+    // command_line_arguments bewusst NICHT kodieren (Judge0 decodiert es
+    // nicht, s. Kommentar oben).
     const res = await fetchImpl(`${opts.baseUrl}/submissions?base64_encoded=true&wait=true`, {
       method: "POST",
       headers: {

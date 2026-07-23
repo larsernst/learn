@@ -100,6 +100,28 @@ describe("createJudge0Client", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
 
+  it("kodiert stdin/expected_output, aber nicht command_line_arguments", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(accepted));
+    const client = createJudge0Client({
+      baseUrl: "http://judge0:2358",
+      token: "t",
+      fetchImpl,
+    });
+
+    await client.submit({
+      language_id: 54,
+      source_code: "int main(){}",
+      command_line_arguments: "eins zwei",
+    });
+
+    const body = JSON.parse(
+      (fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body as string
+    );
+    // Judge0 hat keinen Base64-Codec für command_line_arguments.
+    expect(body.command_line_arguments).toBe("eins zwei");
+    expect(body.source_code).toBe(b64("int main(){}"));
+  });
+
   it("dekodiert Nicht-ASCII-Ausgaben (Umlaute) aus Base64", async () => {
     const umlaut: Judge0Result = {
       status: { id: 3, description: "Accepted" },
