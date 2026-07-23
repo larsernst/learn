@@ -121,6 +121,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* wird von Next.js zur Build-Zeit ins Client-Bundle
+        # einkompiliert – ein Eintrag in environment: allein wirkt nicht.
+        NEXT_PUBLIC_JUDGE0_ENABLED: "${JUDGE0_ENABLED:-false}"
+        NEXT_PUBLIC_APP_NAME: "${NEXT_PUBLIC_APP_NAME:-Lern-App}"
     restart: unless-stopped
     depends_on:
       db:

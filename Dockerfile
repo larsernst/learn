@@ -13,6 +13,12 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* wird von Next.js zur Build-Zeit ins Client-Bundle einkompiliert
+# (Werte kommen als build-args aus docker-compose.yml).
+ARG NEXT_PUBLIC_JUDGE0_ENABLED=false
+ARG NEXT_PUBLIC_APP_NAME=Lern-App
+ENV NEXT_PUBLIC_JUDGE0_ENABLED=$NEXT_PUBLIC_JUDGE0_ENABLED
+ENV NEXT_PUBLIC_APP_NAME=$NEXT_PUBLIC_APP_NAME
 RUN npx prisma generate
 RUN npm run build
 
